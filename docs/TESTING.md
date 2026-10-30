@@ -154,7 +154,7 @@ Yakuniy o‘lchov (`load-2026-10-30T09-15-53-979Z.json`): normal 6 741 so‘rov 
 
 Normal 7 230 so‘rov (121 RPS), peak 12 123 so‘rov (202 RPS), **0 xato**, barcha 19 endpoint p95 < 300 ms; ma’lumot yaxlitligi testi — PASS. Normal bosqichda deyarli hammasi tezroq (yig‘ma jadval va `performance` profili ta’siri bir-biridan ajratib o‘lchanmagan); peak'da sotuvlar ro‘yxati va dashboard Phase 15 bilan bir xil darajada (±10%) — o‘zgarmagan so‘rovlar, farq shovqin chegarasida.
 
-**Topilgan va tuzatilgan:** tarixli omborda kassa katalogi p95 ~1,5–1,7 s va 434 ta 503 (sotilgan miqdor har so‘rovda 2 mln harakatdan yig‘ilardi, DB pool to‘yinardi) → trigger bilan yuritiladigan `warehouse_sales_totals` (DATABASE §4.10a; migratsiya `20261030100000_warehouse_sales_totals`) → 22 / 61 ms. Testlar: `inventory.db-spec.ts` (sotuv va bekor qilinmaydigan yozuv bo‘yicha yig‘ma, ledger bilan moslik), `migrations.db-spec.ts` (`divine_app` — faqat SELECT).
+**Topilgan va tuzatilgan:** tarixli omborda kassa katalogi p95 ~1,5–1,7 s va 434 ta 503 (sotilgan miqdor har so‘rovda 2 mln harakatdan yig‘ilardi, DB pool to‘yinardi) → trigger bilan yuritiladigan `warehouse_sales_totals` (DATABASE §4.10a; migratsiya `20261030100000_warehouse_sales_totals`) → 22 / 61 ms. Testlar: `inventory.db-spec.ts` (har bir sotuv ledger `SALE` harakati orqali yig‘mani oshiradi va `sale_items` yig‘indisiga teng, `reconcile_sales_totals` bo‘sh; ilova roli yig‘mani to‘g‘ridan-to‘g‘ri o‘zgartira olmaydi), `migrations.db-spec.ts` (derived jadval — faqat SELECT).
 
 **Ochiq qolgan:** batareya + `balanced` rejimida `GET /dashboard/summary` peak p95 325 ms (FAIL) — zaxira kichik. Sababi va arxitektura qarori — SECURITY §20.5. Production serverda o‘lchanmagan.
 
