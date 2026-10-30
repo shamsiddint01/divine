@@ -197,12 +197,12 @@ To‘liq xarita (har bir talab → test) — [SECURITY §17 "Phase 16"](SECURITY
 | Qadam | Nima tekshiriladi |
 |---|---|
 | 1 | stack build bilan `healthy`; bootstrap admin (6 raqamli parol faqat chiqishda); 25 sotuv |
-| 2 | mantiqiy backup shifrlangan (`PGDMP` va mijoz ismlari — 0); **barcha volume'lar o‘chiriladi**; toza bazada 0 jadval; `restore.sh` → manifest (sonlar, md5, invariantlar, himoya) backup paytidagi bilan bir xil; ilova orqali sotuvlar 25, reconciliation 0 |
+| 2 | mantiqiy backup shifrlangan (`PGDMP` va mijoz ismlari — 0); **barcha volume'lar o‘chiriladi**; toza bazada 0 jadval; `restore.sh` → manifest (sonlar, md5, invariantlar, himoya) backup paytidagi bilan bir xil, restore'dan keyingi manifest alohida faylga yozilib `cmp` bilan solishtiriladi; ilova orqali sotuvlar 25, reconciliation 0 |
 | 3 | bazaviy backup → D (5 sotuv) → T nuqta + manifest → E (3 sotuv) → WAL → `restore-pitr.sh` T'ga: manifest T bilan bir xil, sotuvlar 30, E ombori yo‘q, D bor; ilova orqali tekshiruv |
 | 4 | `security-check.sh` (51 tekshiruv: konteyner hardening, rollar, tarmoq, Redis, TLS/HSTS/CSP, secretlar inspect va log'larda) va `monitor.sh` (14 OK) |
 | 5 | postgres to‘xtatilgan: backup exit 1, xato holati yozildi, monitor exit 1; keyingi muvaffaqiyatli backup holatni tozaladi |
 
-**Natija (2026-10-30):** `drill-20261030T151900Z.txt` — **DRILL: MUVAFFAQIYATLI**, 204 s, barcha qadamlar PASS. Alert webhook'i alohida: postgres'siz `backup.sh` → lokal HTTP tinglovchiga bitta `application/json` xabar (faqat holat va yiqilgan buyruq nomi, secret yo‘q), status fayli yozildi.
+**Natija (2026-10-30):** `drill-20261030T151900Z.txt` — **DRILL: MUVAFFAQIYATLI**, 204 s, barcha qadamlar PASS (manifest fayllari saqlanmagan). Audit paytida qayta: `drill-20261030T170416Z.txt` — **MUVAFFAQIYATLI**, 239 s; dalillar `drill-20261030T170416Z/`: backup va restore'dan keyingi manifest `cmp` bilan bir xil, T va PITR'dan keyingi manifest bir xil, `security-check.txt` 51 PASS / 0 FAIL, `monitor.txt` 14 OK (SECURITY §20.2). Alert webhook'i alohida: postgres'siz `backup.sh` → lokal HTTP tinglovchiga bitta `application/json` xabar (faqat holat va yiqilgan buyruq nomi, secret yo‘q), status fayli yozildi.
 
 **Phase 17 da qo‘shilgan avtomatik testlar:** `password-hasher.spec.ts` (pepper rotation, 3), `env.schema.spec.ts` (`PASSWORD_PEPPER_V2`), `test/unit/config/secret-files.spec.ts` (`*_FILE`, 4), `auth.db-spec.ts` (pepper rotation login orqali; sessiyalarni tozalash job'i), `inventory.db-spec.ts` (`warehouse_sales_totals`, 2), `migrations.db-spec.ts` (21 jadval, derived jadval faqat SELECT, `reconcile_sales_totals` o‘qiladi), `load.bench-spec.ts` (tarixli ombor ssenariysi).
 
