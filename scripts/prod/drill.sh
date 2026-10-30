@@ -111,6 +111,9 @@ C up -d postgres redis >/dev/null 2>&1
 wait_healthy postgres redis
 expect "yangi bazada jadvallar" "$(q "SELECT count(*) FROM pg_tables WHERE schemaname = 'public'")" 0
 scripts/prod/restore.sh "$dump" --no-start 2>>"$report"
+scripts/prod/verify-db.sh --out "$work/manifest-restored.tsv" 2>>"$report"
+expect "restore manifest'i backup manifest'i bilan bayt-ma-bayt (cmp)" \
+  "$(cmp -s "${dump%.dump.gpg}.manifest.tsv" "$work/manifest-restored.tsv" && echo bir xil || echo farq)" "bir xil"
 note "PASS  restore + manifest (sonlar, md5, invariantlar, himoya) backup paytidagi bilan bir xil"
 C up -d >/dev/null 2>&1
 wait_healthy
@@ -135,7 +138,7 @@ sleep 3
 scripts/prod/backup-wal.sh 2>>"$report"
 base=$(ls "$work"/backups/base/*.tar.gpg)
 scripts/prod/restore-pitr.sh "$base" --target-time "$target" --force --no-start 2>>"$report"
-scripts/prod/verify-db.sh --expect "$work/manifest-T.tsv" 2>>"$report"
+scripts/prod/verify-db.sh --expect "$work/manifest-T.tsv" --out "$work/manifest-pitr.tsv" 2>>"$report"
 expect "PITR: sotuvlar T paytidagidek" "$(q 'SELECT count(*) FROM sales')" "$sales_t"
 expect "PITR: T dan keyingi (E) ombor yo'q" "$(q "SELECT count(*) FROM warehouses WHERE name = 'Drill ombor E'")" 0
 expect "PITR: T gacha (D) ombor bor" "$(q "SELECT count(*) FROM warehouses WHERE name = 'Drill ombor D'")" 1
@@ -176,6 +179,11 @@ expect "keyingi muvaffaqiyatli backup xato holatini tozaladi" "$(test -f "$work/
 
 step "Natija"
 note "Drill tugadi: $(date -u +%FT%TZ), jami $(($(date +%s) - started)) s"
-# Hisobot saqlanadi (ish katalogi muvaffaqiyatda o'chiriladi): backups/ — gitignore'da.
-mkdir -p "$ROOT/backups/drill"
-cp "$report" "$ROOT/backups/drill/drill-$(date -u +%Y%m%dT%H%M%SZ).txt"
+# Hisobot va dalillar saqlanadi (ish katalogi muvaffaqiyatda o'chiriladi): backups/ — gitignore'da.
+# Manifestlarda faqat sonlar, md5 va sozlamalar; tekshiruv chiqishlarida secret qiymatlari yo'q.
+evidence="$ROOT/backups/drill/drill-$(date -u +%Y%m%dT%H%M%SZ)"
+mkdir -p "$evidence"
+cp "$report" "$evidence.txt"
+cp "${dump%.dump.gpg}.manifest.tsv" "$evidence/manifest-backup.tsv"
+cp "$work/manifest-restored.tsv" "$work/manifest-T.tsv" "$work/manifest-pitr.tsv" \
+  "$work/security-check.txt" "$work/monitor.txt" "$evidence/"
