@@ -57,7 +57,10 @@ wait_healthy() { # barcha ishlayotgan (yoki berilgan) servislar aniq "(healthy)"
 data() { node scripts/prod/drill-data.mjs --url "$url" --login drilladmin --password-file "$work/admin.pw" --insecure --tag "$1" --sales "$2" 2>/dev/null; }
 check_app() { node scripts/prod/drill-check.mjs --url "$url" --login drilladmin --password-file "$work/admin.pw" --insecure 2>/dev/null; }
 
-if [ -n "$(docker compose -p "$COMPOSE_PROJECT" ls -q 2>/dev/null)" ] || docker ps -a --format '{{.Names}}' | grep -q '^divine-drill-'; then
+# `docker compose ls` -p'ni e'tiborsiz qoldiradi — aniq nom, konteynerlar va volume'lar bo'yicha tekshiriladi.
+if docker compose ls -aq | grep -qx "$COMPOSE_PROJECT" ||
+  docker ps -a --format '{{.Names}}' | grep -q "^$COMPOSE_PROJECT-" ||
+  docker volume ls -q | grep -q "^${COMPOSE_PROJECT}_"; then
   echo "divine-drill loyihasi allaqachon mavjud — avval: docker compose -p divine-drill -f docker-compose.prod.yml down -v" >&2
   exit 2
 fi
