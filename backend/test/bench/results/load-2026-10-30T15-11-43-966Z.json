@@ -1,6 +1,6 @@
 {
   "kind": "load",
-  "note": "Phase 17, tuzatishdan keyin; noutbuk BATAREYADA (AC0 online=0), power-profiles-daemon \"balanced\", energy_performance_preference=balance_power, CPU ~0,8–1 GHz atrofida cheklangan. Barcha endpointlar Phase 15 (AC) dan bir tekis ~1,5–2× sekin; peak dashboard/summary p95 325 ms → FAIL. Muhit mezon talab qiladigan sharoitga mos emas — solishtirish uchun load-2026-10-30T16-41-08-305Z.json.",
+  "note": "Phase 17, warehouse_sales_totals tuzatishidan keyin (yakuniy o‘lchov bilan bir xil kod). Noutbuk BATAREYADA: o‘lchov tugagan zahoti (15:12Z) tekshirilgan — AC0 online=0, BAT0 Discharging, power-profiles-daemon \"balanced\", energy_performance_preference=balance_power. Peak dashboard/summary p95 325 ms → FAIL. Yakuniy o‘lchovdan (load-2026-10-30T16-41-08-305Z.json, profil \"performance\") p95 bo‘yicha 1,4–3,2× (peak) va 2,0–11,7× (normal) sekin — farq kodda emas, CPU energiya rejimida.",
   "environment": {
     "cpu": "13th Gen Intel(R) Core(TM) i5-13420H",
     "cores": 12,

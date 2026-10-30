@@ -518,7 +518,7 @@ Dev konfiguratsiyasi (`docker-compose.yml`) o‘zgartirilmadi va **production uc
 
 `sort=sold:desc` ko‘p yillik tarixli omborda (Phase 15 dagi "ma’lum chegara") — **alohida ssenariy** sifatida o‘lchandi va tuzatildi (§20.4 #1). To‘liq usul, muhit va jadval — [TESTING §5.2](TESTING.md#52-api-yuklama-testi--p95--300-ms-benchload).
 
-| O‘lchov (p95, ms, normal / peak) | Phase 15 (AC) | Phase 17, tuzatishdan oldin | Phase 17, batareya + `balanced` | **Phase 17 yakuniy** (batareya + `performance`) |
+| O‘lchov (p95, ms, normal / peak) | Phase 15 (quvvat holati qayd etilmagan) | Phase 17, tuzatishdan oldin | Phase 17, batareya + `balanced` | **Phase 17 yakuniy** (batareya + `performance`) |
 |---|---|---|---|---|
 | `GET /products` (kassa, tarixli ombor) | — (o‘lchanmagan) | 1 512 / 1 657, **434 xato** | 80 / 136 | **22 / 61** |
 | `GET /products` (kassa katalogi) | 39 / 65 | 177 / 286 | 69 / 126 | 18 / 55 |
@@ -528,7 +528,9 @@ Dev konfiguratsiyasi (`docker-compose.yml`) o‘zgartirilmadi va **production uc
 | `POST /sales` | 89 / 128 | 304 / 466 | 167 / 251 | 54 / 133 |
 | Xatolar / natija | 0 / PASS | 435 / FAIL | 0 / **FAIL** | **0 / PASS** |
 
-Yakuniy o‘lchov (`load-2026-10-30T16-41-08-305Z.json`) — barcha 19 endpoint p95 < 300 ms, eng sekini 212 ms, 0 xato. **Cheklov:** noutbuk o‘lchov paytida zaryadga ulanmagan edi; CPU energiya profili vaqtincha `performance`ga o‘tkazildi (o‘lchovdan keyin `balanced`ga qaytarildi). Shu mashinada batareya + `balanced` rejimida (CPU cheklangan) dashboard peak'da 325 ms bilan FAIL bo‘lgan — natija faylda izoh bilan saqlangan, o‘chirilmagan. Bu dashboard/summary va sotuvlar ro‘yxatining zaxirasi kichikligini ko‘rsatadi (§20.5).
+Yakuniy o‘lchov (`load-2026-10-30T16-41-08-305Z.json`) — barcha 19 endpoint p95 < 300 ms, eng sekini 212 ms, 0 xato. **Cheklov:** noutbuk o‘lchov paytida zaryadga ulanmagan edi; CPU energiya profili vaqtincha `performance`ga o‘tkazildi (o‘lchovdan keyin `balanced`ga qaytarildi). Shu mashinada, **xuddi shu kod** bilan, batareya + `balanced` rejimida (`balance_power` — o‘lchov tugagan zahoti tekshirilgan: AC0 = 0, batareya `Discharging`) dashboard peak'da 325 ms bilan FAIL bo‘lgan — natija faylda izoh bilan saqlangan, o‘chirilmagan. U yakuniy o‘lchovdan endpoint'lar bo‘yicha p95'da 1,4–3,2× (peak, median 2,3×) va 2,0–11,7× (normal, median 3,7×) sekin. Bu dashboard/summary va sotuvlar ro‘yxatining zaxirasi kichikligini ko‘rsatadi (§20.5).
+
+**Phase 15 bilan solishtirish cheklovi:** Phase 15 o‘lchovi paytida quvvat holati (AC/batareya, CPU profili) qayd etilmagan — muhit tengligi isbotlanmagan. Yakuniy peak p95 Phase 15 ga nisbatan: 13 endpoint tezroq, 5 tasi sekinroq — `GET /customers` (admin) +45% (36 so‘rov, kichik tanlanma), `GET /sales` (hammasi) +11,2%, `GET /dashboard/summary` +8,2%, `POST /sales` +3,5%, `GET /warehouses/:id/stock` +2,3%; normal bosqichda barcha 18 taqqoslanadigan endpoint −20…−86%.
 
 ### 20.4. Phase 17 da topilgan va tuzatilgan
 
@@ -546,7 +548,7 @@ Yakuniy o‘lchov (`load-2026-10-30T16-41-08-305Z.json`) — barcha 19 endpoint 
 ### 20.5. Qolgan xavflar va tugallanmagan ishlar
 
 - **Production serverda hech narsa o‘lchanmagan.** Server, domen, haqiqiy sertifikat va tarmoq yo‘q — p95, TLS va backup faqat lokal. Yuklama generatori server va DB bilan bir mashinada (natija pessimistik), lekin server apparati noma’lum.
-- **Yakuniy yuklama o‘lchovi zaryadsiz** (batareya + `performance` profili) — Phase 15 (AC) bilan eng yaqin, lekin aynan bir xil sharoit emas. CPU cheklanganda `GET /dashboard/summary` peak'da 325 ms (FAIL), `GET /sales` ~300 ms. Zaif serverda shu endpoint'lar chegaradan oshishi mumkin. Sabab — dashboard'ning "barcha vaqt" ko‘rsatkichlari 1 mln sotuvni har so‘rovda skanerlaydi; tuzatish (kunlik yig‘ma jadval) REQ-031 ("keshsiz", real vaqt) va sotuv tranzaksiyasiga ta’sir qiladi — **arxitektura qarori**, Phase 17 da qilinmadi.
+- **Yakuniy yuklama o‘lchovi zaryadsiz** (batareya + `performance` profili); Phase 15 o‘lchovining quvvat holati qayd etilmagan — sharoit tengligi isbotlanmagan. CPU cheklanganda `GET /dashboard/summary` peak'da 325 ms (FAIL), `GET /sales` (o‘z tarixi) 298 ms. Zaif serverda shu endpoint'lar chegaradan oshishi mumkin. Sabab — dashboard'ning "barcha vaqt" ko‘rsatkichlari har so‘rovda barcha sotuvlarni filtrsiz yig‘adi (`dashboard.repository.ts`, `totals(tx)`); tuzatish (kunlik yig‘ma jadval) REQ-031 ("keshsiz", real vaqt) va sotuv tranzaksiyasiga ta’sir qiladi — **arxitektura qarori**, Phase 17 da qilinmadi.
 - **Offsite nusxa** — RUNBOOK'da `rsync` cron namunasi, lekin sinalmagan; moliyaviy ma’lumotlarni saqlash muddati — biznes egasining qarori (RUNBOOK §3).
 - **Backup maxfiy GPG kaliti yo‘qolsa** barcha backup'lar o‘qilmaydi — saqlash (seyf/parol menejeri, ikki nusxa) tashkiliy masala.
 - **RPO:** WAL arxivi staging'i data volume ichida; disk butunlay yo‘qolsa oxirgi ~15 daqiqa (`archive_timeout` 5 + cron 10) yo‘qolishi mumkin.
@@ -554,4 +556,5 @@ Yakuniy o‘lchov (`load-2026-10-30T16-41-08-305Z.json`) — barcha 19 endpoint 
 - **Alert:** webhook faqat lokal tinglovchiga sinaldi; haqiqiy Slack/Telegram kanaliga emas.
 - **Gorizontal kengaytirish** (`--scale api=2`, REQ-169) — dizayn tayyor (holat Redis'da, job qulflari), lekin Phase 17 da **sinalmagan**.
 - Phase 16 dan: `deepmerge-ts` (dev va `migrate` image) high advisory; eski audit qatorlarida xom noma’lum login DB darajasida; CSP `style-src 'unsafe-inline'`; 6 xonali parol (TZ). Load balancer/CDN qo‘shilsa — `TRUST_PROXY` va `set_real_ip_from` (RUNBOOK §1).
+- **Dependabot amalda o‘chirilgan:** `.github/dependabot.yml` — `updates: []` (repo egasining 2026-10-30 dagi commit'i `04b70f7`; Phase 17 o‘zgarishi emas — prettier faqat bo‘sh birinchi qatorni olib tashlagan). §16–§17 dagi "Dependabot" himoyasi hozir ishlamaydi: bog‘liqlik va image yangilanishlari — qo‘lda (`pnpm audit`). Base image'lar teg bilan (`postgres:18-alpine`, `redis:8-alpine`, `node`/`nginx` alpine), digest bilan qotirilmagan — har build yangi patch olishi mumkin, lekin takrorlanuvchanlik kafolatlanmaydi.
 - **D-13, D-14, D-15** — tasdiqlanmagan, Phase 17 ga ta’sir qilmaydi.

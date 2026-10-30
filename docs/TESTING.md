@@ -129,12 +129,12 @@ Yakuniy o‘lchov (`load-2026-10-30T09-15-53-979Z.json`): normal 6 741 so‘rov 
 
 **Ssenariy o‘zgarishi.** Kassa katalogi ikki ssenariyga bo‘lindi (Phase 17 talabi): «Yuklama ombori» (vazn 20, avvalgidek) va **«tarixli ombor»** (vazn 10) — seed'dagi 1 mln sotuvli omborlardan biri (`seedSales1M(...).sampleWarehouse`, bir yillik tarix); sotuvchilar ikkala omborga biriktirilgan. Seed trigger'larni o‘chirib yozgani uchun `warehouse_sales_totals` seed oxirida ledger'dan to‘ldiriladi. Mezon va boshqa vaznlar o‘zgarmadi.
 
-**Muhit.** Mashina, OS, Node, PostgreSQL, Redis, seed — yuqoridagi bilan bir xil. Farqi — quvvat: Phase 17 o‘lchovlari paytida noutbuk **zaryadga ulanmagan**. Har bir faylda `note` maydoni (`bench:compare` uni ogohlantirish sifatida chiqaradi).
+**Muhit.** Mashina, OS, Node, PostgreSQL, Redis, seed — yuqoridagi bilan bir xil. Quvvat: Phase 17 o‘lchovlari paytida noutbuk **zaryadga ulanmagan** (Phase 15 o‘lchovida quvvat holati qayd etilmagan). Har bir faylda `note` maydoni (`bench:compare` uni ogohlantirish sifatida chiqaradi).
 
 | Fayl | Holat | Eng sekin p95 | Xato | Natija |
 |---|---|---|---|---|
 | `load-2026-10-30T11-56-59-964Z.json` | tuzatishdan oldin; quvvat holati qayd etilmagan | 1 657 ms (kassa, tarixli ombor) | 435 (434 — 503) | FAIL |
-| `load-2026-10-30T15-11-43-966Z.json` | tuzatishdan keyin; batareya, `balanced` (`balance_power`, CPU cheklangan) | 325 ms (peak `dashboard/summary`) | 0 | FAIL |
+| `load-2026-10-30T15-11-43-966Z.json` | tuzatishdan keyin (yakuniy bilan bir xil kod); batareya, `balanced` (`balance_power`) — yakuniydan p95'da 1,4–3,2× (peak) sekin | 325 ms (peak `dashboard/summary`) | 0 | FAIL |
 | `load-2026-10-30T16-41-08-305Z.json` | **yakuniy**; batareya, `powerprofilesctl set performance` (o‘lchovdan keyin `balanced`ga qaytarildi), `systemd-inhibit` | 212 ms (peak `dashboard/summary`) | 0 | **PASS** |
 
 **Yakuniy natija (p95, ms, normal / peak)** va Phase 15 bilan solishtirish (`bench:compare load-2026-10-30T09-15-53-979Z.json load-2026-10-30T16-41-08-305Z.json`):
@@ -151,9 +151,9 @@ Yakuniy o‘lchov (`load-2026-10-30T09-15-53-979Z.json`): normal 6 741 so‘rov 
 | `GET /dashboard/my-summary` | 32 / 55 | 16 / 50 |
 | `POST /sales` | 89 / 128 | 54 / 133 |
 | `GET /products/lookup` | 37 / 59 | 16 / 53 |
-| qolgan 9 endpoint | ≤ 125 | ≤ 119 |
+| qolgan 10 endpoint | ≤ 125 | ≤ 119 |
 
-Normal 7 230 so‘rov (121 RPS), peak 12 123 so‘rov (202 RPS), **0 xato**, barcha 19 endpoint p95 < 300 ms; ma’lumot yaxlitligi testi — PASS. Normal bosqichda deyarli hammasi tezroq (yig‘ma jadval va `performance` profili ta’siri bir-biridan ajratib o‘lchanmagan); peak'da sotuvlar ro‘yxati va dashboard Phase 15 bilan bir xil darajada (±10%) — o‘zgarmagan so‘rovlar, farq shovqin chegarasida.
+Normal 7 230 so‘rov (121 RPS), peak 12 123 so‘rov (202 RPS), **0 xato**, barcha 19 endpoint p95 < 300 ms; ma’lumot yaxlitligi testi — PASS. Normal bosqichda barcha 18 taqqoslanadigan endpoint tezroq (−20…−86%; yig‘ma jadval va `performance` profili ta’siri bir-biridan ajratib o‘lchanmagan). Peak'da 13 tasi tezroq, 5 tasi sekinroq: `GET /customers` (admin) +45% (36 so‘rov — kichik tanlanma), `GET /sales` (hammasi) +11,2%, `GET /dashboard/summary` +8,2%, `POST /sales` +3,5%, `GET /warehouses/:id/stock` +2,3%. Phase 15 o‘lchovining quvvat holati qayd etilmagan — ikki o‘lchov sharoiti tengligi isbotlanmagan, farqlarni regressiya yoki yaxshilanish deb talqin qilmang.
 
 **Topilgan va tuzatilgan:** tarixli omborda kassa katalogi p95 ~1,5–1,7 s va 434 ta 503 (sotilgan miqdor har so‘rovda 2 mln harakatdan yig‘ilardi, DB pool to‘yinardi) → trigger bilan yuritiladigan `warehouse_sales_totals` (DATABASE §4.10a; migratsiya `20261030100000_warehouse_sales_totals`) → 22 / 61 ms. Testlar: `inventory.db-spec.ts` (har bir sotuv ledger `SALE` harakati orqali yig‘mani oshiradi va `sale_items` yig‘indisiga teng, `reconcile_sales_totals` bo‘sh; ilova roli yig‘mani to‘g‘ridan-to‘g‘ri o‘zgartira olmaydi), `migrations.db-spec.ts` (derived jadval — faqat SELECT).
 

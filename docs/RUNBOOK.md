@@ -127,7 +127,7 @@ Rollar (`divine_owner`, `divine_app`, `divine_api`) postgres birinchi ishga tush
 
 ## 6. Muntazam drill (oyiga kamida bir marta)
 
-`scripts/prod/drill.sh` — ALOHIDA loyihada (`divine-drill`, 127.0.0.1:18443, vaqtinchalik secretlar, self-signed TLS, vaqtinchalik GPG kalit) to‘liq sikl: stack → admin → HTTPS API orqali ma’lumot → mantiqiy backup → **volume'lar o‘chiriladi** → tiklash → manifest solishtiruvi → ilova orqali tekshiruv → bazaviy backup → yangi ma’lumot, T nuqta, yana ma’lumot → WAL → PITR (T dan keyingilari yo‘q) → xavfsizlik tekshiruvi → monitor → backup xatosini aniqlash (postgres to‘xtatiladi) → tozalash. Ishlab turgan tizimga tegmaydi. Natija — `backups/drill/drill-<UTC>.txt` (xatoda — vaqtinchalik katalogdagi `drill-report.txt`, yo‘li chiqishda), exit 0 faqat hamma qadam PASS bo‘lsa.
+`scripts/prod/drill.sh` — ALOHIDA loyihada (`divine-drill`, 127.0.0.1:18443, vaqtinchalik secretlar, self-signed TLS, vaqtinchalik GPG kalit) to‘liq sikl: stack → admin → HTTPS API orqali ma’lumot → mantiqiy backup → **volume'lar o‘chiriladi** → tiklash → manifest solishtiruvi → ilova orqali tekshiruv → bazaviy backup → yangi ma’lumot, T nuqta, yana ma’lumot → WAL → PITR (T dan keyingilari yo‘q) → xavfsizlik tekshiruvi → monitor → backup xatosini aniqlash (postgres to‘xtatiladi) → tozalash. Ishlab turgan tizimga tegmaydi. Natija — `backups/drill/drill-<UTC>.txt` va `drill-<UTC>/` (manifestlar: backup, restore'dan keyin, T nuqta, PITR'dan keyin; `security-check.txt`, `monitor.txt`); xatoda — vaqtinchalik katalogdagi `drill-report.txt` (yo‘li chiqishda). Exit 0 faqat hamma qadam PASS bo‘lsa.
 
 ## 7. Yangilash, rollback, insident
 
