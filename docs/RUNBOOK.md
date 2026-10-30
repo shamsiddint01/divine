@@ -127,7 +127,7 @@ Rollar (`divine_owner`, `divine_app`, `divine_api`) postgres birinchi ishga tush
 
 ## 6. Muntazam drill (oyiga kamida bir marta)
 
-`scripts/prod/drill.sh` — ALOHIDA loyihada (`divine-drill`, 127.0.0.1:18443, vaqtinchalik secretlar, self-signed TLS, vaqtinchalik GPG kalit) to‘liq sikl: stack → admin → HTTPS API orqali ma’lumot → mantiqiy backup → **volume'lar o‘chiriladi** → tiklash → manifest solishtiruvi → ilova orqali tekshiruv → bazaviy backup → yangi ma’lumot, T nuqta, yana ma’lumot → WAL → PITR (T dan keyingilari yo‘q) → xavfsizlik tekshiruvi → monitor → tozalash. Ishlab turgan tizimga tegmaydi. Natija — `drill-report.txt`.
+`scripts/prod/drill.sh` — ALOHIDA loyihada (`divine-drill`, 127.0.0.1:18443, vaqtinchalik secretlar, self-signed TLS, vaqtinchalik GPG kalit) to‘liq sikl: stack → admin → HTTPS API orqali ma’lumot → mantiqiy backup → **volume'lar o‘chiriladi** → tiklash → manifest solishtiruvi → ilova orqali tekshiruv → bazaviy backup → yangi ma’lumot, T nuqta, yana ma’lumot → WAL → PITR (T dan keyingilari yo‘q) → xavfsizlik tekshiruvi → monitor → backup xatosini aniqlash (postgres to‘xtatiladi) → tozalash. Ishlab turgan tizimga tegmaydi. Natija — `backups/drill/drill-<UTC>.txt` (xatoda — vaqtinchalik katalogdagi `drill-report.txt`, yo‘li chiqishda), exit 0 faqat hamma qadam PASS bo‘lsa.
 
 ## 7. Yangilash, rollback, insident
 
@@ -138,4 +138,4 @@ Rollar (`divine_owner`, `divine_app`, `divine_api`) postgres birinchi ishga tush
 
 ## 8. Kengaytirish (REQ-169)
 
-API stateless (JWT, Redis'da rate limit, lockout va job qulflari). Bir nechta nusxa: `$C up -d --scale api=2` va `$C restart web` (Nginx `api` nomini ishga tushishda hal qiladi). Kunlik job'lar (reconciliation, sessiya tozalash) Redis `SET NX` qulfi bilan bitta nusxada ishlaydi.
+API stateless (JWT, Redis'da rate limit, lockout va job qulflari). Bir nechta nusxa: `$C up -d --scale api=2` va `$C restart web` (Nginx `api` nomini ishga tushishda hal qiladi). Kunlik job'lar (reconciliation, sessiya tozalash) Redis `SET NX` qulfi bilan bitta nusxada ishlaydi. **Phase 17 da bir nechta nusxa bilan sinalmagan** — ishlatishdan oldin sinov loyihasida tekshiring (SECURITY §20.5).
