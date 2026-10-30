@@ -488,7 +488,12 @@ describe('sotilgan miqdor yig‘masi — warehouse_sales_totals (Phase 17, REQ-1
         ],
       });
       expect(await totals(db, warehouseId)).toEqual([]); // kirim sotuv emas
-      await sell(db, { warehouseId, userId: admin, customerId, lines: [{ productId: a, quantity: '3' }] });
+      await sell(db, {
+        warehouseId,
+        userId: admin,
+        customerId,
+        lines: [{ productId: a, quantity: '3' }],
+      });
       await sell(db, {
         warehouseId,
         userId: admin,
@@ -517,9 +522,16 @@ describe('sotilgan miqdor yig‘masi — warehouse_sales_totals (Phase 17, REQ-1
       const customerId = await createCustomer(db, admin);
       await receive(db, { warehouseId, actor: admin, lines: [{ productId, quantity: '5' }] });
       await db.query('SET LOCAL ROLE divine_app');
-      await sell(db, { warehouseId, userId: admin, customerId, lines: [{ productId, quantity: '2' }] });
+      await sell(db, {
+        warehouseId,
+        userId: admin,
+        customerId,
+        lines: [{ productId, quantity: '2' }],
+      });
       expect(await totals(db, warehouseId)).toEqual([{ product_id: productId, quantity: '2.000' }]);
-      await expectPgError(db, `UPDATE warehouse_sales_totals SET quantity = 999`, [], { code: '42501' });
+      await expectPgError(db, `UPDATE warehouse_sales_totals SET quantity = 999`, [], {
+        code: '42501',
+      });
       await expectPgError(
         db,
         `INSERT INTO warehouse_sales_totals (warehouse_id, product_id, quantity) VALUES ($1, $2, 1)`,

@@ -49,8 +49,14 @@ const login = async (loginName, password) =>
 
 const tag = args.tag;
 const admin = await login(args.login, readFileSync(args['password-file'], 'utf8').trim());
-const warehouse = await call('POST', '/warehouses', { token: admin, body: { name: `Drill ombor ${tag}` } });
-const group = await call('POST', '/product-groups', { token: admin, body: { name: `Drill guruh ${tag}` } });
+const warehouse = await call('POST', '/warehouses', {
+  token: admin,
+  body: { name: `Drill ombor ${tag}` },
+});
+const group = await call('POST', '/product-groups', {
+  token: admin,
+  body: { name: `Drill guruh ${tag}` },
+});
 const products = [];
 for (let i = 1; i <= 5; i++) {
   products.push(
@@ -73,14 +79,22 @@ const incoming = await call('POST', '/incoming', {
   body: {
     date: today,
     warehouseId: warehouse.id,
-    items: products.map((p, i) => ({ productId: p.id, quantity: '100', costPrice: `${1000 * (i + 1)}.00` })),
+    items: products.map((p, i) => ({
+      productId: p.id,
+      quantity: '100',
+      costPrice: `${1000 * (i + 1)}.00`,
+    })),
   },
 });
 await call('POST', `/incoming/${incoming.id}/confirm`, { token: admin });
 
 const created = await call('POST', '/users', {
   token: admin,
-  body: { login: `drillkassir${tag}${Date.now().toString(36).slice(-4)}`, role: 'USER', warehouseIds: [warehouse.id] },
+  body: {
+    login: `drillkassir${tag}${Date.now().toString(36).slice(-4)}`,
+    role: 'USER',
+    warehouseIds: [warehouse.id],
+  },
 });
 const seller = await login(created.user.login, created.generatedPassword);
 const count = Number(args.sales);
@@ -90,7 +104,10 @@ for (let i = 0; i < count; i++) {
     headers: { 'Idempotency-Key': randomUUID() },
     body: {
       warehouseId: warehouse.id,
-      customer: { name: `Drill mijoz ${tag}${i}`, phone: i % 2 ? null : `+99890${String(1000000 + i)}` },
+      customer: {
+        name: `Drill mijoz ${tag}${i}`,
+        phone: i % 2 ? null : `+99890${String(1000000 + i)}`,
+      },
       items: [
         { productId: products[i % 5].id, quantity: '2' },
         { productId: products[(i + 1) % 5].id, quantity: '1' },
@@ -98,12 +115,20 @@ for (let i = 0; i < count; i++) {
     },
   });
 }
-const category = await call('POST', '/expense-categories', { token: admin, body: { name: `Drill xarajat ${tag}` } });
+const category = await call('POST', '/expense-categories', {
+  token: admin,
+  body: { name: `Drill xarajat ${tag}` },
+});
 await call('POST', '/expenses', {
   token: admin,
   body: { date: today, amount: '125000.00', categoryId: category.id, note: `Drill ${tag}` },
 });
 const sales = await call('GET', `/sales?warehouseId=${warehouse.id}&pageSize=1`, { token: admin });
 console.log(
-  JSON.stringify({ tag, warehouseId: warehouse.id, products: products.length, sales: sales.meta?.total ?? null }),
+  JSON.stringify({
+    tag,
+    warehouseId: warehouse.id,
+    products: products.length,
+    sales: sales.meta?.total ?? null,
+  }),
 );

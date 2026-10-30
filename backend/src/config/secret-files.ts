@@ -18,7 +18,8 @@ export function loadSecretFiles(env: NodeJS.ProcessEnv = process.env): void {
   for (const key of SECRET_FILE_KEYS) {
     const path = env[`${key}_FILE`];
     if (!path) continue;
-    if (env[key]) throw new Error(`${key} va ${key}_FILE bir vaqtda berilgan — bittasini qoldiring`);
+    if (env[key])
+      throw new Error(`${key} va ${key}_FILE bir vaqtda berilgan — bittasini qoldiring`);
     let value: string;
     try {
       value = readFileSync(path, 'utf8').replace(/\r?\n$/, '');

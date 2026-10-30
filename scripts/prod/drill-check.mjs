@@ -16,7 +16,10 @@ const base = `${args.url}/api/v1`;
 const res = await fetch(`${base}/auth/login`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ login: args.login, password: readFileSync(args['password-file'], 'utf8').trim() }),
+  body: JSON.stringify({
+    login: args.login,
+    password: readFileSync(args['password-file'], 'utf8').trim(),
+  }),
 });
 if (!res.ok) throw new Error(`login → ${res.status}`);
 const auth = { Authorization: `Bearer ${(await res.json()).accessToken}` };
