@@ -122,7 +122,41 @@ Yakuniy o‘lchov (`load-2026-10-30T09-15-53-979Z.json`): normal 6 741 so‘rov 
 
 `load-2026-10-30T08-53-26-861Z.json` — oraliq o‘lchov: peak bosqichi yaroqsiz (uyqu rejimi gumoni, faylda `note`); u faqat tarix uchun saqlangan.
 
-**Ma’lum chegara.** Sotuvchining kassa katalogi `sort=sold:desc` yig‘ma bo‘yicha saralangani uchun ombordagi barcha sotuv qatorlarini yig‘adi. Yuklama omborida (20 mahsulot) bu tez; ko‘p yillik tarixli omborda sekinlashishi mumkin — o‘lchanmagan (benchmark rejasidan tashqari). Kelajakda kerak bo‘lsa — sotilgan miqdor uchun yig‘ma jadval yoki materialized view.
+**Ma’lum chegara (Phase 15).** Sotuvchining kassa katalogi `sort=sold:desc` yig‘ma bo‘yicha saralangani uchun ombordagi barcha sotuv qatorlarini yig‘adi. Yuklama omborida (20 mahsulot) bu tez; ko‘p yillik tarixli omborda o‘lchanmagan edi → Phase 17 da o‘lchandi va tuzatildi (pastda).
+
+#### Phase 17 o‘lchovlari
+
+**Ssenariy o‘zgarishi.** Kassa katalogi ikki ssenariyga bo‘lindi (Phase 17 talabi): «Yuklama ombori» (vazn 20, avvalgidek) va **«tarixli ombor»** (vazn 10) — seed'dagi 1 mln sotuvli omborlardan biri (`seedSales1M(...).sampleWarehouse`, bir yillik tarix); sotuvchilar ikkala omborga biriktirilgan. Seed trigger'larni o‘chirib yozgani uchun `warehouse_sales_totals` seed oxirida ledger'dan to‘ldiriladi. Mezon va boshqa vaznlar o‘zgarmadi.
+
+**Muhit.** Mashina, OS, Node, PostgreSQL, Redis, seed — yuqoridagi bilan bir xil. Farqi — quvvat: Phase 17 o‘lchovlari paytida noutbuk **zaryadga ulanmagan**. Har bir faylda `note` maydoni (`bench:compare` uni ogohlantirish sifatida chiqaradi).
+
+| Fayl | Holat | Eng sekin p95 | Xato | Natija |
+|---|---|---|---|---|
+| `load-2026-10-30T11-56-59-964Z.json` | tuzatishdan oldin; quvvat holati qayd etilmagan | 1 657 ms (kassa, tarixli ombor) | 435 (434 — 503) | FAIL |
+| `load-2026-10-30T15-11-43-966Z.json` | tuzatishdan keyin; batareya, `balanced` (`balance_power`, CPU cheklangan) | 325 ms (peak `dashboard/summary`) | 0 | FAIL |
+| `load-2026-10-30T16-41-08-305Z.json` | **yakuniy**; batareya, `powerprofilesctl set performance` (o‘lchovdan keyin `balanced`ga qaytarildi), `systemd-inhibit` | 212 ms (peak `dashboard/summary`) | 0 | **PASS** |
+
+**Yakuniy natija (p95, ms, normal / peak)** va Phase 15 bilan solishtirish (`bench:compare load-2026-10-30T09-15-53-979Z.json load-2026-10-30T16-41-08-305Z.json`):
+
+| Endpoint | Phase 15 | Phase 17 yakuniy |
+|---|---|---|
+| JAMI | 117 / 139 | 65 / 128 |
+| `GET /products` (kassa, tarixli ombor) | — | **22 / 61** |
+| `GET /products` (kassa katalogi) | 39 / 65 | 18 / 55 |
+| `GET /products` (admin) | 136 / 149 | 19 / 59 |
+| `GET /sales` (admin, hammasi) | 160 / 179 | 129 / 199 |
+| `GET /sales` (sotuvchi, o‘z tarixi) | 191 / 212 | 109 / 204 |
+| `GET /dashboard/summary` | 172 / 196 | 111 / 212 |
+| `GET /dashboard/my-summary` | 32 / 55 | 16 / 50 |
+| `POST /sales` | 89 / 128 | 54 / 133 |
+| `GET /products/lookup` | 37 / 59 | 16 / 53 |
+| qolgan 9 endpoint | ≤ 125 | ≤ 119 |
+
+Normal 7 230 so‘rov (121 RPS), peak 12 123 so‘rov (202 RPS), **0 xato**, barcha 19 endpoint p95 < 300 ms; ma’lumot yaxlitligi testi — PASS. Normal bosqichda deyarli hammasi tezroq (yig‘ma jadval va `performance` profili ta’siri bir-biridan ajratib o‘lchanmagan); peak'da sotuvlar ro‘yxati va dashboard Phase 15 bilan bir xil darajada (±10%) — o‘zgarmagan so‘rovlar, farq shovqin chegarasida.
+
+**Topilgan va tuzatilgan:** tarixli omborda kassa katalogi p95 ~1,5–1,7 s va 434 ta 503 (sotilgan miqdor har so‘rovda 2 mln harakatdan yig‘ilardi, DB pool to‘yinardi) → trigger bilan yuritiladigan `warehouse_sales_totals` (DATABASE §4.10a; migratsiya `20261030100000_warehouse_sales_totals`) → 22 / 61 ms. Testlar: `inventory.db-spec.ts` (sotuv va bekor qilinmaydigan yozuv bo‘yicha yig‘ma, ledger bilan moslik), `migrations.db-spec.ts` (`divine_app` — faqat SELECT).
+
+**Ochiq qolgan:** batareya + `balanced` rejimida `GET /dashboard/summary` peak p95 325 ms (FAIL) — zaxira kichik. Sababi va arxitektura qarori — SECURITY §20.5. Production serverda o‘lchanmagan.
 
 ### 5.3. Natijalarni solishtirish
 
