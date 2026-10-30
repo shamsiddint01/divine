@@ -11,8 +11,9 @@
 #   4) bazaviy backup → D (5 sotuv) → T nuqtasi (+ manifest) → E (3 sotuv) → WAL backup
 #   5) PITR T'ga → manifest T bilan bir xil, E yo'q → ilova orqali tekshiruv
 #   6) security-check.sh, monitor.sh, backup xatosini aniqlash (postgres to'xtatilgan)
-# Natija: backups/drill/drill-<UTC>.txt (xatoda — ish katalogidagi drill-report.txt). Har qanday buzilish —
-# exit 1. --keep — stack va katalog qoladi.
+# Natija: backups/drill/drill-<UTC>.txt + drill-<UTC>/ (manifestlar: backup, restore'dan keyin, T, PITR'dan
+# keyin; security-check va monitor chiqishlari). Xatoda — ish katalogidagi drill-report.txt. Har qanday
+# buzilish — exit 1. --keep — stack va katalog qoladi.
 set -Eeuo pipefail
 umask 077
 
