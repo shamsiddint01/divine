@@ -1,5 +1,6 @@
 {
   "kind": "load",
+  "note": "Phase 17, tuzatishdan keyin; noutbuk BATAREYADA (AC0 online=0), power-profiles-daemon \"balanced\", energy_performance_preference=balance_power, CPU ~0,8–1 GHz atrofida cheklangan. Barcha endpointlar Phase 15 (AC) dan bir tekis ~1,5–2× sekin; peak dashboard/summary p95 325 ms → FAIL. Muhit mezon talab qiladigan sharoitga mos emas — solishtirish uchun load-2026-10-30T16-41-08-305Z.json.",
   "environment": {
     "cpu": "13th Gen Intel(R) Core(TM) i5-13420H",
     "cores": 12,

@@ -1,5 +1,6 @@
 {
   "kind": "load",
+  "note": "Phase 17 yakuniy o‘lchovi: noutbuk BATAREYADA (AC0 online=0, zaryad 58% → 50%), lekin o‘lchov vaqtida `powerprofilesctl set performance` (energy_performance_preference=performance), tugagach \"balanced\"ga qaytarildi; systemd-inhibit ostida. Phase 15 (AC) bilan muhit eng yaqin holat, lekin aynan bir xil emas.",
   "environment": {
     "cpu": "13th Gen Intel(R) Core(TM) i5-13420H",
     "cores": 12,

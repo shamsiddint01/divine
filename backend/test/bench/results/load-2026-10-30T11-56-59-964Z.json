@@ -1,5 +1,6 @@
 {
   "kind": "load",
+  "note": "Phase 17, warehouse_sales_totals tuzatishidan OLDIN (tarixli ombor ssenariysi birinchi marta): kassa katalogi tarixli omborda p95 ~1,5–1,7 s, 434 ta 503 (DB pool to‘yingan) — FAIL. Mashinaning quvvat holati (AC/batareya, CPU profili) qayd etilmagan — raqamlarni boshqa o‘lchovlar bilan to‘g‘ridan-to‘g‘ri solishtirmang.",
   "environment": {
     "cpu": "13th Gen Intel(R) Core(TM) i5-13420H",
     "cores": 12,
