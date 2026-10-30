@@ -105,7 +105,10 @@ describe('mahsulot guruhlari (API §5)', () => {
       .expect(200);
     expect(edited.body).toMatchObject({ name: `${name} 2`, description: null });
 
-    const audit = await t.prisma.auditLog.findMany({ where: { entityId: created.body.id } });
+    const audit = await t.prisma.auditLog.findMany({
+      where: { entityId: created.body.id },
+      orderBy: { id: 'asc' }, // tartibsiz SELECT'da qator tartibi kafolatlanmaydi (Phase 17 da beqarorlik topildi)
+    });
     expect(audit.map((a) => a.action)).toEqual([
       AuditAction.PRODUCT_GROUP_CREATED,
       AuditAction.PRODUCT_GROUP_UPDATED,
