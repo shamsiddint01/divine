@@ -690,6 +690,8 @@ Birinchi o‘lchov ikki so‘rovning dataset o‘lchamiga chiziqli bog‘liqligi
 - `GET /sales` (p95 ~2,5 s → 0,18 s): sahifa so‘rovidagi `count(*) OVER ()` sotuv qatorlari bo‘yicha korrelyatsiyalangan subquery bilan birga LIMIT’dan oldin barcha qatorlarni hisoblatardi. Endi sahifa (`page`) va jami son alohida; ro‘yxat sahifasida son `summary` dan olinadi (o‘sha WHERE).
 - `GET /products` (p95 ~1,6 s → 0,15 s): qoldiq / kirim / sotilgan yig‘malari barcha mahsulotlar bo‘yicha hisoblanib, keyin LIMIT qilinardi. Yig‘ma bo‘yicha saralash yoki filtr (`stock`, `received`, `sold`, `stock=low|out`) bo‘lmasa — avval sahifa (`pg` CTE, `count(*) OVER ()` faqat `products` ustida), yig‘malar faqat sahifa mahsulotlari uchun: `product_id = ANY(ARRAY(SELECT id FROM pg))` — `sale_items(product_id, sale_id)` index bo‘yicha (`IN (SELECT …)` varianti 2 mln qatorni seq scan + hash semi-join qilardi: 198 ms → 36 ms); ombor doirasi bo‘lmasa `sales` bilan JOIN yo‘q.
 
+**Phase 17:** kassa katalogi (`sort=sold:desc`) bir yillik tarixli omborda alohida ssenariy sifatida o‘lchandi — sotilgan miqdor har so‘rovda ombordagi barcha `SALE` qatorlaridan yig‘ilardi (p95 ~1,5–1,7 s, 434 ta 503). Bu safar so‘rov shakli yetarli emas edi (yig‘ma bo‘yicha saralash butun ombor tarixini talab qiladi) → trigger bilan yuritiladigan `warehouse_sales_totals` (§4.10a) → 22 / 61 ms, 0 xato. Natijalar va muhit (noutbuk zaryadga ulanmagan) — TESTING §5.2 "Phase 17 o‘lchovlari".
+
 ---
 
 ## 8. Migratsiya strategiyasi
