@@ -458,7 +458,7 @@ Xuddi shu himoya `inventory_movements`, `sales`, `sale_items` jadvallariga ham q
 - [x] DB huquqlari: `divine_app` ledger va auditni o‘zgartira olmaydi — `immutability.db-spec.ts`, `migrations.db-spec.ts`. Prod'da ilovani `divine_app` a’zosi bilan ulash — Phase 17 (DATABASE §6)
 - [x] Prod env: `NODE_ENV=production`, Swagger o‘chiq, `TRUST_PROXY` to‘g‘ri, secretlar noyob — `env.schema.spec.ts`, `security-hardening.db-spec.ts`, docker-compose (`TRUST_PROXY: 1` — Nginx ortida)
 - [x] Docker: non-root, read-only filesystem imkoniyati, minimal image — joriy kod bilan yig‘ilgan image'lar: `uid=1000(node)` / `uid=101(nginx)`, `--read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges` bilan sog‘lom, `/app` ga yozish rad etiladi; runtime image faqat production bog‘liqliklar (alpine)
-- [ ] Backup va tiklash sinovi — **Phase 17** (rejada shu yerda)
+- [x] Backup va tiklash sinovi — **Phase 17** da bajarildi: [§20.2](#202-backup-va-tiklash)
 
 ## 19. Phase 16 natijalari va qolgan xavflar
 
