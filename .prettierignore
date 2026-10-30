@@ -1,0 +1,13 @@
+node_modules
+dist
+coverage
+secrets
+backups
+playwright-report
+test-results
+.turbo
+pnpm-lock.yaml
+backend/src/generated
+backend/prisma/migrations
+# Markdown hujjatlar qo'lda formatlanadi (uzun jadvallar Prettier tekislashida o'qib bo'lmas holga keladi)
+*.md

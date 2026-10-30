@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+  # prisma generate uchun (DB'ga ulanmaydi). DB testlari o'z DB'sini Testcontainers orqali oladi.
+  DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+
+jobs:
+  quality:
+    name: lint → typecheck → test → db test → build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: |
+          pnpm format:check
+          pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      # Haqiqiy PostgreSQL 18 (Testcontainers): migratsiyalar toza DB'ga qo'llanadi, drift, constraint,
+      # trigger, huquq, seed va parallel sotuv invariantlari tekshiriladi.
+      - name: Database tests
+        run: pnpm test:db
+
+      # CI'da `.env` yo'q: frontend build API rejimini aniq talab qiladi (Phase 16) — production rejimi.
+      - name: Build
+        run: pnpm build
+        env:
+          VITE_API_MODE: http
+
+  docker:
+    name: Docker images
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - name: Build API image
+        run: docker buildx build --load -f docker/api.Dockerfile -t divine-api:ci .
+      - name: Build Web image
+        run: docker buildx build --load -f docker/web.Dockerfile -t divine-web:ci .

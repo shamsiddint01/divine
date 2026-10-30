@@ -1,0 +1,48 @@
+packages:
+  - backend
+  - frontend
+  - shared
+
+# Supply-chain himoyasi: faqat shu ro'yxatdagi paketlarning install skriptlari ishlaydi.
+# Yangi native dependency qo'shilsa, tekshirib, shu yerga aniq qo'shiladi.
+allowBuilds:
+  '@prisma/engines': true
+  '@scarf/scarf': false # swagger-ui telemetriyasi — o'chirilgan
+  '@swc/core': true
+  cpu-features: false # ssh2 (Testcontainers, Docker-over-SSH) ixtiyoriy native qismi — kerak emas
+  esbuild: true
+  prisma: true
+  protobufjs: false # faqat versiya tekshiruvi skripti
+  ssh2: false # Testcontainers: Docker-over-SSH ishlatilmaydi (lokal socket)
+
+# pnpm 11 juda yangi chiqqan versiyalarni (minimumReleaseAge) standart holatda bloklaydi.
+# Quyidagilar pnpm tomonidan avtomatik istisno qilingan (rasmiy relizlar, qo'lda tekshirilgan).
+# Vaqt o'tib, ular yoshi chegaradan oshgach, bu ro'yxatni tozalash mumkin.
+minimumReleaseAgeExclude:
+  - '@typescript-eslint/eslint-plugin@8.71.1'
+  - '@typescript-eslint/parser@8.71.1'
+  - '@typescript-eslint/project-service@8.71.1'
+  - '@typescript-eslint/scope-manager@8.71.1'
+  - '@typescript-eslint/tsconfig-utils@8.71.1'
+  - '@typescript-eslint/type-utils@8.71.1'
+  - '@typescript-eslint/types@8.71.1'
+  - '@typescript-eslint/typescript-estree@8.71.1'
+  - '@typescript-eslint/utils@8.71.1'
+  - '@typescript-eslint/visitor-keys@8.71.1'
+  - typescript-eslint@8.71.1
+  - vite@8.3.3
+
+# Xavfsizlik (Phase 16, `pnpm audit --prod`): @nestjs/platform-express 12.1.x multer'ni aniq 2.4.0 ga
+# qotirgan (GHSA-q7qp-rjg7-q26m, high). 2.5.0 — tuzatilgan versiya, NestJS 12.3 ham shuni ishlatadi.
+# NestJS 12.3+ ga o'tilganda bu override olib tashlanadi.
+# fast-uri (ajv 8 orqali, frontend): 3.1.8 da 4 ta low/moderate advisory; 3.1.9 — ajv'ning ^3 oralig'ida,
+# lekin `pnpm update` uni o'zi ko'tarmadi.
+# Dev-only (`pnpm audit`, production'ga tushmaydi): undici (vitest, testcontainers, jsdom), zod
+# (eslint-plugin-react-hooks), mysql2 (prisma CLI qotirgan; MySQL ishlatilmaydi) — minor/patch ichida.
+# deepmerge-ts 7.1.5 (prisma CLI qotirgan) — tuzatish faqat 8.x (major): Prisma yangilanganda (SECURITY §19).
+overrides:
+  multer: 2.5.0
+  fast-uri: ^3.1.9
+  undici: ^8.12.2
+  zod: ^4.6.7
+  mysql2: ^3.23.1

@@ -1,0 +1,92 @@
+# Divine.uz — mahalliy ishlab chiqish va to'liq stack.
+#
+#   Faqat infratuzilma (dev):   docker compose up -d            → postgres + redis
+#   To'liq stack (prod-ga yaqin): docker compose --profile app up -d --build
+#
+# Barcha qiymatlar .env faylidan olinadi (namunasi: .env.example).
+
+name: divine
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-divine}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD .env da berilishi shart}
+      POSTGRES_DB: ${POSTGRES_DB:-divine}
+      TZ: UTC
+      PGTZ: UTC
+    ports:
+      - '127.0.0.1:${POSTGRES_HOST_PORT:-5434}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes', '--save', '60', '1000']
+    ports:
+      - '127.0.0.1:${REDIS_HOST_PORT:-6381}:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Migratsiya + seed: API'dan oldin bir marta ishlaydi va tugaydi (docs/DATABASE.md §8).
+  migrate:
+    profiles: ['app']
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+      target: migrate
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-divine}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-divine}?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    profiles: ['app']
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      API_HOST: 0.0.0.0
+      API_PORT: 3000
+      TRUST_PROXY: 1
+      DATABASE_URL: postgresql://${POSTGRES_USER:-divine}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-divine}?schema=public
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    profiles: ['app']
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${WEB_HOST_PORT:-8080}:8080'
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  redis_data:

@@ -1,0 +1,416 @@
+{
+  "kind": "load",
+  "recordedAt": "2026-10-30T08:53:26.861Z",
+  "note": "Peak bosqichi yaroqsiz: o‘lchov paytida mashina uyqu rejimiga o‘tgan deb gumon qilinadi (sana almashgan, bitta so‘rovlar bir necha soniyagacha cho‘zilgan). Normal bosqich raqamlari — sales ro‘yxati tuzatishidan keyin, products tuzatishidan oldin. Keyingi o‘lchovlar systemd-inhibit ostida.",
+  "environment": {
+    "cpu": "13th Gen Intel(R) Core(TM) i5-13420H",
+    "cores": 12,
+    "ramGb": 15,
+    "os": "linux 7.1.2-070102-generic",
+    "node": "v24.18.0",
+    "postgres": "PostgreSQL 18.6 (postgres:18-alpine, Testcontainers, shared_buffers = 128MB, max_connections = 100)",
+    "redis": "Redis 8 (redis:8-alpine, Testcontainers)",
+    "server": "production build (swc), NODE_ENV=production, bitta Node jarayoni, pino info"
+  },
+  "dataset": {
+    "sales": 1000000,
+    "saleItems": 2000000,
+    "saleMovements": 2000000,
+    "customers": 100000,
+    "products": 200,
+    "warehouses": 5,
+    "sellers": 30,
+    "incoming": 3650,
+    "expenses": 20000,
+    "days": 365,
+    "loadWarehouseProducts": 20,
+    "virtualUsers": "30 sotuvchi + 2 admin"
+  },
+  "method": "Yopiq sikl, har bir VU o'z tokeni/IP'si; qizdirish 15 s (pauza 250 ms ×0.5–1.5, o‘lchanmaydi) → normal 60 s (pauza 250 ms ×0.5–1.5) → peak 60 s (pauza 120 ms ×0.5–1.5); kechikish — mijozda (fetch boshidan javob tanasi oxirigacha), nearest-rank percentil",
+  "budget": {
+    "p95": 300,
+    "errors": 0
+  },
+  "metrics": [
+    {
+      "name": "normal · JAMI",
+      "count": 6183,
+      "rps": 103.1,
+      "p50": 33.681448000017554,
+      "p95": 187.8974140000064,
+      "p99": 271.62466900001164,
+      "max": 1385.3797360000026,
+      "errors": 0
+    },
+    {
+      "name": "normal · GET /audit-logs",
+      "count": 24,
+      "rps": 0.4,
+      "p50": 17.740244999993593,
+      "p95": 51.6884489999793,
+      "p99": 55.096348999999464,
+      "max": 55.096348999999464,
+      "errors": 0
+    },
+    {
+      "name": "normal · GET /auth/me",
+      "count": 289,
+      "rps": 4.8,
+      "p50": 17.72475300001679,
+      "p95": 60.55879599999753,
+      "p99": 87.34878599998774,
+      "max": 128.1551370000234,
+      "errors": 0
+    },
+    {
+      "name": "normal · GET /customers (admin)",
+      "count": 18,
+      "rps": 0.3,
+      "p50": 109.86879999999655,
+      "p95": 194.8620210000081,
+      "p99": 194.8620210000081,
+      "max": 194.8620210000081,
+      "errors": 0
+    },
+    {
+      "name": "normal · GET /customers?search",
+      "count": 583,
+      "rps": 9.7,
+      "p50": 49.812742000009166,
+      "p95": 168.3955469999928,
+      "p99": 202.8963630000071,
+      "max": 221.74111400000402,
+      "errors": 0
+    },
+    {
+      "name": "normal · GET /dashboard/my-summary",
+      "count": 605,
+      "rps": 10.1,
+      "p50": 18.952527000015834,
+      "p95": 62.52631799998926,
+      "p99": 79.95828700001584,
+      "max": 114.93110399998841,
+      "errors": 0
+    },
+    {
+      "name": "normal · GET /dashboard/summary",
+      "count": 30,
+      "rps": 0.5,
+      "p50": 189.44565899998997,
+      "p95": 315.4445180000039,
+      "p99": 321.6224719999882,
+      "max": 321.6224719999882,
+      "errors": 0
+    },
+    {
+      "name": "normal · GET /expenses",
+      "count": 32,
+      "rps": 0.5,
+      "p50": 37.09713899999042,
+      "p95": 122.37216999998782,
+      "p99": 137.48697100000572,
+      "max": 137.48697100000572,
+      "errors": 0
+    },
+    {
+      "name": "normal · GET /incoming",
+      "count": 24,
+      "rps": 0.4,
+      "p50": 38.05770800000755,
+      "p95": 74.99096999998437,
+      "p99": 87.5778140000184,
+      "max": 87.5778140000184,
+      "errors": 0
+    },
+    {
+      "name": "normal · GET /products (admin)",
+      "count": 30,
+      "rps": 0.5,
+      "p50": 1056.718056999991,
+      "p95": 1303.6118140000035,
+      "p99": 1385.3797360000026,
+      "max": 1385.3797360000026,
+      "errors": 0
+    },
+    {
+      "name": "normal · GET /products (kassa katalogi)",
+      "count": 1782,
+      "rps": 29.7,
+      "p50": 27.634928000014042,
+      "p95": 72.23810400001821,
+      "p99": 102.81522099999711,
+      "max": 136.64045000000624,
+      "errors": 0
+    },
+    {
+      "name": "normal · GET /products/lookup",
+      "count": 587,
+      "rps": 9.8,
+      "p50": 24.738775999983773,
+      "p95": 68.10744900000282,
+      "p99": 100.64173800000572,
+      "max": 123.74366500001634,
+      "errors": 0
+    },
+    {
+      "name": "normal · GET /products?search",
+      "count": 895,
+      "rps": 14.9,
+      "p50": 29.410107000003336,
+      "p95": 75.63777999999002,
+      "p99": 102.23376599999028,
+      "max": 135.6962979999953,
+      "errors": 0
+    },
+    {
+      "name": "normal · GET /sales (hammasi)",
+      "count": 33,
+      "rps": 0.6,
+      "p50": 210.32311100000516,
+      "p95": 292.98752799999784,
+      "p99": 311.41673600001377,
+      "max": 311.41673600001377,
+      "errors": 0
+    },
+    {
+      "name": "normal · GET /sales (o‘z tarixi)",
+      "count": 593,
+      "rps": 9.9,
+      "p50": 165.2111009999935,
+      "p95": 266.9063820000156,
+      "p99": 311.37715999997454,
+      "max": 342.73122099999455,
+      "errors": 0
+    },
+    {
+      "name": "normal · GET /users",
+      "count": 10,
+      "rps": 0.2,
+      "p50": 30.03160499999649,
+      "p95": 51.335697000002256,
+      "p99": 51.335697000002256,
+      "max": 51.335697000002256,
+      "errors": 0
+    },
+    {
+      "name": "normal · GET /warehouses",
+      "count": 37,
+      "rps": 0.6,
+      "p50": 19.568075999995926,
+      "p95": 68.77083200000925,
+      "p99": 68.81406000000425,
+      "max": 68.81406000000425,
+      "errors": 0
+    },
+    {
+      "name": "normal · GET /warehouses/:id/stock",
+      "count": 32,
+      "rps": 0.5,
+      "p50": 18.638049000001047,
+      "p95": 85.49680299998727,
+      "p99": 91.18133599997964,
+      "max": 91.18133599997964,
+      "errors": 0
+    },
+    {
+      "name": "normal · POST /sales",
+      "count": 579,
+      "rps": 9.7,
+      "p50": 67.22094099997776,
+      "p95": 152.7854519999819,
+      "p99": 183.21968599999673,
+      "max": 247.37691500000074,
+      "errors": 0
+    },
+    {
+      "name": "peak · JAMI",
+      "count": 1969,
+      "rps": 32.8,
+      "p50": 61.51934900000924,
+      "p95": 232.42869999998948,
+      "p99": 2111.7828360000276,
+      "max": 3355.9019979999866,
+      "errors": 0
+    },
+    {
+      "name": "peak · GET /audit-logs",
+      "count": 11,
+      "rps": 0.2,
+      "p50": 38.480145999987144,
+      "p95": 76.1247110000113,
+      "p99": 76.1247110000113,
+      "max": 76.1247110000113,
+      "errors": 0
+    },
+    {
+      "name": "peak · GET /auth/me",
+      "count": 98,
+      "rps": 1.6,
+      "p50": 51.50523899999098,
+      "p95": 155.43665799999144,
+      "p99": 2146.4583580000035,
+      "max": 2146.4583580000035,
+      "errors": 0
+    },
+    {
+      "name": "peak · GET /customers (admin)",
+      "count": 3,
+      "rps": 0.1,
+      "p50": 100.3509919999924,
+      "p95": 141.85283300001174,
+      "p99": 141.85283300001174,
+      "max": 141.85283300001174,
+      "errors": 0
+    },
+    {
+      "name": "peak · GET /customers?search",
+      "count": 193,
+      "rps": 3.2,
+      "p50": 47.804441000014776,
+      "p95": 102.16627500002505,
+      "p99": 119.40013699998963,
+      "max": 2100.6150710000074,
+      "errors": 0
+    },
+    {
+      "name": "peak · GET /dashboard/my-summary",
+      "count": 176,
+      "rps": 2.9,
+      "p50": 42.66037200001301,
+      "p95": 106.0385210000095,
+      "p99": 2127.1199760000163,
+      "max": 2148.123658000026,
+      "errors": 0
+    },
+    {
+      "name": "peak · GET /dashboard/summary",
+      "count": 11,
+      "rps": 0.2,
+      "p50": 264.7682619999978,
+      "p95": 2289.5326099999947,
+      "p99": 2289.5326099999947,
+      "max": 2289.5326099999947,
+      "errors": 0
+    },
+    {
+      "name": "peak · GET /expenses",
+      "count": 6,
+      "rps": 0.1,
+      "p50": 68.66181299998425,
+      "p95": 138.0193450000079,
+      "p99": 138.0193450000079,
+      "max": 138.0193450000079,
+      "errors": 0
+    },
+    {
+      "name": "peak · GET /incoming",
+      "count": 7,
+      "rps": 0.1,
+      "p50": 50.269292000011774,
+      "p95": 136.25616499999887,
+      "p99": 136.25616499999887,
+      "max": 136.25616499999887,
+      "errors": 0
+    },
+    {
+      "name": "peak · GET /products (admin)",
+      "count": 7,
+      "rps": 0.1,
+      "p50": 1432.8284780000104,
+      "p95": 3355.9019979999866,
+      "p99": 3355.9019979999866,
+      "max": 3355.9019979999866,
+      "errors": 0
+    },
+    {
+      "name": "peak · GET /products (kassa katalogi)",
+      "count": 573,
+      "rps": 9.6,
+      "p50": 50.81944599997951,
+      "p95": 128.07063599998946,
+      "p99": 163.9816620000056,
+      "max": 2152.006324999995,
+      "errors": 0
+    },
+    {
+      "name": "peak · GET /products/lookup",
+      "count": 192,
+      "rps": 3.2,
+      "p50": 55.59113700001035,
+      "p95": 119.46304699999746,
+      "p99": 131.72360900000785,
+      "max": 143.33861099998467,
+      "errors": 0
+    },
+    {
+      "name": "peak · GET /products?search",
+      "count": 286,
+      "rps": 4.8,
+      "p50": 56.098812000011094,
+      "p95": 122.01651200000197,
+      "p99": 153.4776809999894,
+      "max": 2148.3381610000215,
+      "errors": 0
+    },
+    {
+      "name": "peak · GET /sales (hammasi)",
+      "count": 7,
+      "rps": 0.1,
+      "p50": 230.96017500001471,
+      "p95": 297.1930310000025,
+      "p99": 297.1930310000025,
+      "max": 297.1930310000025,
+      "errors": 0
+    },
+    {
+      "name": "peak · GET /sales (o‘z tarixi)",
+      "count": 198,
+      "rps": 3.3,
+      "p50": 196.6450880000193,
+      "p95": 297.3488359999901,
+      "p99": 2283.7490239999897,
+      "max": 2284.965030000021,
+      "errors": 0
+    },
+    {
+      "name": "peak · GET /users",
+      "count": 4,
+      "rps": 0.1,
+      "p50": 21.147392000013497,
+      "p95": 154.27425100002438,
+      "p99": 154.27425100002438,
+      "max": 154.27425100002438,
+      "errors": 0
+    },
+    {
+      "name": "peak · GET /warehouses",
+      "count": 5,
+      "rps": 0.1,
+      "p50": 42.739432000002125,
+      "p95": 75.3172510000004,
+      "p99": 75.3172510000004,
+      "max": 75.3172510000004,
+      "errors": 0
+    },
+    {
+      "name": "peak · GET /warehouses/:id/stock",
+      "count": 5,
+      "rps": 0.1,
+      "p50": 74.79251499997918,
+      "p95": 80.55551199999172,
+      "p99": 80.55551199999172,
+      "max": 80.55551199999172,
+      "errors": 0
+    },
+    {
+      "name": "peak · POST /sales",
+      "count": 187,
+      "rps": 3.1,
+      "p50": 119.72071300001699,
+      "p95": 259.77183400001377,
+      "p99": 2221.6555949999893,
+      "max": 2242.712711,
+      "errors": 0
+    }
+  ]
+}

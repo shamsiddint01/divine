@@ -1,0 +1,55 @@
+import { Suspense } from 'react';
+import { Outlet, useLocation } from 'react-router';
+import { useCurrentUser } from '@/features/session/api/session';
+import { hasAny, usePermissions } from '@/features/session/hooks/use-permissions';
+import { Skeleton } from '@/shared/ui/skeleton';
+import { findNavItem } from '../navigation-context';
+import { ForbiddenPage } from '../pages/ForbiddenPage';
+import { Sidebar } from './Sidebar';
+import { Topbar } from './Topbar';
+
+function PageFallback() {
+  return (
+    <div className="space-y-6" aria-busy="true">
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-56" />
+        <Skeleton className="h-4 w-80" />
+      </div>
+      <Skeleton className="h-10 w-full max-w-xl" />
+      <Skeleton className="h-96 w-full" />
+    </div>
+  );
+}
+
+/**
+ * Bo'lim ruxsati (RBAC §5): ruxsatsiz bo'limga to'g'ridan-to'g'ri URL bilan kirilsa — "Ruxsat yo'q".
+ * Faqat UX: backend har bir so'rovni qayta tekshiradi.
+ */
+function SectionGate() {
+  const { pathname } = useLocation();
+  const { data: me } = useCurrentUser();
+  const permissions = usePermissions();
+  const section = findNavItem(pathname);
+  if (!me) return <PageFallback />;
+  if (section && !hasAny(permissions, section.anyOf)) return <ForbiddenPage />;
+  return <Outlet />;
+}
+
+/** Asosiy karkas: yon panel + yuqori panel + sahifa (sahifalar lazy yuklanadi). */
+export function AppLayout() {
+  return (
+    <div className="flex min-h-svh">
+      <Sidebar />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <Topbar />
+        <main className="flex-1 p-4 sm:p-6">
+          <div className="mx-auto w-full max-w-[1440px] space-y-6">
+            <Suspense fallback={<PageFallback />}>
+              <SectionGate />
+            </Suspense>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}

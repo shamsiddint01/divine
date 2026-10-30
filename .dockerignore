@@ -1,0 +1,18 @@
+# Image'ga faqat build uchun kerakli fayllar kiradi.
+**/node_modules
+**/dist
+**/coverage
+**/.turbo
+**/*.tsbuildinfo
+backend/src/generated
+.git
+.github
+docs
+*.md
+.env
+.env.*
+!.env.example
+secrets
+backups
+.vscode
+.idea

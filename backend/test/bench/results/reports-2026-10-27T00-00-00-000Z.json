@@ -1,0 +1,130 @@
+{
+  "kind": "reports",
+  "recordedAt": "2026-10-27T00:00:00.000Z",
+  "source": "Phase 12 baseline — DATABASE.md §7.2 jadvalidan ko‘chirildi (o‘sha paytda xom natija fayli saqlanmagan)",
+  "environment": {
+    "cores": 12,
+    "ramGb": 14,
+    "postgres": "PostgreSQL 18 (postgres:18-alpine, Testcontainers, standart sozlamalar, shared_buffers = 128MB)"
+  },
+  "dataset": {
+    "sales": 1000000,
+    "saleItems": 2000000,
+    "saleMovements": 2000000,
+    "customers": 100000,
+    "products": 200,
+    "warehouses": 5,
+    "sellers": 30,
+    "incoming": 3650,
+    "expenses": 20000,
+    "days": 365
+  },
+  "method": "SQL: repository'ning aynan o‘sha so‘rovlari, EXPLAIN (ANALYZE, BUFFERS) planning + execution (sahifa + yig‘ma + guruhlar); HTTP: in-process Nest ilovasi, supertest, 3 marta, mediana; sahifa 20 qator",
+  "budget": {
+    "planMs": 2000,
+    "httpMs": 2000
+  },
+  "metrics": [
+    {
+      "name": "sales — oy",
+      "planMs": 90,
+      "httpMs": 85
+    },
+    {
+      "name": "sales — 366 kun",
+      "planMs": 684,
+      "httpMs": 599
+    },
+    {
+      "name": "sales — 366 kun, ombor + mahsulot",
+      "planMs": 196
+    },
+    {
+      "name": "products — oy",
+      "planMs": 500,
+      "httpMs": 238
+    },
+    {
+      "name": "products — 366 kun",
+      "planMs": 1150,
+      "httpMs": 956
+    },
+    {
+      "name": "warehouse — oy",
+      "planMs": 4,
+      "httpMs": 9
+    },
+    {
+      "name": "incoming — oy",
+      "planMs": 3,
+      "httpMs": 6
+    },
+    {
+      "name": "incoming — 366 kun",
+      "planMs": 6,
+      "httpMs": 12
+    },
+    {
+      "name": "expenses — oy",
+      "planMs": 3,
+      "httpMs": 24
+    },
+    {
+      "name": "expenses — 366 kun",
+      "planMs": 33,
+      "httpMs": 42
+    },
+    {
+      "name": "userSales — oy",
+      "planMs": 53,
+      "httpMs": 51
+    },
+    {
+      "name": "userSales — 366 kun",
+      "planMs": 748,
+      "httpMs": 617
+    },
+    {
+      "name": "productSales — oy",
+      "planMs": 294,
+      "httpMs": 221
+    },
+    {
+      "name": "productSales — 366 kun",
+      "planMs": 1258,
+      "httpMs": 1034
+    },
+    {
+      "name": "customerPurchases — oy",
+      "planMs": 208,
+      "httpMs": 188
+    },
+    {
+      "name": "customerPurchases — 366 kun",
+      "planMs": 1006,
+      "httpMs": 883
+    },
+    {
+      "name": "finance-summary — oy",
+      "planMs": 12,
+      "httpMs": 15
+    },
+    {
+      "name": "finance-summary — 366 kun",
+      "planMs": 80,
+      "httpMs": 76
+    },
+    {
+      "name": "/dashboard/summary",
+      "httpMs": 76
+    },
+    {
+      "name": "/dashboard/sales-trend?days=30",
+      "httpMs": 38
+    },
+    {
+      "name": "/dashboard/top-products?days=30",
+      "httpMs": 114
+    }
+  ]
+}

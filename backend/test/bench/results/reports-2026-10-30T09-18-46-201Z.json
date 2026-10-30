@@ -1,0 +1,132 @@
+{
+  "kind": "reports",
+  "environment": {
+    "cpu": "13th Gen Intel(R) Core(TM) i5-13420H",
+    "cores": 12,
+    "ramGb": 15,
+    "os": "linux 7.1.2-070102-generic",
+    "node": "v24.18.0",
+    "postgres": "PostgreSQL 18.6 (postgres:18-alpine, Testcontainers, shared_buffers = 128MB)"
+  },
+  "dataset": {
+    "sales": 1000000,
+    "saleItems": 2000000,
+    "saleMovements": 2000000,
+    "customers": 100000,
+    "products": 200,
+    "warehouses": 5,
+    "sellers": 30,
+    "incoming": 3650,
+    "expenses": 20000,
+    "days": 365
+  },
+  "method": "SQL: repository'ning aynan o‘sha so‘rovlari, EXPLAIN (ANALYZE, BUFFERS) planning + execution (sahifa + yig‘ma + guruhlar); HTTP: in-process Nest ilovasi, supertest, 3 marta, mediana; sahifa 20 qator",
+  "budget": {
+    "planMs": 2000,
+    "httpMs": 2000
+  },
+  "metrics": [
+    {
+      "name": "sales — oy",
+      "planMs": 91.756,
+      "httpMs": 83.89066599999205
+    },
+    {
+      "name": "sales — 366 kun",
+      "planMs": 689.462,
+      "httpMs": 607.5372449999995
+    },
+    {
+      "name": "products — oy",
+      "planMs": 327.099,
+      "httpMs": 231.0739479999902
+    },
+    {
+      "name": "products — 366 kun",
+      "planMs": 1148.1309999999999,
+      "httpMs": 974.042644000001
+    },
+    {
+      "name": "warehouse — oy",
+      "planMs": 3.791,
+      "httpMs": 11.069816999995965
+    },
+    {
+      "name": "incoming — oy",
+      "planMs": 3.009,
+      "httpMs": 9.89164700001129
+    },
+    {
+      "name": "incoming — 366 kun",
+      "planMs": 9.154,
+      "httpMs": 21.55309600000328
+    },
+    {
+      "name": "expenses — oy",
+      "planMs": 4.9350000000000005,
+      "httpMs": 15.247464000000036
+    },
+    {
+      "name": "expenses — 366 kun",
+      "planMs": 36.133,
+      "httpMs": 35.56049000000348
+    },
+    {
+      "name": "userSales — oy",
+      "planMs": 55.787,
+      "httpMs": 51.847391999996034
+    },
+    {
+      "name": "userSales — 366 kun",
+      "planMs": 774.779,
+      "httpMs": 643.248510999998
+    },
+    {
+      "name": "productSales — oy",
+      "planMs": 279.437,
+      "httpMs": 217.48044200000004
+    },
+    {
+      "name": "productSales — 366 kun",
+      "planMs": 1247.805,
+      "httpMs": 1028.002342000007
+    },
+    {
+      "name": "customerPurchases — oy",
+      "planMs": 204.55800000000002,
+      "httpMs": 191.41035099999863
+    },
+    {
+      "name": "customerPurchases — 366 kun",
+      "planMs": 979.1769999999999,
+      "httpMs": 890.7712739999988
+    },
+    {
+      "name": "sales — 366 kun, ombor + mahsulot",
+      "planMs": 65.56099999999999
+    },
+    {
+      "name": "finance-summary — oy",
+      "planMs": 12.076,
+      "httpMs": 16.252739000003203
+    },
+    {
+      "name": "finance-summary — 366 kun",
+      "planMs": 78.142,
+      "httpMs": 73.41944100000546
+    },
+    {
+      "name": "/dashboard/summary",
+      "httpMs": 74.41164700000081
+    },
+    {
+      "name": "/dashboard/sales-trend?days=30",
+      "httpMs": 39.68316099999356
+    },
+    {
+      "name": "/dashboard/top-products?days=30",
+      "httpMs": 105.95026499999221
+    }
+  ],
+  "recordedAt": "2026-10-30T09:18:46.201Z"
+}

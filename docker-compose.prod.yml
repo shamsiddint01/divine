@@ -1,0 +1,205 @@
+# Divine.uz — PRODUCTION stack (Phase 17). Dev konfiguratsiyasi (docker-compose.yml) bundan mustaqil.
+#
+#   1) scripts/prod/init-secrets.sh            → secrets/ (0700): parollar, kalitlar, ulanish URL'lari
+#      + TLS sertifikati: secrets/tls_cert, secrets/tls_key (Let's Encrypt yoki tashkilot CA)
+#   2) cp .env.prod.example .env.prod          → domen, portlar (secret EMAS)
+#   3) docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#   4) bir marta: ... run --rm api node dist/database/bootstrap-admin.cli.js --login admin
+#
+# To'liq yo'riqnoma va runbook'lar: docs/RUNBOOK.md. Xavfsizlik qarorlari: docs/SECURITY.md §20.
+#  - Secretlar faqat Docker secrets fayllarida (`*_FILE`): `.env`, image va `docker inspect`da yo'q.
+#  - Ilova DB'ga `divine_api` (divine_app a'zosi, superuser emas), migratsiya `divine_owner` bilan.
+#  - postgres, redis va api tashqariga ochilmaydi (`backend` — internal tarmoq); faqat web 80/443.
+#  - Hamma konteyner: read-only root FS, tmpfs, barcha Linux capability'lari olib tashlangan,
+#    no-new-privileges, healthcheck, restart siyosati, log rotatsiyasi.
+
+name: divine-prod
+
+x-hardening: &hardening
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ['no-new-privileges:true']
+  logging:
+    driver: json-file
+    options: { max-size: '10m', max-file: '5' }
+
+services:
+  postgres:
+    <<: *hardening
+    image: postgres:18-alpine
+    restart: unless-stopped
+    # Root'siz: entrypoint chown/su qilmaydi (capability kerak emas). Data volume image'dagi
+    # /var/lib/postgresql egasini (70) oladi.
+    user: '70:70'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_DB: divine
+      # Konteyner ichidagi socket — faqat o'sha OS user (peer); tarmoq orqali — scram-sha-256.
+      POSTGRES_INITDB_ARGS: --auth-local=peer --auth-host=scram-sha-256
+      DB_OWNER_PASSWORD_FILE: /run/secrets/db_owner_password
+      DB_API_PASSWORD_FILE: /run/secrets/db_api_password
+      TZ: UTC
+      PGTZ: UTC
+    # WAL arxivi (PITR, docs/RUNBOOK.md §3): har bir segment atomik ko'chiriladi; 5 daqiqada kamida bitta.
+    # Arxiv data volume ichida (staging) — scripts/prod/backup-wal.sh uni shifrlab backup katalogiga oladi.
+    command:
+      - postgres
+      - -c
+      - wal_level=replica
+      - -c
+      - archive_mode=on
+      - -c
+      - archive_timeout=300
+      - -c
+      - archive_command=mkdir -p /var/lib/postgresql/wal-archive && test ! -f /var/lib/postgresql/wal-archive/%f && cp %p /var/lib/postgresql/wal-archive/%f.tmp && mv /var/lib/postgresql/wal-archive/%f.tmp /var/lib/postgresql/wal-archive/%f
+      - -c
+      - log_min_error_statement=panic
+    secrets: [postgres_password, db_owner_password, db_api_password]
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./docker/postgres/init-roles.sh:/docker-entrypoint-initdb.d/10-init-roles.sh:ro
+    tmpfs:
+      - /var/run/postgresql:mode=1777
+      - /tmp:mode=1777
+    networks: [backend]
+    shm_size: 256m
+    mem_limit: 2g
+    pids_limit: 300
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d divine']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  redis:
+    <<: *hardening
+    image: redis:8-alpine
+    restart: unless-stopped
+    user: '999:1000'
+    # Konfiguratsiya (requirepass bilan) — secret fayl; parol buyruq qatorida yo'q.
+    command: ['redis-server', '/run/secrets/redis_conf']
+    secrets: [redis_conf]
+    volumes:
+      - redis_data:/data
+    networks: [backend]
+    mem_limit: 256m
+    pids_limit: 100
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'REDISCLI_AUTH="$$(sed -n "s/^requirepass //p" /run/secrets/redis_conf)" redis-cli ping | grep -q PONG',
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  # Migratsiya + ma'lumotnoma seed'i: api'dan oldin bir marta, sxema egasi (divine_owner) bilan.
+  migrate:
+    <<: *hardening
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+      target: migrate
+    image: divine-api-migrate:${APP_VERSION:-latest}
+    restart: 'no'
+    environment:
+      NODE_ENV: production
+      MIGRATION_DATABASE_URL_FILE: /run/secrets/migration_database_url
+      DATABASE_URL_FILE: /run/secrets/migration_database_url
+      HOME: /tmp
+    secrets: [migration_database_url]
+    tmpfs: ['/tmp:mode=1777']
+    networks: [backend]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    <<: *hardening
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    image: divine-api:${APP_VERSION:-latest}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      APP_VERSION: ${APP_VERSION:-latest}
+      API_HOST: 0.0.0.0
+      API_PORT: 3000
+      # Bitta proxy (web/Nginx) ortida. Oldiga yana LB/CDN qo'yilsa — hop'lar soni (RUNBOOK §1).
+      TRUST_PROXY: 1
+      CORS_ORIGINS: https://${DOMAIN:?DOMAIN .env.prod da berilishi shart}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DATABASE_URL_FILE: /run/secrets/database_url
+      REDIS_URL_FILE: /run/secrets/redis_url
+      JWT_ACCESS_SECRET_FILE: /run/secrets/jwt_access_secret
+      PASSWORD_PEPPER_FILE: /run/secrets/password_pepper
+      # Pepper rotation (RUNBOOK §5): secret qo'shilgach shu qatorni yoqing.
+      # PASSWORD_PEPPER_V2_FILE: /run/secrets/password_pepper_v2
+    secrets: [database_url, redis_url, jwt_access_secret, password_pepper]
+    tmpfs: ['/tmp:mode=1777']
+    networks: [backend]
+    mem_limit: 1g
+    pids_limit: 200
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    <<: *hardening
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    image: divine-web:${APP_VERSION:-latest}
+    restart: unless-stopped
+    ports:
+      - '${BIND_ADDRESS:-0.0.0.0}:${HTTP_PORT:-80}:8080'
+      - '${BIND_ADDRESS:-0.0.0.0}:${HTTPS_PORT:-443}:8443'
+    volumes:
+      - ./docker/nginx/prod.conf:/etc/nginx/conf.d/default.conf:ro
+    secrets: [tls_cert, tls_key]
+    tmpfs: ['/tmp:mode=1777']
+    networks: [edge, backend]
+    mem_limit: 256m
+    pids_limit: 100
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:8080/healthz']
+      interval: 15s
+      timeout: 3s
+      retries: 3
+    depends_on:
+      api:
+        condition: service_healthy
+
+networks:
+  edge: {}
+  # Tashqi dunyoga chiqishi ham, kirishi ham yo'q: DB, Redis va API faqat shu yerda.
+  backend:
+    internal: true
+
+volumes:
+  postgres_data:
+  redis_data:
+
+secrets:
+  postgres_password: { file: '${SECRETS_DIR:-./secrets}/postgres_password' }
+  db_owner_password: { file: '${SECRETS_DIR:-./secrets}/db_owner_password' }
+  db_api_password: { file: '${SECRETS_DIR:-./secrets}/db_api_password' }
+  migration_database_url: { file: '${SECRETS_DIR:-./secrets}/migration_database_url' }
+  database_url: { file: '${SECRETS_DIR:-./secrets}/database_url' }
+  redis_conf: { file: '${SECRETS_DIR:-./secrets}/redis_conf' }
+  redis_url: { file: '${SECRETS_DIR:-./secrets}/redis_url' }
+  jwt_access_secret: { file: '${SECRETS_DIR:-./secrets}/jwt_access_secret' }
+  password_pepper: { file: '${SECRETS_DIR:-./secrets}/password_pepper' }
+  tls_cert: { file: '${SECRETS_DIR:-./secrets}/tls_cert' }
+  tls_key: { file: '${SECRETS_DIR:-./secrets}/tls_key' }
+  # Pepper rotation (RUNBOOK §5): faylni yarating, shu qatorni va api'dagi PASSWORD_PEPPER_V2_FILE +
+  # `secrets: [..., password_pepper_v2]` ni yoqing.
+  # password_pepper_v2: { file: '${SECRETS_DIR:-./secrets}/password_pepper_v2' }

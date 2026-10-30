@@ -1,0 +1,580 @@
+// Divine.uz — Prisma schema (docs/DATABASE.md bilan 1:1).
+//
+// Prisma ifodalay olmaydigan qismlar migratsiya SQL fayllarida qo'lda yozilgan va Prisma ularni
+// drift deb hisoblamaydi (test/db/migrations.db-spec.ts tekshiradi):
+//   - CHECK constraint'lar, `lower(...)` expression unique indexlar
+//   - IDENTITY ustunlar (bu yerda `autoincrement()` ko'rinishida)
+//   - GENERATED ustunlar (bu yerda `@default(dbgenerated())` — Prisma ularga yozmaydi)
+//   - trigger'lar (o'zgarmaslik, hujjat himoyasi, ledger invariantlari), reconciliation view'lari,
+//     `divine_app` roli va GRANT'lar
+// Ulanish URL'i prisma.config.ts orqali beriladi.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+  previewFeatures     = ["partialIndexes", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [pg_trgm]
+}
+
+// ─── Enumlar (qiymatlari @divine/shared enumlari bilan aynan bir xil) ──────────────────────────
+
+enum RoleCode {
+  ADMIN
+  USER
+
+  @@map("role_code")
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+
+  @@map("user_status")
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+
+  @@map("product_status")
+}
+
+enum ProductUnit {
+  DONA
+  KG
+  LITR
+  METR
+
+  @@map("product_unit")
+}
+
+enum WarehouseStatus {
+  ACTIVE
+  INACTIVE
+
+  @@map("warehouse_status")
+}
+
+enum IncomingStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+
+  @@map("incoming_status")
+}
+
+/// Kelajakda CANCELLED / RETURNED qo'shiladi (D-03).
+enum SaleStatus {
+  COMPLETED
+
+  @@map("sale_status")
+}
+
+/// ADJUSTMENT / RETURN / TRANSFER — zaxira (D-03): DB trigger'i hozircha ularni rad etadi.
+enum MovementType {
+  INCOMING
+  SALE
+  ADJUSTMENT
+  RETURN
+  TRANSFER
+
+  @@map("movement_type")
+}
+
+enum MovementReferenceType {
+  INCOMING
+  SALE
+
+  @@map("movement_reference_type")
+}
+
+// ─── Identity / Access ─────────────────────────────────────────────────────────────────────────
+
+model Role {
+  id        Int      @id @default(autoincrement()) @db.SmallInt
+  code      RoleCode @unique
+  name      String   @db.VarChar(50)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  permissions RolePermission[]
+  users       User[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          Int    @id @default(autoincrement()) @db.SmallInt
+  code        String @unique @db.VarChar(64)
+  description String @db.VarChar(200)
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       Int @map("role_id") @db.SmallInt
+  permissionId Int @map("permission_id") @db.SmallInt
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+/// `login` uchun case-insensitive unique: `users_login_lower_key ON (lower(login))` (migratsiyada).
+model User {
+  id                  String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  login               String     @db.VarChar(32)
+  /// `v1$` + argon2id encoded. Plaintext parol hech qachon saqlanmaydi (CHECK formatni majburlaydi).
+  passwordHash        String     @map("password_hash")
+  fullName            String?    @map("full_name") @db.VarChar(150)
+  roleId              Int        @map("role_id") @db.SmallInt
+  status              UserStatus @default(ACTIVE)
+  failedLoginAttempts Int        @default(0) @map("failed_login_attempts") @db.SmallInt
+  lockoutCount        Int        @default(0) @map("lockout_count") @db.SmallInt
+  lockedUntil         DateTime?  @map("locked_until") @db.Timestamptz(3)
+  lastLoginAt         DateTime?  @map("last_login_at") @db.Timestamptz(3)
+  passwordChangedAt   DateTime   @default(now()) @map("password_changed_at") @db.Timestamptz(3)
+  /// NULL — bootstrap (birinchi) admin.
+  createdById         String?    @map("created_by") @db.Uuid
+  createdAt           DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  role      Role  @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  createdBy User? @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+
+  createdUsers             User[]              @relation("UserCreatedBy")
+  sessions                 UserSession[]
+  warehouses               UserWarehouse[]     @relation("UserWarehouseUser")
+  createdWarehouseLinks    UserWarehouse[]     @relation("UserWarehouseCreatedBy")
+  createdProductGroups     ProductGroup[]
+  createdProducts          Product[]
+  createdWarehouses        Warehouse[]
+  inventoryMovements       InventoryMovement[]
+  createdIncoming          Incoming[]          @relation("IncomingCreatedBy")
+  confirmedIncoming        Incoming[]          @relation("IncomingConfirmedBy")
+  cancelledIncoming        Incoming[]          @relation("IncomingCancelledBy")
+  createdCustomers         Customer[]
+  sales                    Sale[]
+  createdExpenseCategories ExpenseCategory[]
+  createdExpenses          Expense[]           @relation("ExpenseCreatedBy")
+  updatedExpenses          Expense[]           @relation("ExpenseUpdatedBy")
+  deletedExpenses          Expense[]           @relation("ExpenseDeletedBy")
+  auditLogs                AuditLog[]
+  updatedSettings          Setting[]
+
+  @@index([roleId])
+  @@index([status])
+  @@map("users")
+}
+
+model UserSession {
+  id            String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  /// Refresh token'ning SHA-256 hex'i (token o'zi saqlanmaydi).
+  tokenHash     String    @unique @map("token_hash") @db.Char(64)
+  familyId      String    @map("family_id") @db.Uuid
+  replacedById  String?   @unique @map("replaced_by_id") @db.Uuid
+  expiresAt     DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt     DateTime? @map("revoked_at") @db.Timestamptz(3)
+  revokedReason String?   @map("revoked_reason") @db.VarChar(32)
+  ip            String?   @db.Inet
+  userAgent     String?   @map("user_agent") @db.VarChar(300)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastUsedAt    DateTime? @map("last_used_at") @db.Timestamptz(3)
+
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replacedBy UserSession? @relation("SessionRotation", fields: [replacedById], references: [id], onDelete: SetNull)
+  replaces   UserSession? @relation("SessionRotation")
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([expiresAt])
+  @@map("user_sessions")
+}
+
+/// USER ↔ ombor biriktirish (D-04). ADMIN biriktirishsiz barcha omborlar bilan ishlaydi (RBAC).
+model UserWarehouse {
+  userId      String   @map("user_id") @db.Uuid
+  warehouseId String   @map("warehouse_id") @db.Uuid
+  createdById String   @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user      User      @relation("UserWarehouseUser", fields: [userId], references: [id], onDelete: Restrict)
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+  createdBy User      @relation("UserWarehouseCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@id([userId, warehouseId])
+  @@index([warehouseId])
+  @@map("user_warehouses")
+}
+
+// ─── Product ───────────────────────────────────────────────────────────────────────────────────
+
+/// `name` uchun case-insensitive unique: `product_groups_name_lower_key` (migratsiyada).
+model ProductGroup {
+  id          String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  name        String   @db.VarChar(200)
+  description String?  @db.VarChar(1000)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdById String   @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  createdBy User      @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  products  Product[]
+
+  @@map("product_groups")
+}
+
+model Product {
+  id           String        @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  name         String        @db.VarChar(200)
+  groupId      String        @map("group_id") @db.Uuid
+  /// Ixtiyoriy, berilsa barcha mahsulotlar (arxivlanganlar ham) orasida unique (D-05, D-09).
+  barcode      String?       @unique @db.VarChar(64)
+  costPrice    Decimal       @map("cost_price") @db.Decimal(18, 2)
+  salePrice    Decimal       @map("sale_price") @db.Decimal(18, 2)
+  unit         ProductUnit   @default(DONA)
+  allowDecimal Boolean       @default(false) @map("allow_decimal")
+  /// NULL — global sozlama (`low_stock_default_threshold`).
+  minStock     Decimal?      @map("min_stock") @db.Decimal(14, 3)
+  status       ProductStatus @default(ACTIVE)
+  createdById  String        @map("created_by") @db.Uuid
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  group              ProductGroup        @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  createdBy          User                @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  stock              WarehouseStock[]
+  salesTotals        WarehouseSalesTotal[]
+  inventoryMovements InventoryMovement[]
+  incomingItems      IncomingItem[]
+  saleItems          SaleItem[]
+
+  @@index([groupId])
+  @@index([status])
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "products_name_trgm_idx")
+  @@map("products")
+}
+
+// ─── Warehouse / Inventory ─────────────────────────────────────────────────────────────────────
+
+/// `name` uchun case-insensitive unique: `warehouses_name_lower_key` (migratsiyada).
+model Warehouse {
+  id          String          @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  name        String          @db.VarChar(200)
+  address     String?         @db.VarChar(300)
+  status      WarehouseStatus @default(ACTIVE)
+  createdById String          @map("created_by") @db.Uuid
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  createdBy          User                @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  users              UserWarehouse[]
+  stock              WarehouseStock[]
+  salesTotals        WarehouseSalesTotal[]
+  inventoryMovements InventoryMovement[]
+  incoming           Incoming[]
+  sales              Sale[]
+
+  @@index([status])
+  @@map("warehouses")
+}
+
+/// Joriy qoldiq — ledger'ning materializatsiyasi. `quantity >= 0` (CHECK) va ledger bilan tenglik
+/// (deferred trigger) DB darajasida kafolatlanadi (DATABASE.md §5).
+model WarehouseStock {
+  warehouseId String   @map("warehouse_id") @db.Uuid
+  productId   String   @map("product_id") @db.Uuid
+  quantity    Decimal  @default(0) @db.Decimal(14, 3)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@id([warehouseId, productId])
+  @@index([productId])
+  @@map("warehouse_stock")
+}
+
+/// Ombor × mahsulot bo'yicha jami sotilgan miqdor (Phase 17, REQ-167) — ledger SALE harakatlarining
+/// materializatsiyasi. Faqat trigger yozadi (`inventory_movements_sales_totals`, SECURITY DEFINER); ilova
+/// roli faqat o'qiydi. Ledger bilan tenglik — `reconcile_sales_totals` view'i (DATABASE.md §5.5).
+model WarehouseSalesTotal {
+  warehouseId String  @map("warehouse_id") @db.Uuid
+  productId   String  @map("product_id") @db.Uuid
+  quantity    Decimal @default(0) @db.Decimal(14, 3)
+
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@id([warehouseId, productId])
+  @@index([productId])
+  @@map("warehouse_sales_totals")
+}
+
+/// O'zgarmas ledger (append-only). `id` — IDENTITY; ledger tartibi `id` bo'yicha (DATABASE.md §5.3).
+model InventoryMovement {
+  id              BigInt                @id @default(autoincrement())
+  warehouseId     String                @map("warehouse_id") @db.Uuid
+  productId       String                @map("product_id") @db.Uuid
+  movementType    MovementType          @map("movement_type")
+  /// Ishorali: kirim `+`, chiqim `−`.
+  quantity        Decimal               @db.Decimal(14, 3)
+  balanceAfter    Decimal               @map("balance_after") @db.Decimal(14, 3)
+  unitCost        Decimal?              @map("unit_cost") @db.Decimal(18, 2)
+  referenceType   MovementReferenceType @map("reference_type")
+  referenceId     String                @map("reference_id") @db.Uuid
+  referenceItemId String                @map("reference_item_id") @db.Uuid
+  createdById     String                @map("created_by") @db.Uuid
+  createdAt       DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+  createdBy User      @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@unique([referenceType, referenceItemId])
+  @@index([warehouseId, productId, id(sort: Desc)])
+  @@index([productId, id(sort: Desc)])
+  @@index([referenceType, referenceId])
+  @@index([createdAt])
+  @@map("inventory_movements")
+}
+
+// ─── Incoming ──────────────────────────────────────────────────────────────────────────────────
+
+model Incoming {
+  id            String         @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  /// IDENTITY; UI'da `K-000123`.
+  number        BigInt         @unique @default(autoincrement())
+  incomingDate  DateTime       @map("incoming_date") @db.Date
+  warehouseId   String         @map("warehouse_id") @db.Uuid
+  notes         String?        @db.VarChar(1000)
+  status        IncomingStatus @default(DRAFT)
+  /// Σ items.quantity — application hisoblaydi, tasdiqlashda DB tekshiradi.
+  totalQuantity Decimal        @default(0) @map("total_quantity") @db.Decimal(14, 3)
+  /// Σ items.line_total — application hisoblaydi, tasdiqlashda DB tekshiradi.
+  totalAmount   Decimal        @default(0) @map("total_amount") @db.Decimal(18, 2)
+  createdById   String         @map("created_by") @db.Uuid
+  confirmedById String?        @map("confirmed_by") @db.Uuid
+  confirmedAt   DateTime?      @map("confirmed_at") @db.Timestamptz(3)
+  cancelledById String?        @map("cancelled_by") @db.Uuid
+  cancelledAt   DateTime?      @map("cancelled_at") @db.Timestamptz(3)
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  warehouse   Warehouse      @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+  createdBy   User           @relation("IncomingCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  confirmedBy User?          @relation("IncomingConfirmedBy", fields: [confirmedById], references: [id], onDelete: Restrict)
+  cancelledBy User?          @relation("IncomingCancelledBy", fields: [cancelledById], references: [id], onDelete: Restrict)
+  items       IncomingItem[]
+
+  @@index([warehouseId, incomingDate])
+  @@index([status, incomingDate])
+  @@index([incomingDate])
+  @@index([createdById])
+  @@map("incoming")
+}
+
+model IncomingItem {
+  id          String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  incomingId  String   @map("incoming_id") @db.Uuid
+  productId   String   @map("product_id") @db.Uuid
+  /// Snapshot: mahsulot keyin qayta nomlansa ham hujjat o'zgarmaydi (D-08).
+  productName String   @map("product_name") @db.VarChar(200)
+  /// Snapshot (D-08).
+  barcode     String?  @db.VarChar(64)
+  quantity    Decimal  @db.Decimal(14, 3)
+  costPrice   Decimal  @map("cost_price") @db.Decimal(18, 2)
+  /// GENERATED ALWAYS AS (round(quantity * cost_price, 2)) STORED.
+  lineTotal   Decimal  @default(dbgenerated()) @map("line_total") @db.Decimal(18, 2)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  incoming Incoming @relation(fields: [incomingId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([incomingId, productId])
+  @@index([productId])
+  @@map("incoming_items")
+}
+
+// ─── Sales ─────────────────────────────────────────────────────────────────────────────────────
+
+model Customer {
+  id             String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  name           String    @db.VarChar(150)
+  /// `+998XXXXXXXXX`, unique emas (A-23).
+  phone          String?   @db.VarChar(13)
+  notes          String?   @db.VarChar(1000)
+  /// Yig'ma (cache) — sotuv tranzaksiyasida yangilanadi, `reconcile_customer_aggregates` tekshiradi.
+  purchaseCount  Int       @default(0) @map("purchase_count")
+  totalSpent     Decimal   @default(0) @map("total_spent") @db.Decimal(18, 2)
+  lastPurchaseAt DateTime? @map("last_purchase_at") @db.Timestamptz(3)
+  createdById    String    @map("created_by") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  createdBy User   @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  sales     Sale[]
+
+  @@index([phone], where: raw("phone IS NOT NULL"), map: "customers_phone_idx")
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "customers_name_trgm_idx")
+  @@index([lastPurchaseAt])
+  @@map("customers")
+}
+
+/// O'zgarmas (D-03, D-07): UPDATE/DELETE trigger bilan rad etiladi.
+model Sale {
+  id                    String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  /// IDENTITY; UI'da `S-000123`.
+  number                BigInt     @unique @default(autoincrement())
+  soldAt                DateTime   @default(now()) @map("sold_at") @db.Timestamptz(3)
+  userId                String     @map("user_id") @db.Uuid
+  warehouseId           String     @map("warehouse_id") @db.Uuid
+  customerId            String     @map("customer_id") @db.Uuid
+  customerNameSnapshot  String     @map("customer_name_snapshot") @db.VarChar(150)
+  customerPhoneSnapshot String?    @map("customer_phone_snapshot") @db.VarChar(13)
+  totalQuantity         Decimal    @map("total_quantity") @db.Decimal(14, 3)
+  totalAmount           Decimal    @map("total_amount") @db.Decimal(18, 2)
+  totalCost             Decimal    @map("total_cost") @db.Decimal(18, 2)
+  status                SaleStatus @default(COMPLETED)
+  /// `Idempotency-Key` header (REQ-145).
+  idempotencyKey        String     @unique @map("idempotency_key") @db.Uuid
+  /// Kanonik payload SHA-256 — kalitni boshqa payload bilan qayta ishlatishni aniqlash uchun.
+  requestHash           String     @map("request_hash") @db.Char(64)
+  createdAt             DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  warehouse Warehouse  @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+  customer  Customer   @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  items     SaleItem[]
+
+  @@index([soldAt])
+  @@index([userId, soldAt])
+  @@index([warehouseId, soldAt])
+  @@index([customerId, soldAt])
+  @@map("sales")
+}
+
+/// O'zgarmas. Narx va tannarx sotuv paytidagi snapshot (D-02).
+model SaleItem {
+  id          String  @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  saleId      String  @map("sale_id") @db.Uuid
+  productId   String  @map("product_id") @db.Uuid
+  /// Snapshot (D-08): chek mahsulot qayta nomlansa ham o'zgarmaydi.
+  productName String  @map("product_name") @db.VarChar(200)
+  /// Snapshot (D-08).
+  barcode     String? @db.VarChar(64)
+  quantity    Decimal @db.Decimal(14, 3)
+  /// Snapshot `products.sale_price`.
+  unitPrice   Decimal @map("unit_price") @db.Decimal(18, 2)
+  /// Snapshot `products.cost_price` (D-02). Foyda = (unit_price − unit_cost) × quantity.
+  unitCost    Decimal @map("unit_cost") @db.Decimal(18, 2)
+  /// GENERATED ALWAYS AS (round(quantity * unit_price, 2)) STORED — subtotal.
+  lineTotal   Decimal @default(dbgenerated()) @map("line_total") @db.Decimal(18, 2)
+  /// GENERATED ALWAYS AS (round(quantity * unit_cost, 2)) STORED.
+  lineCost    Decimal @default(dbgenerated()) @map("line_cost") @db.Decimal(18, 2)
+
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Restrict)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([saleId, productId])
+  @@index([productId, saleId])
+  @@map("sale_items")
+}
+
+// ─── Finance ───────────────────────────────────────────────────────────────────────────────────
+
+/// `name` uchun case-insensitive unique: `expense_categories_name_lower_key` (migratsiyada).
+model ExpenseCategory {
+  id          String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  name        String   @db.VarChar(100)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdById String   @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  createdBy User      @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  expenses  Expense[]
+
+  @@map("expense_categories")
+}
+
+/// Moliyaviy xarajat ("Xarajatlar", D-01, D-11). Kategoriya majburiy (D-19), holat yo'q (D-11).
+/// Soft delete (`deleted_at`).
+model Expense {
+  id          String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  expenseDate DateTime  @map("expense_date") @db.Date
+  amount      Decimal   @db.Decimal(18, 2)
+  categoryId  String    @map("category_id") @db.Uuid
+  note        String?   @db.VarChar(1000)
+  createdById String    @map("created_by") @db.Uuid
+  updatedById String?   @map("updated_by") @db.Uuid
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(3)
+  deletedById String?   @map("deleted_by") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  category  ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  createdBy User            @relation("ExpenseCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedBy User?           @relation("ExpenseUpdatedBy", fields: [updatedById], references: [id], onDelete: Restrict)
+  deletedBy User?           @relation("ExpenseDeletedBy", fields: [deletedById], references: [id], onDelete: Restrict)
+
+  @@index([expenseDate], where: raw("deleted_at IS NULL"), map: "expenses_expense_date_active_idx")
+  @@index([categoryId])
+  @@index([createdById])
+  @@map("expenses")
+}
+
+// ─── Audit / Settings ──────────────────────────────────────────────────────────────────────────
+
+/// O'zgarmas audit jurnali (D-06): UPDATE/DELETE/TRUNCATE trigger bilan rad etiladi,
+/// `divine_app` roliga faqat SELECT, INSERT berilgan.
+model AuditLog {
+  id         BigInt   @id @default(autoincrement())
+  occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  /// NULL — tizim yoki noma'lum (masalan, xato login).
+  actorId    String?  @map("actor_id") @db.Uuid
+  /// `AuditAction` (@divine/shared).
+  action     String   @db.VarChar(64)
+  /// `AuditEntityType` (@divine/shared).
+  entityType String   @map("entity_type") @db.VarChar(32)
+  entityId   String?  @map("entity_id") @db.VarChar(64)
+  /// Parol, hash va token hech qachon yozilmaydi.
+  metadata   Json     @default("{}")
+  ip         String?  @db.Inet
+  userAgent  String?  @map("user_agent") @db.VarChar(300)
+  requestId  String?  @map("request_id") @db.VarChar(64)
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([occurredAt(sort: Desc)])
+  @@index([entityType, entityId, occurredAt(sort: Desc)])
+  @@index([actorId, occurredAt(sort: Desc)])
+  @@index([action, occurredAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+/// Kalit–qiymat sozlamalar: yangi sozlama migratsiyasiz qo'shiladi.
+model Setting {
+  key         String   @id @db.VarChar(64)
+  value       Json
+  updatedById String?  @map("updated_by") @db.Uuid
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  updatedBy User? @relation(fields: [updatedById], references: [id], onDelete: Restrict)
+
+  @@map("settings")
+}

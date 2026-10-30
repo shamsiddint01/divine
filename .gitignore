@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Turborepo
+.turbo/
+
+# Prisma generated client (prisma generate orqali yaratiladi)
+backend/src/generated/
+
+# Environment — secretlar hech qachon repoga tushmaydi
+.env
+.env.*
+!.env.example
+!.env.prod.example
+
+# Production secretlari va backup'lar (Phase 17) — faqat serverda
+secrets/
+backups/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Editor / OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+playwright-report/
+test-results/
