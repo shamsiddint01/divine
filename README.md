@@ -2,7 +2,7 @@
 
 Chakana savdo va bozor bizneslari uchun **web ERP**: mahsulotlar, omborlar, kirim, sotuv, mijozlar, xarajatlar, hisobotlar va audit. Interfeys to‘liq o‘zbek tilida (lotin).
 
-> **Holat:** Phase 1–6 tugallandi (foundation, database, backend foundation, authentication + RBAC, users, mahsulotlar va guruhlar). Biznes modullari keyingi phase'larda ([docs/DEVELOPMENT-PLAN.md](docs/DEVELOPMENT-PLAN.md)).
+> **Holat:** Phase 1–17 tugallandi ([docs/DEVELOPMENT-PLAN.md](docs/DEVELOPMENT-PLAN.md)). Production konfiguratsiyasi tayyor va lokal sinovdan o‘tgan; haqiqiy serverda deploy va tekshiruv — [docs/RUNBOOK.md](docs/RUNBOOK.md). Biznes egasining ochiq qarorlari: D-13, D-14, D-15.
 
 ---
 
@@ -18,6 +18,8 @@ Chakana savdo va bozor bizneslari uchun **web ERP**: mahsulotlar, omborlar, kiri
 | [SECURITY](docs/SECURITY.md) | Xavfsizlik arxitekturasi, 6 xonali parol xavfi |
 | [DEVELOPMENT-PLAN](docs/DEVELOPMENT-PLAN.md) | 17 ta phase va Definition of Done |
 | [REQUIREMENTS-MATRIX](docs/REQUIREMENTS-MATRIX.md) | TZ talabi → implementatsiya → test → status |
+| [TESTING](docs/TESTING.md) | Test to‘plamlari, TZ §19 → testlar, coverage, benchmark natijalari |
+| [RUNBOOK](docs/RUNBOOK.md) | Production: o‘rnatish, backup/tiklash, monitoring, rotation, insident |
 
 ## Texnologiyalar
 
@@ -235,18 +237,24 @@ To‘liq xarita (TZ §19 → testlar, 17 ta kritik ssenariy, coverage, benchmark
 
 ## Production build va deploy
 
-```bash
-# Image'lar
-docker compose --profile app build
+**Production — faqat `docker-compose.prod.yml`** (Phase 17). To‘liq yo‘riqnoma: [docs/RUNBOOK.md](docs/RUNBOOK.md) — o‘rnatish, cron, monitoring, backup va kalitlar, tiklash, secret rotation, drill, yangilash/rollback/insident.
 
-# To‘liq stack (postgres, redis, api, web/Nginx) → http://127.0.0.1:8080
-docker compose --profile app up -d
+```bash
+scripts/prod/init-secrets.sh                      # secrets/ (0700): parollar, kalitlar, ulanish URL'lari
+cp .env.prod.example .env.prod                    # domen, portlar, yo'llar — secret EMAS
+# + secrets/tls_cert, secrets/tls_key, secrets/backup_public_key.asc (RUNBOOK §1, §3.1)
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm --no-deps api \
+  node dist/database/bootstrap-admin.cli.js --login admin
+scripts/prod/security-check.sh                    # hammasi PASS bo'lishi shart
+scripts/prod/drill.sh                             # backup → tiklash → PITR sinovi (alohida loyihada)
 ```
 
-- `api` image `NODE_ENV=production` bilan ishlaydi: `.env`dagi secretlar haqiqiy bo‘lishi shart (`change-me…` rad etiladi), Swagger o‘chiq.
-- `web` image — statik SPA + Nginx: `/api` → `api:3000` proxy, secure header'lar, SPA fallback.
-- Migratsiyalar: compose'dagi `migrate` servisi (`docker/api.Dockerfile --target migrate`) `prisma migrate deploy` va seed'ni bajaradi; `api` uning muvaffaqiyatli tugashini kutadi.
-- TLS, backup, monitoring va runbook'lar — Phase 17.
+- API ma’lumotlar bazasiga `divine_api` (superuser emas) bilan ulanadi, migratsiya va seed — alohida `migrate` konteynerida `divine_owner` bilan; `api` uning muvaffaqiyatli tugashini kutadi.
+- Barcha konteynerlar: read-only, `cap_drop: ALL`, `no-new-privileges`, root emas, healthcheck, restart; postgres/redis/api tashqariga ochilmaydi.
+- Nginx (web) — TLS 1.2/1.3, http → https, HSTS faqat HTTPS'da, `/api` → `api:3000`, SPA fallback.
+- Secretlar — Docker secrets fayllari (`*_FILE`), `.env`/image'da yo‘q. Backup'lar GPG ochiq kalit bilan shifrlanadi (maxfiy kalit serverda saqlanmaydi).
+- `docker-compose.yml` (`--profile app`) — **faqat lokal sinov uchun**: API superuser bilan ulanadi, TLS va hardening yo‘q.
 
 > **Eslatma:** `pnpm deploy` ni lokal workspace'da ishga tushirmang. U faqat Docker build ichida ishlatiladi va lokal `node_modules` holatini production rejimiga o‘tkazib qo‘yishi mumkin. Agar shunday bo‘lsa: `CI=true pnpm install`.
 
@@ -257,6 +265,15 @@ docker compose --profile app up -d
 - Xato strukturasi: `{ "error": { "code", "message" (o‘zbekcha), "details"?, "requestId" } }`.
 - To‘liq contract: [docs/API.md](docs/API.md). Ishlab turgan endpointlar: `GET /api/v1/health`, `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`, `GET /api/v1/auth/me`, Users (§4): `GET/POST /api/v1/users`, `GET /api/v1/users/warehouse-options`, `GET/PATCH /api/v1/users/:id`, `PATCH /api/v1/users/:id/status`, `POST /api/v1/users/:id/reset-password`, `PUT /api/v1/users/:id/warehouses`; mahsulotlar (§5–6): `/api/v1/product-groups` (GET, POST, `/:id` GET/PATCH/DELETE), `/api/v1/products` (GET, POST, `/lookup`, `/:id` GET/PATCH, `/:id/status`, `/:id/summary`); omborlar va inventar (§7–8): `/api/v1/warehouses` (GET, POST, `/:id` GET/PATCH, `/:id/status`, `/:id/stock`, `/:id/movements`), `/api/v1/inventory/movements`, `/api/v1/inventory/reconciliation`; kirim (§9): `/api/v1/incoming` (GET, POST, `/:id` GET/PATCH, `/:id/confirm`, `/:id/cancel`); mijozlar (§10): `/api/v1/customers` (GET, POST, `/:id` GET/PATCH, `/:id/purchases`); sotuvlar (§11): `/api/v1/sales` (GET, POST + `Idempotency-Key`, `/:id`); xarajatlar (§12): `/api/v1/expenses` (GET, POST, `/:id` GET/PATCH/DELETE), `/api/v1/expense-categories` (GET, POST, `/:id` PATCH/DELETE); hisobotlar (§13): `/api/v1/reports/{sales,products,warehouse-stock,incoming,expenses,user-sales,product-sales,customer-purchases,finance-summary}`; dashboard (§14): `/api/v1/dashboard/{summary,sales-trend,top-products,my-summary}`; sozlamalar (§16): `GET/PATCH /api/v1/settings`; audit (§15): `GET /api/v1/audit-logs`, `GET /api/v1/audit-logs/:id`.
 
+## Phase 17 natijasi (Production preparation)
+
+- **Production konfiguratsiyasi tayyor:** alohida `docker-compose.prod.yml` (superuser'siz API, read-only konteynerlar, internal tarmoq, TLS + HSTS, Docker secrets) va [docs/RUNBOOK.md](docs/RUNBOOK.md). Avtomatik tekshiruv `scripts/prod/security-check.sh` — 51/51 PASS
+- **Backup va tiklash sinalgan:** kunlik/haftalik backup va WAL arxivi, shifrlangan; `scripts/prod/drill.sh` barcha ma’lumotni o‘chirib, backup'dan tiklaydi va vaqt nuqtasiga (PITR) qaytaradi — ma’lumot bayt-ma-bayt bir xil
+- **Monitoring va alert:** `scripts/prod/monitor.sh` (health, sertifikat, backup, xato darajasi, reconciliation, disk) → webhook
+- **Tezlik:** ko‘p yillik tarixli omborda kassa katalogi sekin edi (~1,6 s, xatolar bilan) → sotilgan miqdor yig‘ma jadvali (yangi migratsiya `20261030100000_warehouse_sales_totals`) → 0,06 s. Yuklama testi — barcha endpoint p95 < 300 ms ([docs/TESTING.md §5.2](docs/TESTING.md))
+- Pepper rotation (`PASSWORD_PEPPER_V2`) va eski sessiyalarni avtomatik tozalash
+- **Muhim:** hammasi lokal mashinada sinalgan — haqiqiy production serverda o‘lchanmagan. Qolgan xavflar — [docs/SECURITY.md §20](docs/SECURITY.md)
+
 ## Phase 16 natijasi (Security review)
 
 - **SEC-01 yopildi:** login maydoniga tasodifan yozilgan parol endi audit jurnaliga va Redis'ga ochiq yozilmaydi (6 raqamli qiymat — yashiriladi, boshqa noma’lum login — kalitli barmoq izi). Eski audit yozuvlari o‘zgartirilmadi, lekin jurnal ularni ham yashirib ko‘rsatadi
@@ -264,7 +281,7 @@ docker compose --profile app up -d
 - API javoblari brauzer keshiga yozilmaydi (`Cache-Control: no-store`) — umumiy kassa kompyuterida ham shaxsiy ma’lumot va kelgan narxi keshda qolmaydi
 - Bog‘liqliklar yangilandi: `pnpm audit --prod` — zaiflik yo‘q (`pnpm-workspace.yaml` `overrides` izohlari bilan)
 - Yangi avtomatik xavfsizlik testlari: log/audit/Redis'da maxfiy qiymat qidirish, har bir endpoint uchun RBAC va kirish fuzz'i, production header'lari, brauzerda ruxsatsiz urinishlar — [docs/TESTING.md §7](docs/TESTING.md), [docs/SECURITY.md §17–§19](docs/SECURITY.md)
-- Qolgan xavflar va Phase 17 vazifalari — [docs/SECURITY.md §19](docs/SECURITY.md)
+- Qolgan xavflar — [docs/SECURITY.md §19](docs/SECURITY.md) (Phase 17 da yopilganlari — §20)
 - Yangi migratsiya yo‘q
 
 ## Phase 15 natijasi (Testing)
