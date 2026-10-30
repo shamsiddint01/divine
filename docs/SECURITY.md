@@ -480,3 +480,78 @@ Xuddi shu himoya `inventory_movements`, `sales`, `sale_items` jadvallariga ham q
 - 6 xonali parol (TZ) — §5 dagi qoldiq xavf o‘zgarmagan.
 - Web CSP'da `style-src 'unsafe-inline'` (inline stil; skript emas).
 - Backup va tiklash sinovi — Phase 17.
+
+## 20. Phase 17 production konfiguratsiyasi va qolgan xavflar
+
+> **Muhit haqida ochiq:** haqiqiy production serverga kirish imkoni bo‘lmagan. Quyidagi barcha dalillar — lokal mashinada (Intel i5-13420H noutbuk, Docker): production konfiguratsiyasi alohida `divine-drill` loyihasida (127.0.0.1:18443, self-signed TLS) ishga tushirilgan, yuklama testi — Testcontainers'da. Bu **production o‘lchovi emas**. Deploy'dan keyin serverda `security-check.sh`, `monitor.sh` va `drill.sh` qayta bajarilishi shart ([RUNBOOK §1, §6](RUNBOOK.md)).
+
+### 20.1. Production stack (`docker-compose.prod.yml`)
+
+Dev konfiguratsiyasi (`docker-compose.yml`) o‘zgartirilmadi va **production uchun emas** (API u yerda superuser bilan ulanadi, hardening yo‘q). Production — alohida fayl (`name: divine-prod`), o‘rnatish va yuritish — [RUNBOOK](RUNBOOK.md).
+
+| Talab | Qanday bajarilgan | Dalil |
+|---|---|---|
+| API superuser bilan ishlamaydi | API `divine_api` (LOGIN, `divine_app` a’zosi) bilan ulanadi; migratsiya va seed — alohida bir martalik `migrate` konteyneri, `divine_owner` bilan; rollar `docker/postgres/init-roles.sh` (birinchi ishga tushishda, parollar fayldan, `log_statement = none`); `PUBLIC`dan `CONNECT` va `public` sxemada `CREATE` olingan | `security-check.sh`: "api DB ulanishi: divine_api (superuser emas)", "divine_api ∈ divine_app", "divine_* rollarida SUPERUSER/CREATEROLE/CREATEDB yo‘q"; `verify-db.sh`: `app_can_update = 0`, baza egasi `divine_owner` |
+| `read_only`, `tmpfs`, `cap_drop` | barcha 5 servis (postgres, redis, migrate, api, web): read-only root FS, yoziladigan joylar faqat `tmpfs`/volume, `cap_drop: [ALL]`, `no-new-privileges`, root emas (postgres `70`, redis `999`, api/migrate `node` 1000, web `nginx` 101) | `security-check.sh` — har bir servis bo‘yicha |
+| Healthcheck va restart | uzoq ishlaydigan servislar `restart: unless-stopped` + healthcheck (`pg_isready`, `redis-cli ping`, API `/health`, web `/healthz`); `migrate` — restart'siz; `api` migratsiya muvaffaqiyatli tugashini kutadi | `security-check.sh` ("healthy", restart siyosati); drill — `wait_healthy` aniq `(healthy)` holatini kutadi |
+| Tarmoq | `backend` tarmog‘i `internal: true` — postgres, redis, api host'ga port ochmaydi va internetga chiqa olmaydi; faqat web 80/443 (`BIND_ADDRESS`) | `security-check.sh`: "host'ga port ochilmagan" ×4, "api: internetga chiqish yo‘q" |
+| TLS, HSTS faqat HTTPS orqali | Nginx (web) TLS terminator: TLS 1.2/1.3, Mozilla intermediate shifrlari; 80 → 301 https; HSTS (`max-age=31536000; includeSubDomains`, `preload`siz) faqat 443 javoblarida (`security-headers-tls.conf`); `TRUST_PROXY=1` (Nginx yagona proxy) | `security-check.sh`: HSTS va CSP https'da bor, http javobida HSTS yo‘q, http → https 301, API oddiy HTTP orqali ochilmaydi, TLS 1.2/1.3 ishlaydi, TLS 1.0/1.1 rad etiladi (klient `SECLEVEL=0` bilan — server alert 70 qaytaradi, tekshiruv "bo‘sh" o‘tmaydi) |
+| Secretlar `.env` va image'da emas | Docker secrets fayllari (`secrets/`, katalog 0700): ilova `*_FILE` o‘zgaruvchilarini o‘qiydi (`src/config/secret-files.ts`: ikkalasi berilsa, fayl o‘qilmasa yoki bo‘sh bo‘lsa — qiymatsiz xato bilan to‘xtaydi; `prisma.config.ts` ham); `.env.prod`da faqat domen, port, yo‘llar; `.dockerignore` — `.env*`, `secrets`, `backups`; Redis paroli va konfiguratsiyasi ham secret (xavfli buyruqlar `FLUSHALL`/`FLUSHDB`/`CONFIG` o‘chirilgan) | `security-check.sh`: har bir secret qiymati `docker inspect` (env, cmd) va barcha konteyner log'larida qidirildi — topilmadi, secrets katalogi 0700, Redis parolsiz rad etadi; `secret-files.spec.ts` (4); drill image'lari (2026-10-30): `Config.Env`da faqat `PATH`/`NODE_*`/`NGINX_*` kabi standart nomlar, fayl tizimida `.env`/kalit fayllari yo‘q (faqat Alpine'ning ommaviy CA to‘plami) |
+| Log'larda secret yo‘q | ilova redaction'i (§14) o‘zgarmagan; postgres `log_min_error_statement = panic` (xato so‘rov matni — ichidagi ma’lumot bilan — log'ga tushmaydi); log rotatsiyasi `json-file` 10 MB × 5 | `security-check.sh` (log grep), `security-leaks.db-spec.ts` (Phase 16) |
+
+**Qo‘shimcha (Phase 17 rejasidagi bandlar):**
+- **Pepper rotation** — `PASSWORD_PEPPER_V2` (ixtiyoriy, pepper va JWT secret'dan farqli bo‘lishi shart): yangi hash'lar `v2$`, eski `v1$` hash muvaffaqiyatli login'da shartli `UPDATE` bilan avtomatik yangilanadi (parallel login'da ustidan yozilmaydi). Testlar: `password-hasher.spec.ts` (3), `env.schema.spec.ts`, `auth.db-spec.ts`. Yo‘riqnoma — RUNBOOK §5.
+- **Sessiyalar jadvali cheksiz o‘smaydi** — `SessionCleanupJob` (har kuni 04:00 Toshkent, Redis `SET NX` qulfi — bir nechta API nusxasida bitta): muddati yoki bekor qilinganiga 30 kundan oshgan `user_sessions` qatorlari o‘chiriladi (audit jurnaliga tegmaydi). Test: `auth.db-spec.ts`.
+
+### 20.2. Backup va tiklash
+
+| Talab | Qanday | Dalil |
+|---|---|---|
+| Backup yaratiladi | `backup.sh` (`pg_dump -Fc`, kunlik), `backup-base.sh` (`pg_basebackup`, haftalik), `backup-wal.sh` (WAL arxivi, `archive_timeout = 300`) | drill |
+| Shifrlash | har bir fayl GPG **ochiq kalit** bilan (`*.gpg`); maxfiy kalit serverda emas — server egallansa ham backup o‘qilmaydi; ochiq matnli nusxa faqat 0700 vaqtinchalik katalogda | drill: shifrlangan dump'da `PGDMP` sarlavhasi va drill mijoz ismlari — 0 ta |
+| Yaxlitlik | `.sha256`; backup'dan oldin `pg_restore --list` (muhim jadvallar ma’lumoti bor); manifest — jadval sonlari, o‘zgarmas va moliyaviy jadvallarning md5'i, invariantlar (reconciliation view'lari, shu jumladan `reconcile_sales_totals`, manfiy qoldiq), himoya (immutability trigger'lari yoqilgan, `divine_app` yoza olmaydi, baza egasi, `TimeZone`, migratsiyalar soni) | `verify-db.sh --expect` — bayt-ma-bayt solishtiruv |
+| Haqiqiy restore | `restore.sh`: nazorat yig‘indisi → shifr ochiladi → API to‘xtatiladi → `DROP DATABASE … WITH (FORCE)` → `pg_restore --create` → manifest solishtiruvi → o‘zgarmas jadvalda jonli `UPDATE` urinishi trigger tomonidan rad etilishi (`DV001`) → API; `restore-pitr.sh` — vaqt nuqtasiga | drill: **barcha volume'lar o‘chirilib**, toza postgres'ga tiklandi, manifest backup paytidagi bilan bir xil, ilova orqali login, sotuvlar soni va reconciliation (0) tekshirildi; PITR: T nuqtasigacha bo‘lgan ma’lumot bor, T dan keyingi yo‘q, manifest T paytidagi bilan bir xil |
+| Takrorlanadigan | `drill.sh` — bitta buyruq, alohida loyiha, vaqtinchalik secretlar va GPG kalitlari; har qanday buzilish — exit 1; hisobot `backups/drill/` | `backups/drill/drill-20261030T151900Z.txt`: **DRILL: MUVAFFAQIYATLI**, 204 s (`warehouse_sales_totals` migratsiyasi bilan) |
+| Xatoni aniqlash | ERR trap → `status/last-<tur>-failure.json` + webhook (xabarda faqat holat va yiqilgan buyruq nomi); muvaffaqiyatli backup xato holatini tozalaydi; `monitor.sh` backup yoshi, xatolar, `pg_stat_archiver`, sertifikat muddati, 5xx darajasi, reconciliation, disk — bitta yig‘ma alert | drill 5-qadam: postgres to‘xtatilganda backup exit 1, xato holati yozildi, monitor exit 1; keyingi backup tozaladi. Webhook: lokal tinglovchiga (127.0.0.1) bitta `application/json` xabar keldi, matnda secret yo‘q (2026-10-30) |
+
+### 20.3. Performance (REQ-167)
+
+`sort=sold:desc` ko‘p yillik tarixli omborda (Phase 15 dagi "ma’lum chegara") — **alohida ssenariy** sifatida o‘lchandi va tuzatildi (§20.4 #1). To‘liq usul, muhit va jadval — [TESTING §5.2](TESTING.md#52-api-yuklama-testi--p95--300-ms-benchload).
+
+| O‘lchov (p95, ms, normal / peak) | Phase 15 (AC) | Phase 17, tuzatishdan oldin | Phase 17, batareya + `balanced` | **Phase 17 yakuniy** (batareya + `performance`) |
+|---|---|---|---|---|
+| `GET /products` (kassa, tarixli ombor) | — (o‘lchanmagan) | 1 512 / 1 657, **434 xato** | 80 / 136 | **22 / 61** |
+| `GET /products` (kassa katalogi) | 39 / 65 | 177 / 286 | 69 / 126 | 18 / 55 |
+| `GET /sales` (admin, hammasi) | 160 / 179 | 536 / 569 | 250 / 280 | 129 / 199 |
+| `GET /sales` (sotuvchi, o‘z tarixi) | 191 / 212 | 483 / 565 | 269 / 298 | 109 / 204 |
+| `GET /dashboard/summary` | 172 / 196 | 575 / 561 | 279 / **325** | 111 / **212** |
+| `POST /sales` | 89 / 128 | 304 / 466 | 167 / 251 | 54 / 133 |
+| Xatolar / natija | 0 / PASS | 435 / FAIL | 0 / **FAIL** | **0 / PASS** |
+
+Yakuniy o‘lchov (`load-2026-10-30T16-41-08-305Z.json`) — barcha 19 endpoint p95 < 300 ms, eng sekini 212 ms, 0 xato. **Cheklov:** noutbuk o‘lchov paytida zaryadga ulanmagan edi; CPU energiya profili vaqtincha `performance`ga o‘tkazildi (o‘lchovdan keyin `balanced`ga qaytarildi). Shu mashinada batareya + `balanced` rejimida (CPU cheklangan) dashboard peak'da 325 ms bilan FAIL bo‘lgan — natija faylda izoh bilan saqlangan, o‘chirilmagan. Bu dashboard/summary va sotuvlar ro‘yxatining zaxirasi kichikligini ko‘rsatadi (§20.5).
+
+### 20.4. Phase 17 da topilgan va tuzatilgan
+
+| # | Muammo | Tuzatish | Dalil |
+|---|---|---|---|
+| 1 | Kassa katalogi `sort=sold:desc` tarixli omborda (1 mln sotuvli seed) har so‘rovda ombordagi barcha `SALE` harakatlarini yig‘ardi: p95 ~1,5–1,7 s, DB pool to‘yinib 434 ta 503 | yangi migratsiya `20261030100000_warehouse_sales_totals`: (ombor, mahsulot) bo‘yicha sotilgan miqdor yig‘ma jadvali, `inventory_movements`ga `SALE` yozilganda `SECURITY DEFINER` trigger bilan **shu tranzaksiyada** yangilanadi (stock bilan bir xil qulf tartibi — yangi deadlock yo‘q); ledger'dan backfill; `divine_app` — faqat `SELECT`; nomuvofiqlik view'i `reconcile_sales_totals` (monitor va `verify-db.sh` tekshiradi). Javob shakli o‘zgarmadi; ledger va audit o‘zgarmas qoldi | `inventory.db-spec.ts` (2), `migrations.db-spec.ts` (derived jadval — faqat SELECT), yuklama: 22 / 61 ms, 0 xato |
+| 2 | Backup skripti funksiya ichida yiqilsa ERR trap ishlamasdi — exit 1, lekin alert va xato holati yo‘q | `set -E` (`lib.sh`) | drill 5-qadam, webhook sinovi |
+| 3 | Bazaviy backup'da `tar … \| grep -q` `pipefail` ostida SIGPIPE bilan soxta xato | mundarija avval faylga yoziladi | drill 3-qadam |
+| 4 | `verify-db.sh` immutability sinovi identity ustunida (`id = id`) — "bo‘sh" o‘tishi mumkin edi | oddiy ustun + `ctid`, `DV001` kutiladi | drill |
+| 5 | TLS 1.0/1.1 rad etish tekshiruvi klient OpenSSL'ning o‘zi rad etgani uchun "bo‘sh" o‘tardi | klient `SECLEVEL=0`, server alert'i tekshiriladi | `security-check.sh` |
+| 6 | `migrate` konteyneri internal tarmoqda corepack orqali pnpm yuklamoqchi bo‘lib yiqilardi | Prisma CLI to‘g‘ridan-to‘g‘ri, `USER node` | drill 1-qadam |
+| 7 | Drill: `unhealthy` ham "healthy" deb sanalardi; subshell'da takroriy alert; `security-check` bo‘sh pool'da rol topmasdi | `(healthy)` aniq sanaladi; `BASH_SUBSHELL` himoyasi; oldin health so‘rovi | drill |
+| 8 | `products.db-spec.ts` audit tartibi `ORDER BY`siz — vaqti-vaqti bilan yiqilardi (Phase 17 dan oldingi test) | `orderBy: { id: 'asc' }` (test talabi o‘zgarmadi) | `test:db` 384/384 |
+
+### 20.5. Qolgan xavflar va tugallanmagan ishlar
+
+- **Production serverda hech narsa o‘lchanmagan.** Server, domen, haqiqiy sertifikat va tarmoq yo‘q — p95, TLS va backup faqat lokal. Yuklama generatori server va DB bilan bir mashinada (natija pessimistik), lekin server apparati noma’lum.
+- **Yakuniy yuklama o‘lchovi zaryadsiz** (batareya + `performance` profili) — Phase 15 (AC) bilan eng yaqin, lekin aynan bir xil sharoit emas. CPU cheklanganda `GET /dashboard/summary` peak'da 325 ms (FAIL), `GET /sales` ~300 ms. Zaif serverda shu endpoint'lar chegaradan oshishi mumkin. Sabab — dashboard'ning "barcha vaqt" ko‘rsatkichlari 1 mln sotuvni har so‘rovda skanerlaydi; tuzatish (kunlik yig‘ma jadval) REQ-031 ("keshsiz", real vaqt) va sotuv tranzaksiyasiga ta’sir qiladi — **arxitektura qarori**, Phase 17 da qilinmadi.
+- **Offsite nusxa** — RUNBOOK'da `rsync` cron namunasi, lekin sinalmagan; moliyaviy ma’lumotlarni saqlash muddati — biznes egasining qarori (RUNBOOK §3).
+- **Backup maxfiy GPG kaliti yo‘qolsa** barcha backup'lar o‘qilmaydi — saqlash (seyf/parol menejeri, ikki nusxa) tashkiliy masala.
+- **RPO:** WAL arxivi staging'i data volume ichida; disk butunlay yo‘qolsa oxirgi ~15 daqiqa (`archive_timeout` 5 + cron 10) yo‘qolishi mumkin.
+- **TLS:** faqat self-signed sertifikat bilan sinaldi. Let's Encrypt yangilanishi stack ichida avtomatlashtirilmagan (host'dagi certbot + `nginx -s reload`); `monitor.sh` muddat < 14 kun qolganda ogohlantiradi.
+- **Alert:** webhook faqat lokal tinglovchiga sinaldi; haqiqiy Slack/Telegram kanaliga emas.
+- **Gorizontal kengaytirish** (`--scale api=2`, REQ-169) — dizayn tayyor (holat Redis'da, job qulflari), lekin Phase 17 da **sinalmagan**.
+- Phase 16 dan: `deepmerge-ts` (dev va `migrate` image) high advisory; eski audit qatorlarida xom noma’lum login DB darajasida; CSP `style-src 'unsafe-inline'`; 6 xonali parol (TZ). Load balancer/CDN qo‘shilsa — `TRUST_PROXY` va `set_real_ip_from` (RUNBOOK §1).
+- **D-13, D-14, D-15** — tasdiqlanmagan, Phase 17 ga ta’sir qilmaydi.
