@@ -1,4 +1,4 @@
-# Divine.uz — testlash (Phase 15)
+# Divine.uz — testlash (Phase 15; Phase 16–17 qo‘shimchalari)
 
 > Manba: TZ §19 (13 ta acceptance test), dastlabki topshiriqdagi 17 ta kritik ssenariy, REQ-167, REQ-172.
 > AC raqamlari — [REQUIREMENTS-MATRIX §5](REQUIREMENTS-MATRIX.md#5-acceptance-criteria--req).
@@ -15,6 +15,7 @@
 | `pnpm --filter @divine/backend bench:load` | API yuklama testi, 1 mln sotuv (p95 < 300 ms) | Docker, ~4 daq |
 | `pnpm --filter @divine/backend bench:compare [reports\|load \| eski.json yangi.json]` | Benchmark natijalarini solishtirish (§5.3) | — |
 | `pnpm --filter @divine/frontend qa:ui` / `qa:interactions` | Real brauzer QA: 17 sahifa × 5 kenglik × 2 mavzu; 39 ta interaktiv ssenariy | ishlayotgan preview |
+| `scripts/prod/drill.sh` | Production konfiguratsiyasi: backup → volume'lar o‘chiriladi → restore, PITR, `security-check.sh`, `monitor.sh`, backup xatosini aniqlash (§8) | Docker, ~4 daq |
 
 `coverage`, `e2e` va `bench:*` doimiy `test`/`test:db` to‘plamidan alohida: ular Docker va bir necha daqiqa talab qiladi. `test:db`, `coverage` va turbo `typecheck`/`lint` (shared `dist`ni qayta quradi) bir vaqtda ishga tushirilmaydi.
 
@@ -186,3 +187,23 @@ To‘liq xarita (har bir talab → test) — [SECURITY §17 "Phase 16"](SECURITY
 
 `backend/test/db/support/routes.ts` — endpointlar ro‘yxati Nest metadata'sidan (RBAC matritsasi, fuzz va skaner umumiy manbasi): yangi endpoint avtomatik qamraladi.
 
+
+## 8. Production tekshiruvlari (Phase 17)
+
+> Hammasi **lokal** mashinada — haqiqiy production serverga kirish yo‘q (SECURITY §20). Serverda deploy'dan keyin xuddi shu skriptlar qayta bajariladi (RUNBOOK §1, §6).
+
+`scripts/prod/drill.sh` — `docker-compose.prod.yml` asosida ALOHIDA `divine-drill` loyihasi (127.0.0.1:18081/18443), vaqtinchalik secretlar, self-signed TLS va vaqtinchalik GPG kalit juftligi; ishlab turgan dev stack'ga tegmaydi. Ma’lumot haqiqiy HTTPS API orqali yaratiladi (`drill-data.mjs`), ilova darajasidagi tekshiruv — `drill-check.mjs` (login, sotuvlar soni, reconciliation, audit o‘qiladi). Har qanday buzilish — exit 1; hisobot — `backups/drill/drill-<UTC>.txt`.
+
+| Qadam | Nima tekshiriladi |
+|---|---|
+| 1 | stack build bilan `healthy`; bootstrap admin (6 raqamli parol faqat chiqishda); 25 sotuv |
+| 2 | mantiqiy backup shifrlangan (`PGDMP` va mijoz ismlari — 0); **barcha volume'lar o‘chiriladi**; toza bazada 0 jadval; `restore.sh` → manifest (sonlar, md5, invariantlar, himoya) backup paytidagi bilan bir xil; ilova orqali sotuvlar 25, reconciliation 0 |
+| 3 | bazaviy backup → D (5 sotuv) → T nuqta + manifest → E (3 sotuv) → WAL → `restore-pitr.sh` T'ga: manifest T bilan bir xil, sotuvlar 30, E ombori yo‘q, D bor; ilova orqali tekshiruv |
+| 4 | `security-check.sh` (51 tekshiruv: konteyner hardening, rollar, tarmoq, Redis, TLS/HSTS/CSP, secretlar inspect va log'larda) va `monitor.sh` (14 OK) |
+| 5 | postgres to‘xtatilgan: backup exit 1, xato holati yozildi, monitor exit 1; keyingi muvaffaqiyatli backup holatni tozaladi |
+
+**Natija (2026-10-30):** `drill-20261030T151900Z.txt` — **DRILL: MUVAFFAQIYATLI**, 204 s, barcha qadamlar PASS. Alert webhook'i alohida: postgres'siz `backup.sh` → lokal HTTP tinglovchiga bitta `application/json` xabar (faqat holat va yiqilgan buyruq nomi, secret yo‘q), status fayli yozildi.
+
+**Phase 17 da qo‘shilgan avtomatik testlar:** `password-hasher.spec.ts` (pepper rotation, 3), `env.schema.spec.ts` (`PASSWORD_PEPPER_V2`), `test/unit/config/secret-files.spec.ts` (`*_FILE`, 4), `auth.db-spec.ts` (pepper rotation login orqali; sessiyalarni tozalash job'i), `inventory.db-spec.ts` (`warehouse_sales_totals`, 2), `migrations.db-spec.ts` (21 jadval, derived jadval faqat SELECT, `reconcile_sales_totals` o‘qiladi), `load.bench-spec.ts` (tarixli ombor ssenariysi).
+
+**Testlar (2026-10-30, Phase 17 kodi bilan):** unit — shared 193, backend 190, frontend 164; `test:db` — 384; Playwright E2E — 8; `qa:interactions` — 39; `qa:ui` — 170 tekshiruv, muammo yo‘q (birinchi ishga tushirishda 14-tekshiruvda brauzer CDP 30 s timeout — kod xatosi emas, qayta ishga tushirishda o‘tdi); `bench:load` — 2/2 (§5.2); format, lint (5/5), typecheck (5/5), build (4/4) — toza.
