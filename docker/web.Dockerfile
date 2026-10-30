@@ -31,7 +31,7 @@ ENV VITE_API_BASE_URL=${VITE_API_BASE_URL} \
     VITE_API_MODE=${VITE_API_MODE}
 RUN pnpm --filter @divine/shared build && pnpm --filter @divine/frontend build
 
-FROM nginxinc/nginx-unprivileged:1.29-alpine AS runtime
+FROM nginxinc/nginx-unprivileged:1.31-alpine AS runtime
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY docker/nginx/security-headers.conf /etc/nginx/snippets/security-headers.conf
 # Production (docker-compose.prod.yml): TLS server blokidagi header'lar (+ HSTS) — prod.conf shu snippet'ni ishlatadi.
