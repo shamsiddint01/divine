@@ -72,8 +72,9 @@ function SellerDashboard() {
       {error && !data ? (
         <ErrorState message={error.message} onRetry={() => refetch()} />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
           <StatCard
+            dense
             label={t.dashboard.my.todaySales}
             icon={Wallet}
             tone="success"
@@ -82,12 +83,14 @@ function SellerDashboard() {
             hint={data ? t.dashboard.kpi.salesCount(data.today.salesCount) : null}
           />
           <StatCard
+            dense
             label={t.dashboard.my.todaySoldQty}
             icon={ShoppingBag}
             loading={isPending}
             value={data ? formatQuantity(data.today.soldQuantity) : null}
           />
           <StatCard
+            dense
             label={t.dashboard.kpi.averageCheck}
             icon={Receipt}
             tone="info"

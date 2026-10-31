@@ -113,14 +113,16 @@ export function SalesHistoryView() {
 
   return (
     <div className="space-y-4">
-      <div className={`grid gap-4 ${canReadCost ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
+      <div className={`grid gap-2 sm:gap-4 ${canReadCost ? 'grid-cols-3' : 'grid-cols-2'}`}>
         <StatCard
+          dense
           label={t.sales.history.summaryCount}
           icon={Receipt}
           loading={isPending}
           value={data?.summary.count ?? null}
         />
         <StatCard
+          dense
           label={t.sales.history.summaryAmount}
           icon={Wallet}
           tone="info"
@@ -129,6 +131,7 @@ export function SalesHistoryView() {
         />
         {canReadCost ? (
           <StatCard
+          dense
             label={t.sales.history.summaryProfit}
             icon={TrendingUp}
             tone="success"

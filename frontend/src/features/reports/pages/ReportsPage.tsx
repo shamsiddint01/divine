@@ -305,7 +305,7 @@ export function ReportsPage() {
       <PageHeader title={t.nav.reports} description={t.reports.description} />
 
       <div
-        className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+        className="grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3"
         role="tablist"
         aria-label={t.nav.reports}
       >
@@ -320,13 +320,14 @@ export function ReportsPage() {
               aria-selected={selected}
               onClick={() => selectReport(r.type)}
               className={cn(
-                'flex items-start gap-3 rounded-xl border bg-card p-4 text-left transition-all hover:border-primary/40 hover:shadow-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none',
+                // Telefonda 3 ustun: ikonka tepada, nom ostida, izoh yashirin (sig'maydi)
+                'flex flex-col items-center gap-1.5 rounded-xl border bg-card p-2.5 text-center transition-all hover:border-primary/40 hover:shadow-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none sm:flex-row sm:items-start sm:gap-3 sm:p-4 sm:text-left',
                 selected && 'border-primary ring-1 ring-primary',
               )}
             >
               <span
                 className={cn(
-                  'flex size-9 shrink-0 items-center justify-center rounded-lg',
+                  'flex size-8 shrink-0 items-center justify-center rounded-lg sm:size-9',
                   selected
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted text-muted-foreground',
@@ -335,8 +336,12 @@ export function ReportsPage() {
                 <Icon className="size-[18px]" />
               </span>
               <span className="min-w-0">
-                <span className="block text-sm font-semibold">{tabTitle(r.type)}</span>
-                <span className="block text-xs text-muted-foreground">{tabHint(r.type)}</span>
+                <span className="block text-xs leading-tight font-semibold sm:text-sm">
+                  {tabTitle(r.type)}
+                </span>
+                <span className="block text-xs text-muted-foreground max-sm:hidden">
+                  {tabHint(r.type)}
+                </span>
               </span>
             </button>
           );

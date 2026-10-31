@@ -22,11 +22,13 @@ interface StatCardProps {
   tone?: Tone;
   loading?: boolean;
   className?: string;
+  /** Telefonda uch ustunli to'r uchun: ikonka yashiriladi, yozuvlar kichikroq. */
+  dense?: boolean;
 }
 
 /**
  * KPI kartasi: katta raqam + qisqa izoh (dataviz: bitta raqam uchun grafik emas, stat tile). Telefonda
- * (`sm` dan kichik) ixchamroq — ikki ustunli to'rga sig'adi.
+ * (`sm` dan kichik) ixchamroq — ikki ustunli to'rga sig'adi (`dense` — uch ustunliga).
  */
 export function StatCard({
   label,
@@ -36,14 +38,23 @@ export function StatCard({
   tone = 'default',
   loading,
   className,
+  dense = false,
 }: StatCardProps) {
   return (
-    <Card className={cn('h-full gap-2 p-3 sm:gap-3 sm:p-5', className)}>
+    <Card className={cn('h-full gap-2 p-3 sm:gap-3 sm:p-5', dense && 'max-sm:gap-1 max-sm:p-2.5', className)}>
       <div className="flex items-start justify-between gap-2 sm:gap-3">
-        <p className="text-xs leading-snug font-medium text-muted-foreground sm:text-sm">{label}</p>
+        <p
+          className={cn(
+            'text-xs leading-snug font-medium text-muted-foreground sm:text-sm',
+            dense && 'max-sm:text-[11px]',
+          )}
+        >
+          {label}
+        </p>
         <span
           className={cn(
             'flex size-7 shrink-0 items-center justify-center rounded-md sm:size-9 sm:rounded-lg',
+            dense && 'max-sm:hidden',
             TONES[tone],
           )}
         >
@@ -57,9 +68,21 @@ export function StatCard({
         </div>
       ) : (
         <div className="space-y-0.5 sm:space-y-1">
-          <p className="text-lg font-semibold tracking-tight tabular-nums sm:text-2xl">{value}</p>
+          <p
+            className={cn(
+              'text-lg font-semibold tracking-tight tabular-nums sm:text-2xl',
+              dense && 'max-sm:text-sm max-sm:leading-snug',
+            )}
+          >
+            {value}
+          </p>
           {/* Izoh qatoriga doim joy ajratiladi — barcha kartalarda raqam bir xil balandlikda turadi */}
-          <div className="min-h-4 text-[11px] leading-snug text-muted-foreground sm:text-xs">
+          <div
+            className={cn(
+              'min-h-4 text-[11px] leading-snug text-muted-foreground sm:text-xs',
+              dense && 'max-sm:min-h-0 max-sm:text-[10px]',
+            )}
+          >
             {hint}
           </div>
         </div>
