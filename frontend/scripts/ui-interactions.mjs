@@ -88,6 +88,8 @@ const waitFor = async (expr, ms = 6000) => {
   }
   return false;
 };
+// Jadvalda haqiqiy qatorlar: yuklanish skeleti (`data-slot=skeleton`) ham `tbody tr` — uni bosish hech narsa qilmaydi.
+const tableReady = `document.querySelectorAll('tbody tr').length > 0 && !document.querySelector('tbody [data-slot=skeleton]')`;
 const textOnPage = (t) => `document.body.innerText.includes(${JSON.stringify(t)})`;
 const clickText = (t, selector = 'button, a, [role=tab], [role=option], [role=menuitem]') =>
   evaluate(
@@ -183,7 +185,7 @@ await key('Escape');
 
 // 2b. Tahrirlash formasi mavjud qiymatlar bilan ochiladi (guruh, birlik)
 await go('/products');
-await waitFor(`document.querySelectorAll('tbody tr').length > 0`);
+await waitFor(tableReady);
 await evaluate(`document.querySelector('tbody tr').click()`);
 await waitFor(textOnPage('Asosiy ma’lumot'));
 await clickText('Tahrirlash');
@@ -197,7 +199,7 @@ await key('Escape');
 
 // 3. Guruhni o'chirish: mahsuloti bor guruh — bloklanadi
 await go('/product-groups');
-await waitFor(`document.querySelectorAll('tbody tr').length > 0`);
+await waitFor(tableReady);
 await evaluate(`document.querySelector('tbody tr button[aria-label="O‘chirish"]').click()`);
 check(
   'Guruhni o‘chirish: tasdiqlash oynasi va bloklash izohi',
@@ -306,7 +308,7 @@ check(
 
 // 6. Userlar: yaratish → 6 xonali parol bir marta
 await go('/users');
-await waitFor(`document.querySelectorAll('tbody tr').length > 0`);
+await waitFor(tableReady);
 await clickText('User qo‘shish');
 await waitFor(`!!document.querySelector('#u-login')`);
 check(
@@ -373,7 +375,7 @@ await layerIsUzbek('sana oralig‘i (kalendar)', () =>
   pointerClick('main [data-slot=popover-trigger]'),
 );
 await go('/products');
-await waitFor(`document.querySelectorAll('tbody tr').length > 0`);
+await waitFor(tableReady);
 await layerIsUzbek('filtr ro‘yxati (select)', () =>
   pointerClick('main [data-slot=select-trigger]'),
 );
