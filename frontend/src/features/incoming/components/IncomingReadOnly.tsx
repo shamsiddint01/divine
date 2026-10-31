@@ -61,7 +61,7 @@ export function IncomingReadOnly({ doc }: { doc: IncomingDto }) {
           <TableBody>
             {doc.items?.map((i) => (
               <TableRow key={i.id}>
-                <TableCell className="font-medium max-sm:min-w-28 max-sm:whitespace-normal">
+                <TableCell className="font-medium max-sm:min-w-20 max-sm:whitespace-normal">
                   {i.productName}
                   {/* Telefonda kelgan narxi shu yerda (alohida ustun sig'maydi) */}
                   <p className="text-xs font-normal text-muted-foreground sm:hidden">
