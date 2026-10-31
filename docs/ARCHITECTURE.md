@@ -202,7 +202,7 @@ frontend/src/
 │  ├─ navigation.ts         # TZ §16 navigatsiyasi + har bir bo‘lim uchun permission
 │  ├─ providers.tsx         # QueryClientProvider, Toaster
 │  ├─ query-client.ts       # TanStack Query standart sozlamalari
-│  ├─ layouts/              # AppLayout, Sidebar (desktop + mobil drawer), Topbar
+│  ├─ layouts/              # AppLayout, Sidebar (desktop + planshet drawer), MobileNav (telefon pastki menyusi), Topbar
 │  └─ pages/                # NotFound, Forbidden ("Ruxsat yo‘q")
 ├─ features/<feature>/
 │  ├─ api/                  # so‘rov funksiyalari + query hook'lar (queryKey fabrikasi)
@@ -232,7 +232,7 @@ frontend/src/
 - **Holatlar:** har bir ma’lumot ko‘rsatuvchi sahifa va panelda loading (Skeleton), empty (`EmptyState`), error (`ErrorState` + "Qayta urinish") va success (toast) holatlari bo‘ladi. Yuklanmagan ma’lumot hech qachon "bo‘sh" deb ko‘rsatilmaydi (`error && !data` → xato). Forma tanlov ro‘yxati yuklanmasa — `OptionsLoadError` (maydon ostida, qayta urinish bilan).
 - **Code splitting:** sahifalar `lazy` (`app/routes.tsx`); bosh sahifadagi grafik (recharts) alohida chunk — KPI'lar uni kutmaydi.
 - **Tasdiqlash (BR-33):** o‘chirish, arxivlash/nofaol qilish, bloklash, parolni tiklash, kirimni tasdiqlash/bekor qilish, savatni tozalash va demo'ni tiklash — `ConfirmDialog`; faollashtirish va arxivdan chiqarish (xavfsiz, qaytariladigan) — darhol.
-- **Responsive:** desktop-first. `lg` (1024px) dan kichik ekranda sidebar drawer'ga aylanadi.
+- **Responsive:** desktop-first. `lg` (1024px) dan kichik ekranda sidebar drawer'ga aylanadi; telefonda (`md`, 768px dan kichik) menyu — ekran pastidagi panel (`MobileNav`): 4 ta guruh (Asosiy, Katalog, Operatsiyalar, Boshqaruv), guruh bosilsa bo‘limlari pastdan ochiladi, bitta bo‘limli guruh to‘g‘ridan-to‘g‘ri havola. Guruhlar — `NAV_SECTIONS` (yon panel bilan bitta manba), ruxsatsiz bo‘limlar yashiriladi.
 
 ---
 

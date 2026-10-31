@@ -14,7 +14,7 @@
 | `pnpm --filter @divine/backend bench:reports` | Hisobotlar, 1 mln sotuv (< 2 s) | Docker, ~4 daq |
 | `pnpm --filter @divine/backend bench:load` | API yuklama testi, 1 mln sotuv (p95 < 300 ms) | Docker, ~4 daq |
 | `pnpm --filter @divine/backend bench:compare [reports\|load \| eski.json yangi.json]` | Benchmark natijalarini solishtirish (§5.3) | — |
-| `pnpm --filter @divine/frontend qa:ui` / `qa:interactions` | Real brauzer QA: 17 sahifa × 5 kenglik × 2 mavzu; 39 ta interaktiv ssenariy | ishlayotgan preview |
+| `pnpm --filter @divine/frontend qa:ui` / `qa:interactions` | Real brauzer QA: 17 sahifa × 5 kenglik × 2 mavzu; 43 ta interaktiv ssenariy (telefon pastki menyusi bilan) | ishlayotgan preview |
 | `scripts/prod/drill.sh` | Production konfiguratsiyasi: backup → volume'lar o‘chiriladi → restore, PITR, `security-check.sh`, `monitor.sh`, backup xatosini aniqlash (§8) | Docker, ~4 daq |
 
 `coverage`, `e2e` va `bench:*` doimiy `test`/`test:db` to‘plamidan alohida: ular Docker va bir necha daqiqa talab qiladi. `test:db`, `coverage` va turbo `typecheck`/`lint` (shared `dist`ni qayta quradi) bir vaqtda ishga tushirilmaydi.
