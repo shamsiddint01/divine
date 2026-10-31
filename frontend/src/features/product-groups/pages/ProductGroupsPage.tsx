@@ -63,7 +63,7 @@ export function ProductGroupsPage() {
             onClick={(e) => e.stopPropagation()}
             className="block text-xs font-normal text-muted-foreground hover:text-primary sm:hidden"
           >
-            {t.groups.productCountShort(g.productCount)}
+            {t.groups.col.productCountShort(g.productCount)}
           </Link>
         </span>
       ),
