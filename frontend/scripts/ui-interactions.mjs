@@ -453,12 +453,12 @@ check(
     3000,
   ),
 );
-await evaluate(`window.scrollTo(0, document.documentElement.scrollHeight)`);
-await sleep(300);
+// Ro'yxat yuklanib bo'lgach sahifa uzayadi — har urinishda qayta oxirigacha aylantiriladi.
 check(
   'Telefon: sahifa oxiri pastki menyu ostida qolmaydi',
-  await evaluate(
-    `document.querySelector('main > div').getBoundingClientRect().bottom <= ${bottomNav}.getBoundingClientRect().top`,
+  await waitFor(
+    `(() => { window.scrollTo(0, document.documentElement.scrollHeight); return !document.querySelector('main [aria-busy=true]') && document.querySelector('main > div').getBoundingClientRect().bottom <= ${bottomNav}.getBoundingClientRect().top; })()`,
+    4000,
   ),
 );
 
