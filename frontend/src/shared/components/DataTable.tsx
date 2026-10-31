@@ -74,6 +74,12 @@ export function DataTable<T>({
 
   const alignClass = (align?: Column<T>['align']) =>
     align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : undefined;
+  // Telefonda matn ustunlari (chapga tekislangan) qatorga o'tadi — aks holda uzun nom jadvalni ekrandan
+  // kengaytirib, raqam ustunlarini ko'rinmas qiladi. Raqam ustunlari (o'ngga/markazga) bir qatorda qoladi.
+  const wrapClass = (align?: Column<T>['align']) =>
+    !align || align === 'left'
+      ? 'max-sm:min-w-28 max-sm:whitespace-normal max-sm:break-words'
+      : undefined;
 
   return (
     <div className="overflow-hidden rounded-xl border bg-card">
@@ -83,7 +89,12 @@ export function DataTable<T>({
             {columns.map((c) => (
               <TableHead
                 key={c.key}
-                className={cn(alignClass(c.align), c.hideBelow && HIDE[c.hideBelow], c.className)}
+                className={cn(
+                  alignClass(c.align),
+                  wrapClass(c.align),
+                  c.hideBelow && HIDE[c.hideBelow],
+                  c.className,
+                )}
                 aria-sort={
                   c.sortKey && sortField === c.sortKey
                     ? sortDir === 'desc'
@@ -154,6 +165,7 @@ export function DataTable<T>({
                       key={c.key}
                       className={cn(
                         alignClass(c.align),
+                        wrapClass(c.align),
                         c.hideBelow && HIDE[c.hideBelow],
                         c.className,
                       )}
