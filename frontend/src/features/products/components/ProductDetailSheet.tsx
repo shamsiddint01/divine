@@ -32,9 +32,9 @@ interface ProductDetailSheetProps {
 
 function Metric({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border bg-muted/30 p-3">
+    <div className="rounded-lg border bg-muted/30 p-2.5 sm:p-3">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <div className="mt-1 text-base font-semibold">{children}</div>
+      <div className="mt-1 text-sm font-semibold sm:text-base">{children}</div>
     </div>
   );
 }
@@ -132,7 +132,8 @@ export function ProductDetailSheet({ productId, onOpenChange, onEdit }: ProductD
 
               <section className="space-y-2">
                 <h3 className="text-sm font-semibold">{t.products.detail.prices}</h3>
-                <div className="grid grid-cols-2 gap-x-6 gap-y-3 rounded-lg border p-4 text-sm">
+                {/* Telefonda bitta ustun: ikki ustunda "Hisoblangan foyda 391 000 so'm" sig'maydi */}
+                <div className="grid gap-y-2.5 rounded-lg border p-4 text-sm sm:grid-cols-2 sm:gap-x-6 sm:gap-y-3">
                   <div className="flex justify-between gap-2">
                     <span className="text-muted-foreground">{t.products.col.salePrice}</span>
                     <MoneyText value={p.salePrice} className="font-medium" />
@@ -155,7 +156,7 @@ export function ProductDetailSheet({ productId, onOpenChange, onEdit }: ProductD
                           {margin ? `${margin.replace('.', ',')}%` : t.common.notSet}
                         </span>
                       </div>
-                      <Separator className="col-span-2" />
+                      <Separator className="sm:col-span-2" />
                       <div className="flex justify-between gap-2">
                         <span className="text-muted-foreground">{t.reports.kpi.revenue}</span>
                         <MoneyText value={data.totalRevenue} />
@@ -219,7 +220,7 @@ export function ProductDetailSheet({ productId, onOpenChange, onEdit }: ProductD
                         >
                           <div className="min-w-0">
                             <p className="truncate font-medium">{s.customerName}</p>
-                            <p className="truncate text-xs text-muted-foreground">
+                            <p className="text-xs text-muted-foreground sm:truncate">
                               {s.saleNumber} · {formatDateTime(s.soldAt)} · {s.warehouseName}
                             </p>
                           </div>

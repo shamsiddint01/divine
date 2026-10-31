@@ -48,7 +48,7 @@ function WarehouseCard({
   const active = w.status === 'ACTIVE';
   return (
     <Card className="gap-0 overflow-hidden p-0 transition-shadow hover:shadow-md">
-      <div className="flex items-start justify-between gap-3 p-5">
+      <div className="flex items-start justify-between gap-3 p-4 sm:p-5">
         <div className="flex min-w-0 gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <Warehouse className="size-5" />
@@ -60,35 +60,37 @@ function WarehouseCard({
             >
               {w.name}
             </Link>
-            <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
-              <MapPin className="size-3 shrink-0" />
-              <span className="truncate">{w.address ?? t.common.notSet}</span>
+            {/* Telefonda manzil to'liq (qatorga o'tadi), keng ekranda — bir qatorda */}
+            <p className="mt-0.5 flex items-start gap-1 text-xs text-muted-foreground sm:items-center sm:truncate">
+              <MapPin className="mt-0.5 size-3 shrink-0 sm:mt-0" />
+              <span className="sm:truncate">{w.address ?? t.common.notSet}</span>
             </p>
           </div>
         </div>
         <StatusBadge status={w.status} />
       </div>
       <div className="grid grid-cols-3 divide-x border-y bg-muted/30">
-        <div className="p-4">
+        <div className="p-3 sm:p-4">
           <p className="text-xs text-muted-foreground">{t.warehouses.productCount}</p>
-          <p className="mt-1 text-lg font-semibold tabular-nums">{w.productCount ?? 0}</p>
+          <p className="mt-1 text-base font-semibold tabular-nums sm:text-lg">{w.productCount ?? 0}</p>
         </div>
-        <div className="p-4">
+        <div className="p-3 sm:p-4">
           <p className="text-xs text-muted-foreground">{t.warehouses.totalStock}</p>
-          <p className="mt-1 text-lg font-semibold tabular-nums">
+          <p className="mt-1 text-base font-semibold tabular-nums sm:text-lg">
             {formatQuantity(w.totalQuantity ?? '0')}
           </p>
         </div>
-        <div className="p-4">
+        <div className="p-3 sm:p-4">
           <p className="text-xs text-muted-foreground">{t.warehouses.lowStockCount}</p>
           <p
-            className={`mt-1 text-lg font-semibold tabular-nums ${(w.lowStockCount ?? 0) > 0 ? 'text-warning' : ''}`}
+            className={`mt-1 text-base font-semibold tabular-nums sm:text-lg ${(w.lowStockCount ?? 0) > 0 ? 'text-warning' : ''}`}
           >
             {w.lowStockCount ?? 0}
           </p>
         </div>
       </div>
-      <div className="flex items-center justify-between gap-2 p-4">
+      {/* Telefonda qiymat va tugmalar ikki qatorda — aks holda tugma karta chetidan chiqadi */}
+      <div className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm">
           {w.stockValue !== undefined ? (
             <>
@@ -97,7 +99,7 @@ function WarehouseCard({
             </>
           ) : null}
         </div>
-        <div className="flex gap-1">
+        <div className="flex items-center justify-end gap-1">
           {canManage ? (
             <>
               <Tooltip>
