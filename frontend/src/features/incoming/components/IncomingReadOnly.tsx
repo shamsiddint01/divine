@@ -63,9 +63,10 @@ export function IncomingReadOnly({ doc }: { doc: IncomingDto }) {
               <TableRow key={i.id}>
                 <TableCell className="font-medium max-sm:min-w-20 max-sm:whitespace-normal">
                   {i.productName}
-                  {/* Telefonda kelgan narxi shu yerda (alohida ustun sig'maydi) */}
+                  {/* Telefonda kelgan narxi shu yerda (alohida ustun sig'maydi); summa alohida qatorda — u bo'linmaydi */}
                   <p className="text-xs font-normal text-muted-foreground sm:hidden">
-                    {t.incoming.form.costPrice}: <MoneyText value={i.costPrice} />
+                    {t.incoming.form.costPrice}:
+                    <MoneyText value={i.costPrice} className="block" />
                   </p>
                 </TableCell>
                 <TableCell className="hidden text-muted-foreground md:table-cell">
