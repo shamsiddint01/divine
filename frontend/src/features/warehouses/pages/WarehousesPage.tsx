@@ -72,7 +72,9 @@ function WarehouseCard({
       <div className="grid grid-cols-3 divide-x border-y bg-muted/30">
         <div className="p-3 sm:p-4">
           <p className="text-xs text-muted-foreground">{t.warehouses.productCount}</p>
-          <p className="mt-1 text-base font-semibold tabular-nums sm:text-lg">{w.productCount ?? 0}</p>
+          <p className="mt-1 text-base font-semibold tabular-nums sm:text-lg">
+            {w.productCount ?? 0}
+          </p>
         </div>
         <div className="p-3 sm:p-4">
           <p className="text-xs text-muted-foreground">{t.warehouses.totalStock}</p>
