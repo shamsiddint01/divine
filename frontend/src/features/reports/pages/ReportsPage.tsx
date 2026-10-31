@@ -158,9 +158,15 @@ function SummaryValue({ item }: { item: ReportSummaryItem }) {
 
 function SummaryTile({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div role="group" aria-label={title} className="rounded-lg bg-muted/40 px-4 py-3">
-      <p className="text-xs text-muted-foreground">{title}</p>
-      <div className="mt-0.5 text-lg font-semibold tabular-nums">{children}</div>
+    <div
+      role="group"
+      aria-label={title}
+      className="rounded-lg bg-muted/40 px-3 py-2.5 sm:px-4 sm:py-3"
+    >
+      <p className="text-[11px] leading-snug text-muted-foreground sm:text-xs">{title}</p>
+      <div className="mt-0.5 text-sm font-semibold break-words tabular-nums sm:text-lg">
+        {children}
+      </div>
     </div>
   );
 }
@@ -216,7 +222,7 @@ function FinancePanel({ data, loading }: { data?: FinanceSummaryDto; loading: bo
   const hiddenByWarehouse = data.expenses === null;
   return (
     <div className="space-y-3 border-t pt-4">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
         {items.map(({ key, integer }) => {
           const value = data[key] as string | number | null;
           return (
@@ -436,7 +442,7 @@ export function ReportsPage() {
           )
         ) : (
           <>
-            <div className="grid gap-3 border-t pt-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 border-t pt-4 sm:gap-3 xl:grid-cols-4">
               {report.isPending
                 ? Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-16" />)
                 : data?.summary.map((s) => (
