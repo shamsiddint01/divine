@@ -24,7 +24,10 @@ interface StatCardProps {
   className?: string;
 }
 
-/** KPI kartasi: katta raqam + qisqa izoh (dataviz: bitta raqam uchun grafik emas, stat tile). */
+/**
+ * KPI kartasi: katta raqam + qisqa izoh (dataviz: bitta raqam uchun grafik emas, stat tile). Telefonda
+ * (`sm` dan kichik) ixchamroq — ikki ustunli to'rga sig'adi.
+ */
 export function StatCard({
   label,
   value,
@@ -35,25 +38,30 @@ export function StatCard({
   className,
 }: StatCardProps) {
   return (
-    <Card className={cn('h-full gap-3 p-5', className)}>
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-medium text-muted-foreground">{label}</p>
+    <Card className={cn('h-full gap-2 p-3 sm:gap-3 sm:p-5', className)}>
+      <div className="flex items-start justify-between gap-2 sm:gap-3">
+        <p className="text-xs leading-snug font-medium text-muted-foreground sm:text-sm">{label}</p>
         <span
-          className={cn('flex size-9 shrink-0 items-center justify-center rounded-lg', TONES[tone])}
+          className={cn(
+            'flex size-7 shrink-0 items-center justify-center rounded-md sm:size-9 sm:rounded-lg',
+            TONES[tone],
+          )}
         >
-          <Icon className="size-[18px]" aria-hidden />
+          <Icon className="size-4 sm:size-[18px]" aria-hidden />
         </span>
       </div>
       {loading ? (
         <div className="space-y-2">
-          <Skeleton className="h-7 w-32" />
-          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-6 w-full max-w-32 sm:h-7" />
+          <Skeleton className="h-4 w-3/4 max-w-24" />
         </div>
       ) : (
-        <div className="space-y-1">
-          <p className="text-2xl font-semibold tracking-tight tabular-nums">{value}</p>
+        <div className="space-y-0.5 sm:space-y-1">
+          <p className="text-lg font-semibold tracking-tight tabular-nums sm:text-2xl">{value}</p>
           {/* Izoh qatoriga doim joy ajratiladi — barcha kartalarda raqam bir xil balandlikda turadi */}
-          <div className="min-h-4 text-xs text-muted-foreground">{hint}</div>
+          <div className="min-h-4 text-[11px] leading-snug text-muted-foreground sm:text-xs">
+            {hint}
+          </div>
         </div>
       )}
     </Card>
