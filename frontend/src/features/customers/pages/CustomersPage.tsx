@@ -37,9 +37,17 @@ export function CustomersPage() {
               {initials(c.name)}
             </AvatarFallback>
           </Avatar>
-          <span className="block max-w-64 truncate font-medium" title={c.name}>
-            {c.name}
-          </span>
+          <div className="min-w-0">
+            <span className="block max-w-64 font-medium max-sm:line-clamp-2 sm:truncate" title={c.name}>
+              {c.name}
+            </span>
+            {/* Telefonda telefon raqami shu yerda (alohida ustun sig'maydi) */}
+            {c.phone ? (
+              <p className="text-xs text-muted-foreground tabular-nums sm:hidden">
+                {formatPhone(c.phone)}
+              </p>
+            ) : null}
+          </div>
         </div>
       ),
     },

@@ -104,12 +104,21 @@ function ExpensesRegister() {
       key: 'date',
       header: t.expenses.col.date,
       sortKey: 'date',
+      hideBelow: 'sm',
       cell: (e) => <span className="tabular-nums">{formatDate(e.date)}</span>,
     },
     {
       key: 'category',
       header: t.expenses.col.category,
-      cell: (e) => <Badge variant="outline">{e.category.name}</Badge>,
+      cell: (e) => (
+        <div>
+          <Badge variant="outline" className="max-w-full whitespace-normal">
+            {e.category.name}
+          </Badge>
+          {/* Telefonda sana shu yerda (alohida ustun sig'maydi) */}
+          <p className="mt-0.5 text-xs text-muted-foreground sm:hidden tabular-nums">{formatDate(e.date)}</p>
+        </div>
+      ),
     },
     {
       key: 'note',

@@ -89,10 +89,10 @@ export function ProductsPage() {
       header: t.products.col.name,
       sortKey: 'name',
       cell: (p) => (
-        <div className="max-w-64 min-w-40">
-          <p className="truncate font-medium">{p.name}</p>
+        <div className="sm:max-w-64 sm:min-w-40">
+          <p className="font-medium max-sm:line-clamp-2 sm:truncate">{p.name}</p>
           {/* Tor ekranda guruh va shtrix-kod shu yerda; keng ekranda — alohida ustunlarda */}
-          <p className="truncate text-xs text-muted-foreground 2xl:hidden">
+          <p className="text-xs text-muted-foreground sm:truncate 2xl:hidden">
             {p.groupName}
             {p.barcode ? <span className="font-mono"> · {p.barcode}</span> : null}
           </p>
@@ -174,6 +174,8 @@ export function ProductsPage() {
           )}
         >
           <QtyText value={p.stock} unit={p.unit} />
+          {/* Telefonda sotuv narxi shu yerda (alohida ustun sig'maydi) */}
+          <MoneyText value={p.salePrice} className="block text-xs font-normal text-foreground sm:hidden" />
         </span>
       ),
     },
@@ -190,6 +192,7 @@ export function ProductsPage() {
       header: t.products.col.salePrice,
       sortKey: 'salePrice',
       align: 'right',
+      hideBelow: 'sm',
       cell: (p) => <MoneyText value={p.salePrice} className="font-medium" />,
     },
     {

@@ -83,7 +83,11 @@ export function UsersPage() {
                 <span className="ml-1.5 text-xs text-muted-foreground">({t.users.you})</span>
               ) : null}
             </p>
-            <p className="text-xs text-muted-foreground">{u.fullName ?? t.common.notSet}</p>
+            <p className="text-xs text-muted-foreground">
+              {u.fullName ?? t.common.notSet}
+              {/* Telefonda rol shu yerda (alohida ustun sig'maydi) */}
+              <span className="sm:hidden"> · {t.roles[u.role]}</span>
+            </p>
           </div>
         </div>
       ),
@@ -91,6 +95,7 @@ export function UsersPage() {
     {
       key: 'role',
       header: t.users.col.role,
+      hideBelow: 'sm',
       cell: (u) =>
         u.role === 'ADMIN' ? (
           <Badge variant="info">

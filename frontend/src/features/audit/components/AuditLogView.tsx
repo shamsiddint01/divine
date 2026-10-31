@@ -165,7 +165,7 @@ export function AuditLogView() {
       key: 'occurredAt',
       header: t.audit.col.occurredAt,
       cell: (e) => (
-        <span className="whitespace-nowrap tabular-nums">{formatDateTime(e.occurredAt)}</span>
+        <span className="tabular-nums sm:whitespace-nowrap">{formatDateTime(e.occurredAt)}</span>
       ),
     },
     {

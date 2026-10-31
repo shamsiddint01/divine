@@ -53,18 +53,25 @@ export function CustomerDetailPage() {
     {
       key: 'number',
       header: t.sales.history.col.number,
-      cell: (s) => <span className="font-mono text-xs">{s.number}</span>,
+      cell: (s) => (
+        <div>
+          <span className="font-mono text-xs">{s.number}</span>
+          {/* Telefonda sana shu yerda (alohida ustun sig'maydi) */}
+          <p className="mt-0.5 text-xs text-muted-foreground sm:hidden tabular-nums">{formatDateTime(s.soldAt)}</p>
+        </div>
+      ),
     },
     {
       key: 'date',
       header: t.sales.history.col.date,
+      hideBelow: 'sm',
       cell: (s) => <span className="tabular-nums">{formatDateTime(s.soldAt)}</span>,
     },
     {
       key: 'items',
       header: t.sales.history.col.items,
       cell: (s) => (
-        <span className="block max-w-80 truncate text-muted-foreground">
+        <span className="block max-w-80 text-muted-foreground max-sm:line-clamp-2 sm:truncate">
           {s.items?.map((i) => i.productName).join(', ')}
         </span>
       ),

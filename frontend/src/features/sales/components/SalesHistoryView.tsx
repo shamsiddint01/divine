@@ -41,19 +41,29 @@ export function SalesHistoryView() {
       key: 'number',
       header: t.sales.history.col.number,
       sortKey: 'number',
-      cell: (s) => <span className="font-mono text-xs">{s.number}</span>,
+      cell: (s) => (
+        <div>
+          <span className="font-mono text-xs">{s.number}</span>
+          {/* Telefonda sana shu yerda (alohida ustun sig'maydi) */}
+          <p className="mt-0.5 text-xs text-muted-foreground sm:hidden tabular-nums">{formatDateTime(s.soldAt)}</p>
+        </div>
+      ),
     },
     {
       key: 'date',
       header: t.sales.history.col.date,
       sortKey: 'soldAt',
+      hideBelow: 'sm',
       cell: (s) => <span className="tabular-nums">{formatDateTime(s.soldAt)}</span>,
     },
     {
       key: 'customer',
       header: t.sales.history.col.customer,
       cell: (s) => (
-        <span className="block max-w-56 truncate font-medium" title={s.customer.name}>
+        <span
+          className="block max-w-56 font-medium max-sm:line-clamp-2 sm:truncate"
+          title={s.customer.name}
+        >
           {s.customer.name}
         </span>
       ),

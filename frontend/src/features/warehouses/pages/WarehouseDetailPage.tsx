@@ -51,8 +51,8 @@ function StockTab({ warehouseId }: { warehouseId: string }) {
       header: t.products.col.name,
       sortKey: 'productName',
       cell: (r) => (
-        <div className="min-w-40">
-          <p className="max-w-72 truncate font-medium" title={r.productName}>
+        <div className="sm:min-w-40">
+          <p className="max-w-72 font-medium max-sm:line-clamp-2 sm:truncate" title={r.productName}>
             {r.productName}
           </p>
           <p className="text-xs text-muted-foreground">
@@ -222,7 +222,10 @@ function MovementsTab({ warehouseId }: { warehouseId: string }) {
       key: 'product',
       header: t.warehouses.movement.product,
       cell: (m) => (
-        <span className="block max-w-64 truncate font-medium" title={m.productName}>
+        <span
+          className="block max-w-64 font-medium max-sm:line-clamp-2 sm:truncate"
+          title={m.productName}
+        >
           {m.productName}
         </span>
       ),

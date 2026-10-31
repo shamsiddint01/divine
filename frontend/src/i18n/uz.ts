@@ -347,6 +347,7 @@ export const uz = {
     col: {
       name: 'Guruh nomi',
       productCount: 'Mahsulotlar soni',
+      productCountShort: (n: number) => `${n} ta mahsulot`,
       description: 'Tavsif',
       createdAt: 'Yaratilgan sana',
     },

@@ -57,6 +57,14 @@ export function ProductGroupsPage() {
               {t.groups.archived}
             </Badge>
           )}
+          {/* Telefonda mahsulotlar soni shu yerda (alohida ustun sig'maydi) */}
+          <Link
+            to={`/products?groupId=${g.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="block text-xs font-normal text-muted-foreground hover:text-primary sm:hidden"
+          >
+            {t.groups.productCountShort(g.productCount)}
+          </Link>
         </span>
       ),
     },
@@ -75,6 +83,7 @@ export function ProductGroupsPage() {
       header: t.groups.col.productCount,
       sortKey: 'productCount',
       align: 'right',
+      hideBelow: 'sm',
       cell: (g) => (
         <Link to={`/products?groupId=${g.id}`} onClick={(e) => e.stopPropagation()}>
           <Badge variant="secondary" className="tabular-nums hover:bg-accent">

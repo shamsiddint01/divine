@@ -33,15 +33,29 @@ export function IncomingPage() {
     {
       key: 'number',
       header: t.incoming.col.number,
-      cell: (d) => <span className="font-mono text-xs font-medium">{d.number}</span>,
+      cell: (d) => (
+        <div>
+          <span className="font-mono text-xs font-medium">{d.number}</span>
+          {/* Telefonda sana va ombor shu yerda (alohida ustunlar sig'maydi) */}
+          <p className="mt-0.5 text-xs text-muted-foreground sm:hidden">
+            <span className="tabular-nums">{formatDate(d.date)}</span> · {d.warehouseName}
+          </p>
+        </div>
+      ),
     },
     {
       key: 'date',
       header: t.incoming.col.date,
       sortKey: 'date',
+      hideBelow: 'sm',
       cell: (d) => <span className="tabular-nums">{formatDate(d.date)}</span>,
     },
-    { key: 'warehouse', header: t.incoming.col.warehouse, cell: (d) => d.warehouseName },
+    {
+      key: 'warehouse',
+      header: t.incoming.col.warehouse,
+      hideBelow: 'sm',
+      cell: (d) => d.warehouseName,
+    },
     {
       key: 'items',
       header: t.incoming.col.items,
