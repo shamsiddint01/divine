@@ -30,8 +30,11 @@ export const uz = {
     expand: 'Yon panelni yoyish',
     sectionMain: 'Asosiy',
     sectionCatalog: 'Katalog va ombor',
+    sectionCatalogShort: 'Katalog',
     sectionOperations: 'Operatsiyalar',
     sectionAdmin: 'Boshqaruv',
+    bottomMenu: 'Pastki menyu',
+    sectionPages: (title: string) => `${title} bo‘limlari`,
   },
   common: {
     loading: 'Yuklanmoqda…',

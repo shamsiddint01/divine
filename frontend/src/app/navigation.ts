@@ -4,10 +4,12 @@ import {
   BarChart3,
   Boxes,
   FolderTree,
+  House,
   LayoutDashboard,
   Package,
   PackagePlus,
   Settings,
+  ShieldCheck,
   ShoppingCart,
   UserRound,
   Users,
@@ -100,5 +102,46 @@ export const NAV_ITEMS: readonly NavItem[] = [
     label: t.nav.settings,
     icon: Settings,
     anyOf: [Permission.SETTINGS_READ],
+  },
+];
+
+export interface NavSection {
+  key: 'main' | 'catalog' | 'operations' | 'admin';
+  title: string;
+  /** Telefon pastki panelidagi qisqa nom (4 ta tugma bir qatorga sig'ishi uchun). */
+  shortTitle: string;
+  icon: LucideIcon;
+  keys: NavItem['key'][];
+}
+
+/** Menyu guruhlari: desktop yon paneli va telefon pastki paneli uchun yagona manba. */
+export const NAV_SECTIONS: readonly NavSection[] = [
+  {
+    key: 'main',
+    title: t.nav.sectionMain,
+    shortTitle: t.nav.sectionMain,
+    icon: House,
+    keys: ['dashboard', 'sales', 'customers'],
+  },
+  {
+    key: 'catalog',
+    title: t.nav.sectionCatalog,
+    shortTitle: t.nav.sectionCatalogShort,
+    icon: Package,
+    keys: ['products', 'productGroups', 'warehouses', 'incoming'],
+  },
+  {
+    key: 'operations',
+    title: t.nav.sectionOperations,
+    shortTitle: t.nav.sectionOperations,
+    icon: Wallet,
+    keys: ['expenses', 'reports'],
+  },
+  {
+    key: 'admin',
+    title: t.nav.sectionAdmin,
+    shortTitle: t.nav.sectionAdmin,
+    icon: ShieldCheck,
+    keys: ['users', 'settings'],
   },
 ];
