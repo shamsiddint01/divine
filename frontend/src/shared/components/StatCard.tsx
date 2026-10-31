@@ -41,7 +41,13 @@ export function StatCard({
   dense = false,
 }: StatCardProps) {
   return (
-    <Card className={cn('h-full gap-2 p-3 sm:gap-3 sm:p-5', dense && 'max-sm:gap-1 max-sm:p-2.5', className)}>
+    <Card
+      className={cn(
+        'h-full gap-2 p-3 sm:gap-3 sm:p-5',
+        dense && 'max-sm:gap-1 max-sm:p-2.5',
+        className,
+      )}
+    >
       <div className="flex items-start justify-between gap-2 sm:gap-3">
         <p
           className={cn(
