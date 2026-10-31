@@ -72,7 +72,7 @@ export function TopProductsCard() {
                     <span className="w-4 shrink-0 text-muted-foreground tabular-nums">
                       {index + 1}
                     </span>
-                    <span className="line-clamp-2 font-medium break-words sm:truncate">
+                    <span className="line-clamp-2 font-medium break-words sm:line-clamp-1">
                       {p.name}
                     </span>
                   </span>
@@ -143,7 +143,7 @@ export function LowStockCard({
                     <PackageX className="size-4" aria-hidden />
                   </span>
                   <div className="min-w-0 flex-1 space-y-1">
-                    <p className="line-clamp-2 text-[13px] font-medium break-words sm:truncate sm:text-sm">
+                    <p className="line-clamp-2 text-[13px] font-medium break-words sm:line-clamp-1 sm:text-sm">
                       {item.name}
                     </p>
                     <Progress
@@ -198,7 +198,7 @@ export function RecentSalesCard() {
                   <p className="truncate text-[13px] font-medium sm:text-sm">
                     {sale.customer.name}
                   </p>
-                  <p className="line-clamp-2 text-[11px] text-muted-foreground sm:truncate sm:text-xs">
+                  <p className="line-clamp-2 text-[11px] text-muted-foreground sm:line-clamp-1 sm:text-xs">
                     {sale.number} · {sale.user.fullName ?? sale.user.login} ·{' '}
                     {formatRelative(sale.soldAt)}
                   </p>
