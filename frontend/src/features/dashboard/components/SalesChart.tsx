@@ -1,6 +1,14 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { BarChart3 } from 'lucide-react';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { t } from '@/i18n/uz';
 import { divideMoney, sumMoney, toChartNumber } from '@/shared/lib/decimal';
 import {
@@ -82,8 +90,12 @@ function TrendTable({ points }: { points: SalesTrendPoint[] }) {
   );
 }
 
-/** Kunlik savdo summasi — bitta seriya, bitta o'q (dataviz qoidalari: ustun ≤24px, 4px yumaloq uch). */
+/**
+ * Kunlik savdo summasi — bitta seriya, bitta o'q: chiziq (2px) + ostida och soha (dataviz qoidalari),
+ * hover'da vertikal kursor va nuqta. Telefonda enidan uzun (past) — sahifa scroll'ida kam joy oladi.
+ */
 export function SalesChart() {
+  const gradientId = `sales-fill-${useId().replace(/:/g, '')}`;
   const [days, setDays] = useState(14);
   const [view, setView] = useState<'chart' | 'table'>('chart');
   const { data, isPending, error, refetch } = useSalesTrend(days);
@@ -158,28 +170,30 @@ export function SalesChart() {
         {error && !data ? (
           <ErrorState message={error.message} onRetry={() => refetch()} />
         ) : isPending ? (
-          <Skeleton className="h-72 w-full" />
+          <Skeleton className="h-48 w-full sm:h-72" />
         ) : count === 0 ? (
-          <div className="flex h-72 flex-col justify-center">
+          <div className="flex h-48 flex-col justify-center sm:h-72">
             <EmptyState icon={BarChart3} title={t.dashboard.chart.empty} />
           </div>
         ) : view === 'table' ? (
           <TrendTable points={data ?? []} />
         ) : (
-          <div className="h-72 w-full" role="img" aria-label={t.dashboard.chart.title}>
+          <div className="h-48 w-full sm:h-72" role="img" aria-label={t.dashboard.chart.title}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={rows}
-                margin={{ top: 8, right: 4, left: 4, bottom: 0 }}
-                barCategoryGap="20%"
-              >
+              <AreaChart data={rows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.28} />
+                    <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
                 <XAxis
                   dataKey="date"
                   tickFormatter={formatDayShort}
                   tickLine={false}
                   axisLine={false}
-                  tick={{ fill: 'var(--chart-axis)', fontSize: 12 }}
+                  tick={{ fill: 'var(--chart-axis)', fontSize: 11 }}
                   interval="preserveStartEnd"
                   minTickGap={16}
                 />
@@ -189,21 +203,29 @@ export function SalesChart() {
                   }
                   tickLine={false}
                   axisLine={false}
-                  width={64}
-                  tick={{ fill: 'var(--chart-axis)', fontSize: 12 }}
+                  width={56}
+                  tick={{ fill: 'var(--chart-axis)', fontSize: 11 }}
                 />
                 <Tooltip
                   content={<ChartTooltip />}
-                  cursor={{ fill: 'var(--muted)', opacity: 0.6 }}
+                  cursor={{ stroke: 'var(--chart-axis)', strokeDasharray: '3 3' }}
                 />
-                <Bar
+                <Area
+                  type="monotone"
                   dataKey="amount"
-                  fill="var(--chart-1)"
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={24}
+                  stroke="var(--chart-1)"
+                  strokeWidth={2}
+                  fill={`url(#${gradientId})`}
+                  dot={false}
+                  activeDot={{
+                    r: 5,
+                    fill: 'var(--chart-1)',
+                    stroke: 'var(--card)',
+                    strokeWidth: 2,
+                  }}
                   isAnimationActive={false}
                 />
-              </BarChart>
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         )}
