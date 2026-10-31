@@ -447,6 +447,7 @@ export function ReportsPage() {
 
       {active === 'finance' ? null : (
         <DataTable
+          mobileCards
           columns={columns}
           rows={data?.data}
           rowKey={(row) => Object.values(row).join('|')}

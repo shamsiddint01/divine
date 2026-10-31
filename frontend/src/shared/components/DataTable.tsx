@@ -1,6 +1,7 @@
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { t } from '@/i18n/uz';
+import { PHONE_QUERY, useMediaQuery } from '@/shared/hooks/use-media-query';
 import { cn } from '@/shared/lib/utils';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table';
@@ -33,6 +34,12 @@ interface DataTableProps<T> {
   selectedKey?: string | null;
   skeletonRows?: number;
   footer?: ReactNode;
+  /**
+   * Telefonda jadval o'rniga kartalar: birinchi ustun — sarlavha, qolgan BARCHA ustunlar (keng ekranda
+   * yashiriladiganlari ham) — "nom: qiymat". Ko'p raqamli ustunli jadvallar (hisobotlar) uchun: aks holda
+   * asosiy summalar ekrandan tashqarida qoladi.
+   */
+  mobileCards?: boolean;
 }
 
 const HIDE: Record<NonNullable<Column<unknown>['hideBelow']>, string> = {
@@ -61,7 +68,9 @@ export function DataTable<T>({
   selectedKey,
   skeletonRows = 8,
   footer,
+  mobileCards = false,
 }: DataTableProps<T>) {
+  const isPhone = useMediaQuery(PHONE_QUERY);
   if (error && !rows) {
     return <ErrorState message={error.message || t.errors.unexpected} onRetry={onRetry} />;
   }
@@ -80,6 +89,55 @@ export function DataTable<T>({
     !align || align === 'left'
       ? 'max-sm:min-w-20 max-sm:whitespace-normal max-sm:break-words'
       : undefined;
+
+  if (mobileCards && isPhone) {
+    const [title, ...rest] = columns;
+    const fields = rest.filter((c) => c.header);
+    return (
+      <div className="overflow-hidden rounded-xl border bg-card">
+        <ul className={cn('divide-y', isLoading && rows && 'opacity-60 transition-opacity')}>
+          {isLoading && !rows
+            ? Array.from({ length: Math.min(skeletonRows, 4) }, (_, i) => (
+                <li key={i} className="space-y-2 px-4 py-3">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-3 w-5/6" />
+                </li>
+              ))
+            : rows?.map((row) => (
+                <li
+                  key={rowKey(row)}
+                  className={cn(
+                    'space-y-2 px-4 py-3',
+                    onRowClick && 'cursor-pointer focus-visible:bg-muted/60 focus-visible:outline-2',
+                  )}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  tabIndex={onRowClick ? 0 : undefined}
+                  onKeyDown={
+                    onRowClick
+                      ? (e: KeyboardEvent) => {
+                          if (e.key === 'Enter') onRowClick(row);
+                        }
+                      : undefined
+                  }
+                >
+                  {title ? <div className="text-sm font-medium break-words">{title.cell(row)}</div> : null}
+                  <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                    {fields.map((c) => (
+                      <div key={c.key} className="min-w-0">
+                        <dt className="text-muted-foreground">{c.header}</dt>
+                        <dd className="font-medium break-words">{c.cell(row)}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </li>
+              ))}
+        </ul>
+        {rows && rows.length === 0 && !isLoading ? <div className="p-6">{empty}</div> : null}
+        {footer ? <div className="border-t px-3 py-3">{footer}</div> : null}
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-hidden rounded-xl border bg-card">
