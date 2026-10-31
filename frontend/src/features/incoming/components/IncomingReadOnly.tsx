@@ -52,14 +52,22 @@ export function IncomingReadOnly({ doc }: { doc: IncomingDto }) {
               <TableHead className="hidden md:table-cell">{t.incoming.form.group}</TableHead>
               <TableHead className="hidden lg:table-cell">{t.incoming.form.barcode}</TableHead>
               <TableHead className="text-right">{t.incoming.form.quantity}</TableHead>
-              <TableHead className="text-right">{t.incoming.form.costPrice}</TableHead>
+              <TableHead className="hidden text-right sm:table-cell">
+                {t.incoming.form.costPrice}
+              </TableHead>
               <TableHead className="text-right">{t.incoming.form.lineTotal}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {doc.items?.map((i) => (
               <TableRow key={i.id}>
-                <TableCell className="font-medium">{i.productName}</TableCell>
+                <TableCell className="font-medium max-sm:min-w-28 max-sm:whitespace-normal">
+                  {i.productName}
+                  {/* Telefonda kelgan narxi shu yerda (alohida ustun sig'maydi) */}
+                  <p className="text-xs font-normal text-muted-foreground sm:hidden">
+                    {t.incoming.form.costPrice}: <MoneyText value={i.costPrice} />
+                  </p>
+                </TableCell>
                 <TableCell className="hidden text-muted-foreground md:table-cell">
                   {i.groupName}
                 </TableCell>
@@ -69,7 +77,7 @@ export function IncomingReadOnly({ doc }: { doc: IncomingDto }) {
                 <TableCell className="text-right">
                   <QtyText value={i.quantity} unit={i.unit} />
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="hidden text-right sm:table-cell">
                   <MoneyText value={i.costPrice} muted />
                 </TableCell>
                 <TableCell className="text-right">
@@ -80,13 +88,16 @@ export function IncomingReadOnly({ doc }: { doc: IncomingDto }) {
           </TableBody>
           <TableFooter>
             <TableRow>
-              <TableCell colSpan={3} className="font-semibold">
+              {/* colSpan o'rniga ustunlar bilan bir xil yashirinadigan bo'sh kataklar — har kenglikda tekis */}
+              <TableCell className="font-semibold max-sm:whitespace-normal">
                 {t.incoming.form.totalQuantity}
               </TableCell>
+              <TableCell className="hidden md:table-cell" />
+              <TableCell className="hidden lg:table-cell" />
               <TableCell className="text-right font-semibold">
                 <QtyText value={doc.totalQuantity} />
               </TableCell>
-              <TableCell />
+              <TableCell className="hidden sm:table-cell" />
               <TableCell className="text-right font-semibold">
                 <MoneyText value={doc.totalAmount} />
               </TableCell>

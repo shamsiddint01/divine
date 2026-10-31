@@ -103,6 +103,8 @@ function StockTab({ warehouseId }: { warehouseId: string }) {
     {
       key: 'status',
       header: t.common.status,
+      // Telefonda yashirin: holat qoldiq raqamining rangida ko'rinadi (qizil — tugagan, sariq — kam).
+      hideBelow: 'sm',
       cell: (r) => (
         <StatusBadge
           status={

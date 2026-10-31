@@ -78,7 +78,7 @@ export function DataTable<T>({
   // kengaytirib, raqam ustunlarini ko'rinmas qiladi. Raqam ustunlari (o'ngga/markazga) bir qatorda qoladi.
   const wrapClass = (align?: Column<T>['align']) =>
     !align || align === 'left'
-      ? 'max-sm:min-w-28 max-sm:whitespace-normal max-sm:break-words'
+      ? 'max-sm:min-w-20 max-sm:whitespace-normal max-sm:break-words'
       : undefined;
 
   return (

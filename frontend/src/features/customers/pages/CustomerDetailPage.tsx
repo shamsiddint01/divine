@@ -73,7 +73,7 @@ export function CustomerDetailPage() {
       key: 'items',
       header: t.sales.history.col.items,
       cell: (s) => (
-        <span className="block max-w-80 text-muted-foreground max-sm:line-clamp-2 sm:truncate">
+        <span className="block max-w-80 text-muted-foreground sm:truncate">
           {s.items?.map((i) => i.productName).join(', ')}
         </span>
       ),
