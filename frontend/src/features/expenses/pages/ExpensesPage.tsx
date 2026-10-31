@@ -116,7 +116,9 @@ function ExpensesRegister() {
             {e.category.name}
           </Badge>
           {/* Telefonda sana shu yerda (alohida ustun sig'maydi) */}
-          <p className="mt-0.5 text-xs text-muted-foreground sm:hidden tabular-nums">{formatDate(e.date)}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground sm:hidden tabular-nums">
+            {formatDate(e.date)}
+          </p>
         </div>
       ),
     },

@@ -38,7 +38,10 @@ export function CustomersPage() {
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <span className="block max-w-64 font-medium max-sm:line-clamp-2 sm:truncate" title={c.name}>
+            <span
+              className="block max-w-64 font-medium max-sm:line-clamp-2 sm:truncate"
+              title={c.name}
+            >
               {c.name}
             </span>
             {/* Telefonda telefon raqami shu yerda (alohida ustun sig'maydi) */}

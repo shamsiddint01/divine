@@ -45,7 +45,9 @@ export function SalesHistoryView() {
         <div>
           <span className="font-mono text-xs">{s.number}</span>
           {/* Telefonda sana shu yerda (alohida ustun sig'maydi) */}
-          <p className="mt-0.5 text-xs text-muted-foreground sm:hidden tabular-nums">{formatDateTime(s.soldAt)}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground sm:hidden tabular-nums">
+            {formatDateTime(s.soldAt)}
+          </p>
         </div>
       ),
     },

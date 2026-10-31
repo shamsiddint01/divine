@@ -175,7 +175,10 @@ export function ProductsPage() {
         >
           <QtyText value={p.stock} unit={p.unit} />
           {/* Telefonda sotuv narxi shu yerda (alohida ustun sig'maydi) */}
-          <MoneyText value={p.salePrice} className="block text-xs font-normal text-foreground sm:hidden" />
+          <MoneyText
+            value={p.salePrice}
+            className="block text-xs font-normal text-foreground sm:hidden"
+          />
         </span>
       ),
     },
