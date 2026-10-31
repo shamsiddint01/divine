@@ -45,7 +45,7 @@ export function IncomingReadOnly({ doc }: { doc: IncomingDto }) {
         </CardContent>
       </Card>
       {/* Telefonda ixchamroq: 360px ekranda ham "Summa" ustuni sig'adi */}
-      <div className="overflow-hidden rounded-xl border bg-card max-sm:text-[13px] max-sm:[&_td]:px-2 max-sm:[&_th]:px-2">
+      <div className="overflow-hidden rounded-xl border bg-card max-sm:[&_table]:text-[13px] max-sm:[&_td]:px-2 max-sm:[&_th]:px-2">
         <Table>
           <TableHeader>
             <TableRow>
