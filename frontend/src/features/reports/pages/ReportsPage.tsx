@@ -161,10 +161,10 @@ function SummaryTile({ title, children }: { title: string; children: ReactNode }
     <div
       role="group"
       aria-label={title}
-      className="rounded-lg bg-muted/40 px-3 py-2.5 sm:px-4 sm:py-3"
+      className="rounded-lg bg-muted/40 px-2 py-2.5 sm:px-4 sm:py-3"
     >
       <p className="text-[11px] leading-snug text-muted-foreground sm:text-xs">{title}</p>
-      <div className="mt-0.5 text-sm font-semibold break-words tabular-nums sm:text-lg">
+      <div className="mt-0.5 text-[13px] font-semibold break-words tabular-nums sm:text-lg">
         {children}
       </div>
     </div>
@@ -211,7 +211,7 @@ const FINANCE_ITEMS: { key: keyof FinanceSummaryDto; integer?: boolean }[] = [
 function FinancePanel({ data, loading }: { data?: FinanceSummaryDto; loading: boolean }) {
   if (loading || !data) {
     return (
-      <div className="grid gap-3 border-t pt-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 border-t pt-4 sm:gap-3 xl:grid-cols-4">
         {Array.from({ length: 4 }, (_, i) => (
           <Skeleton key={i} className="h-16" />
         ))}
