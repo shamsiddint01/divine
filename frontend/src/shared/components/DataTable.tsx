@@ -109,7 +109,8 @@ export function DataTable<T>({
                   key={rowKey(row)}
                   className={cn(
                     'space-y-2 px-4 py-3',
-                    onRowClick && 'cursor-pointer focus-visible:bg-muted/60 focus-visible:outline-2',
+                    onRowClick &&
+                      'cursor-pointer focus-visible:bg-muted/60 focus-visible:outline-2',
                   )}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                   tabIndex={onRowClick ? 0 : undefined}
@@ -121,7 +122,9 @@ export function DataTable<T>({
                       : undefined
                   }
                 >
-                  {title ? <div className="text-sm font-medium break-words">{title.cell(row)}</div> : null}
+                  {title ? (
+                    <div className="text-sm font-medium break-words">{title.cell(row)}</div>
+                  ) : null}
                   <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
                     {fields.map((c) => (
                       <div key={c.key} className="min-w-0">
