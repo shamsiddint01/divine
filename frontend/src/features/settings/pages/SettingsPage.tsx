@@ -220,7 +220,7 @@ function SettingsForm({ initial: raw }: { initial: SettingsDto }) {
         </Section>
       </div>
 
-      <div className="sticky bottom-4 z-10 flex justify-end">
+      <div className="sticky bottom-[calc(var(--mobile-nav-h,0px)+1rem)] z-10 flex justify-end">
         <Button
           size="lg"
           onClick={onSave}

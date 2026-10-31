@@ -5,6 +5,7 @@ import { hasAny, usePermissions } from '@/features/session/hooks/use-permissions
 import { Skeleton } from '@/shared/ui/skeleton';
 import { findNavItem } from '../navigation-context';
 import { ForbiddenPage } from '../pages/ForbiddenPage';
+import { MobileNav } from './MobileNav';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 
@@ -35,14 +36,17 @@ function SectionGate() {
   return <Outlet />;
 }
 
-/** Asosiy karkas: yon panel + yuqori panel + sahifa (sahifalar lazy yuklanadi). */
+/**
+ * Asosiy karkas: yon panel + yuqori panel + sahifa (sahifalar lazy yuklanadi). Telefonda menyu pastda
+ * (`MobileNav`): `--mobile-nav-h` — uning balandligi; sahifa oxiri va sticky paneller uning ostida qolmaydi.
+ */
 export function AppLayout() {
   return (
-    <div className="flex min-h-svh">
+    <div className="flex min-h-svh [--mobile-nav-h:calc(4rem+env(safe-area-inset-bottom))] md:[--mobile-nav-h:0px]">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
-        <main className="flex-1 p-4 sm:p-6">
+        <main className="flex-1 p-4 pb-[calc(var(--mobile-nav-h)+1rem)] sm:p-6 sm:pb-[calc(var(--mobile-nav-h)+1.5rem)]">
           <div className="mx-auto w-full max-w-[1440px] space-y-6">
             <Suspense fallback={<PageFallback />}>
               <SectionGate />
@@ -50,6 +54,7 @@ export function AppLayout() {
           </div>
         </main>
       </div>
+      <MobileNav />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { t } from '@/i18n/uz';
@@ -47,6 +47,36 @@ describe('ilova karkasi (layout)', () => {
       await screen.findByRole('heading', { level: 1, name: 'Kirim' }, PAGE),
     ).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Kirim' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+  });
+
+  it('telefon pastki menyusi: 4 ta guruh; guruh bosilsa bo‘limlari ochiladi, havola sahifani almashtiradi', async () => {
+    const { router } = renderApp('/');
+    const bottom = await screen.findByRole('navigation', { name: t.nav.bottomMenu }, PAGE);
+    expect(
+      within(bottom)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Asosiy', 'Katalog', 'Operatsiyalar', 'Boshqaruv']);
+    expect(within(bottom).getByRole('button', { name: 'Asosiy' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+
+    await userEvent.click(within(bottom).getByRole('button', { name: 'Katalog' }));
+    const sheet = await screen.findByRole('dialog', { name: t.nav.sectionCatalog });
+    expect(
+      within(sheet)
+        .getAllByRole('link')
+        .map((a) => a.textContent),
+    ).toEqual(['Mahsulotlar', 'Mahsulot guruhlari', 'Ombor', 'Kirim']);
+
+    await userEvent.click(within(sheet).getByRole('link', { name: 'Kirim' }));
+    expect(router.state.location.pathname).toBe('/incoming');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(within(bottom).getByRole('button', { name: 'Katalog' })).toHaveAttribute(
       'aria-current',
       'page',
     );

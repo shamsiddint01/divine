@@ -569,7 +569,7 @@ export function IncomingEditorPage() {
           </Card>
 
           {/* Jami — dinamik (TZ §7) */}
-          <div className="sticky bottom-4 z-10 flex flex-col gap-3 rounded-xl border bg-card/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+          <div className="sticky bottom-[calc(var(--mobile-nav-h,0px)+1rem)] z-10 flex flex-col gap-3 rounded-xl border bg-card/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-baseline gap-x-8 gap-y-1">
               <div>
                 <p className="text-xs text-muted-foreground">{t.incoming.form.totalQuantity}</p>

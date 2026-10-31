@@ -142,7 +142,7 @@ export function Topbar() {
       <Button
         variant="ghost"
         size="icon"
-        className="lg:hidden"
+        className="hidden md:inline-flex lg:hidden"
         onClick={openMobileSidebar}
         aria-label={t.nav.openMenu}
       >

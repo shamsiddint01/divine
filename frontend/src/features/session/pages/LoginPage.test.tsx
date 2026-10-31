@@ -109,6 +109,17 @@ describe('logout va RBAC (UX)', () => {
       .getAllByRole('link')
       .map((link) => link.textContent);
     expect(links).toEqual(['Bosh sahifa', 'Sotuvlar', 'Mahsulotlar', 'Xarajatlar']);
+    // Telefon pastki menyusi: admin guruhlari yo'q; bitta bo'limli guruh — to'g'ridan-to'g'ri havola.
+    const bottom = screen.getByRole('navigation', { name: t.nav.bottomMenu });
+    expect(within(bottom).getAllByRole('button').map((b) => b.textContent)).toEqual(['Asosiy']);
+    expect(
+      within(bottom)
+        .getAllByRole('link')
+        .map((a) => [a.textContent, a.getAttribute('href')]),
+    ).toEqual([
+      ['Katalog', '/products'],
+      ['Operatsiyalar', '/expenses'],
+    ]);
     await router.navigate('/users');
     expect(
       await screen.findByRole('heading', { level: 1, name: t.forbidden.title }, PAGE),

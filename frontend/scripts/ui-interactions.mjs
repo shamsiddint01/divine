@@ -402,22 +402,63 @@ check(
 );
 await clickText('Yon panelni yoyish');
 
-// 8. Mobil drawer
-await viewport(390, 844);
+// 8. Planshet: chapdan ochiladigan drawer
+await viewport(820, 1180);
 await go('/');
 await clickText('Menyuni ochish');
 check(
-  'Mobil: drawer ochiladi',
+  'Planshet: drawer ochiladi',
   await waitFor(`!!document.querySelector('[role=dialog] nav')`, 2000),
 );
 await evaluate(
   `[...document.querySelectorAll('[role=dialog] nav a')].find((a) => a.innerText.trim() === 'Kirim').click()`,
 );
 check(
-  'Mobil: havola bosilsa sahifa almashadi va drawer yopiladi',
+  'Planshet: havola bosilsa sahifa almashadi va drawer yopiladi',
   await waitFor(
     `location.pathname === '/incoming' && !document.querySelector('[role=dialog]')`,
     3000,
+  ),
+);
+
+// 8b. Telefon: pastki menyu (guruh → bo'limlari pastdan → sahifa). Panel `fixed` — offsetParent null,
+// shuning uchun clickText emas, getClientRects.
+await viewport(390, 844);
+await go('/');
+const bottomNav = `document.querySelector('nav[aria-label="Pastki menyu"]')`;
+check(
+  'Telefon: pastki menyu ekran pastida, 4 ta guruh; hamburger tugmasi yo‘q',
+  await waitFor(
+    `(() => { const n = ${bottomNav}; if (!n) return false; const r = n.getBoundingClientRect(); const tabs = [...n.querySelectorAll('button, a')].map((e) => e.innerText.trim()).join(); const burger = [...document.querySelectorAll('button')].find((b) => b.getAttribute('aria-label') === 'Menyuni ochish'); return Math.abs(r.bottom - innerHeight) < 2 && tabs === 'Asosiy,Katalog,Operatsiyalar,Boshqaruv' && (!burger || burger.getClientRects().length === 0); })()`,
+    3000,
+  ),
+);
+await evaluate(
+  `[...${bottomNav}.querySelectorAll('button')].find((b) => b.innerText.trim() === 'Katalog').click()`,
+);
+check(
+  'Telefon: guruh bosilsa bo‘limlari pastdan ochiladi',
+  await waitFor(
+    `(() => { const d = document.querySelector('[role=dialog]'); return !!d && Math.abs(d.getBoundingClientRect().bottom - innerHeight) < 2 && [...d.querySelectorAll('nav a')].map((a) => a.innerText.trim()).join() === 'Mahsulotlar,Mahsulot guruhlari,Ombor,Kirim'; })()`,
+    2000,
+  ),
+);
+await evaluate(
+  `[...document.querySelectorAll('[role=dialog] nav a')].find((a) => a.innerText.trim() === 'Kirim').click()`,
+);
+check(
+  'Telefon: bo‘lim bosilsa sahifa almashadi, oyna yopiladi, guruh faol',
+  await waitFor(
+    `location.pathname === '/incoming' && !document.querySelector('[role=dialog]') && [...${bottomNav}.querySelectorAll('button')].find((b) => b.innerText.trim() === 'Katalog')?.getAttribute('aria-current') === 'page'`,
+    3000,
+  ),
+);
+await evaluate(`window.scrollTo(0, document.documentElement.scrollHeight)`);
+await sleep(300);
+check(
+  'Telefon: sahifa oxiri pastki menyu ostida qolmaydi',
+  await evaluate(
+    `document.querySelector('main > div').getBoundingClientRect().bottom <= ${bottomNav}.getBoundingClientRect().top`,
   ),
 );
 
