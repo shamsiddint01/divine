@@ -131,7 +131,7 @@ export function SalesHistoryView() {
         />
         {canReadCost ? (
           <StatCard
-          dense
+            dense
             label={t.sales.history.summaryProfit}
             icon={TrendingUp}
             tone="success"
