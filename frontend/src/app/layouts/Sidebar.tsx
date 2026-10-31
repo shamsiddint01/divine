@@ -1,7 +1,6 @@
 import { LogOut } from 'lucide-react';
 import { NavLink } from 'react-router';
 import { useCurrentUser } from '@/features/session/api/session';
-import { hasAny, usePermissions } from '@/features/session/hooks/use-permissions';
 import { useSignOut } from '@/features/session/hooks/use-sign-out';
 import { t } from '@/i18n/uz';
 import { initials } from '@/shared/lib/format';
@@ -11,14 +10,7 @@ import { Button } from '@/shared/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/shared/ui/sheet';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip';
 import { useUiStore } from '@/stores/ui.store';
-import { NAV_ITEMS, type NavItem } from '../navigation';
-
-const SECTIONS: { title: string; keys: NavItem['key'][] }[] = [
-  { title: t.nav.sectionMain, keys: ['dashboard', 'sales', 'customers'] },
-  { title: t.nav.sectionCatalog, keys: ['products', 'productGroups', 'warehouses', 'incoming'] },
-  { title: t.nav.sectionOperations, keys: ['expenses', 'reports'] },
-  { title: t.nav.sectionAdmin, keys: ['users', 'settings'] },
-];
+import { useNavSections } from './use-nav-sections';
 
 /** Mayda vaqtinchalik ko'rsatgich: icon-only rejimda nom tooltip'da chiqadi. */
 function WithTooltip({
@@ -48,15 +40,8 @@ function SidebarContent({
 }) {
   const { data: me } = useCurrentUser();
   const name = me?.fullName ?? me?.login ?? '';
-  const permissions = usePermissions();
   const { signOut, pending } = useSignOut();
-  // RBAC §3.1: faqat ruxsat etilgan bo'limlar (UX; haqiqiy himoya — backend). Bo'sh guruh yashiriladi.
-  const sections = SECTIONS.map((section) => ({
-    ...section,
-    items: section.keys
-      .map((key) => NAV_ITEMS.find((i) => i.key === key))
-      .filter((item): item is NavItem => Boolean(item) && hasAny(permissions, item!.anyOf)),
-  })).filter((section) => section.items.length > 0);
+  const sections = useNavSections();
 
   return (
     <div className="flex h-full flex-col">
@@ -82,7 +67,7 @@ function SidebarContent({
         className={cn('flex-1 space-y-4 overflow-y-auto py-4', collapsed ? 'px-2' : 'px-3')}
       >
         {sections.map((section, index) => (
-          <div key={section.title} className="space-y-0.5">
+          <div key={section.key} className="space-y-0.5">
             {collapsed ? (
               index > 0 ? (
                 <div className="mx-2 mb-2 border-t border-sidebar-border" aria-hidden />
@@ -169,7 +154,10 @@ function SidebarContent({
   );
 }
 
-/** Desktop'da doimiy (yig'iladigan) yon panel, mobil va planshetda — chapdan ochiladigan drawer. */
+/**
+ * Desktop'da doimiy (yig'iladigan) yon panel, planshetda — chapdan ochiladigan drawer. Telefonda menyu —
+ * pastki panel (`MobileNav`); drawer ochish tugmasi u yerda ko'rsatilmaydi.
+ */
 export function Sidebar() {
   const { mobileSidebarOpen, closeMobileSidebar, sidebarCollapsed } = useUiStore();
 
