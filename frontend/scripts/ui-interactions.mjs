@@ -95,6 +95,11 @@ const clickText = (t, selector = 'button, a, [role=tab], [role=option], [role=me
   evaluate(
     `(() => { const el = [...document.querySelectorAll(${JSON.stringify(selector)})].find((e) => e.offsetParent !== null && (e.innerText.trim() === ${JSON.stringify(t)} || e.getAttribute('aria-label') === ${JSON.stringify(t)})); if (!el) return false; el.click(); return true; })()`,
   );
+// Tasdiqlash tugmasida jami summa ham yoziladi ("Savdoni tasdiqlash · 25 000 so'm") — boshlanishi bo'yicha.
+const clickConfirmSale = () =>
+  evaluate(
+    `(() => { const el = [...document.querySelectorAll('button')].find((b) => b.offsetParent !== null && b.innerText.trim().startsWith('Savdoni tasdiqlash')); if (!el) return false; el.click(); return true; })()`,
+  );
 const typeInto = async (selector, text) => {
   await evaluate(
     `(() => { const el = document.querySelector(${JSON.stringify(selector)}); el.focus(); el.select?.(); return true; })()`,
@@ -221,10 +226,10 @@ check(
   'POS: mahsulot savatga qo‘shiladi',
   await waitFor(`!document.body.innerText.includes('Savat bo‘sh')`),
 );
-await clickText('Savdoni tasdiqlash');
+await clickConfirmSale();
 check('POS: mijoz ismisiz sotuv rad etiladi', await waitFor(textOnPage('Mijoz ismi majburiy')));
 await typeInto('#pos-customer', 'Brauzer Test');
-await clickText('Savdoni tasdiqlash');
+await clickConfirmSale();
 check('POS: sotuv yakunlanadi (chek oynasi)', await waitFor(textOnPage('Sotuv yakunlandi'), 8000));
 await clickText('Yangi sotuv', 'button');
 check('POS: yangi sotuv uchun savat tozalanadi', await waitFor(textOnPage('Savat bo‘sh')));
@@ -429,9 +434,9 @@ await viewport(390, 844);
 await go('/');
 const bottomNav = `document.querySelector('nav[aria-label="Pastki menyu"]')`;
 check(
-  'Telefon: pastki menyu ekran pastida, 4 ta guruh; hamburger tugmasi yo‘q',
+  'Telefon: pastki menyu ekran pastida, 4 ta guruh + Sotuv; hamburger tugmasi yo‘q',
   await waitFor(
-    `(() => { const n = ${bottomNav}; if (!n) return false; const r = n.getBoundingClientRect(); const tabs = [...n.querySelectorAll('button, a')].map((e) => e.innerText.trim()).join(); const burger = [...document.querySelectorAll('button')].find((b) => b.getAttribute('aria-label') === 'Menyuni ochish'); return Math.abs(r.bottom - innerHeight) < 2 && tabs === 'Asosiy,Katalog,Operatsiyalar,Boshqaruv' && (!burger || burger.getClientRects().length === 0); })()`,
+    `(() => { const n = ${bottomNav}; if (!n) return false; const r = n.getBoundingClientRect(); const tabs = [...n.querySelectorAll('button, a')].map((e) => e.innerText.trim()).join(); const burger = [...document.querySelectorAll('button')].find((b) => b.getAttribute('aria-label') === 'Menyuni ochish'); return Math.abs(r.bottom - innerHeight) < 2 && tabs === 'Asosiy,Katalog,Sotuv,Operatsiyalar,Boshqaruv' && (!burger || burger.getClientRects().length === 0); })()`,
     3000,
   ),
 );
