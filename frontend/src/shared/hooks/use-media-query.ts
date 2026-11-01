@@ -19,3 +19,6 @@ export function useMediaQuery(query: string): boolean {
 
 /** Tailwind `sm` (640px) dan kichik ekran — telefon. */
 export const PHONE_QUERY = '(max-width: 639.98px)';
+
+/** Tailwind `xl` (1280px) dan kichik ekran — yon ustun uchun joy yetmaydi (POS savati pastga o'tadi). */
+export const BELOW_XL_QUERY = '(max-width: 1279.98px)';

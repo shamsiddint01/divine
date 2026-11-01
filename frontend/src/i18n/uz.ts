@@ -496,6 +496,8 @@ export const uz = {
       decrease: 'Kamaytirish',
       increase: 'Ko‘paytirish',
       remove: 'Savatdan olib tashlash',
+      open: 'Savatni ochish',
+      inCart: (qty: string) => `Savatda: ${qty}`,
     },
     customer: {
       title: 'Mijoz',
