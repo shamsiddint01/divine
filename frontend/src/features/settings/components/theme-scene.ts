@@ -295,6 +295,8 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
   }
 
   const dens = new Float32Array(W * H);
+  // "Gulkaram" bo'laklari: ichki yoritishni modulyatsiya qiladi (silliq plastik emas)
+  const lobes = new Float32Array(W * H);
   for (let py = 0; py < H; py++) {
     const v = py / H;
     for (let px = 0; px < W; px++) {
@@ -309,9 +311,11 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
       }
       let m = smoothstep(0.3, 1.05, field);
       m *= smoothstep(0.84, 0.7, v); // tekis tag
-      const billow = fbm(shape, u * 5 * aspect, v * 5, 5);
-      const fine = fbm(erode, u * 14 * aspect, v * 14, 3);
-      let d = m * 1.15 - (1 - billow) * 0.38 - (1 - fine) * 0.1 + 0.12;
+      const billow = fbm(shape, u * 6.5 * aspect, v * 6.5, 5);
+      const fine = fbm(erode, u * 16 * aspect, v * 16, 3);
+      // Chet — notekis bo'lakli kontur; ichki qism yaxlit qoladi
+      let d = m * 1.2 - (1 - billow) * 0.5 * (1 - m * 0.55) - (1 - fine) * 0.08 + 0.1;
+      lobes[py * W + px] = billow * 0.75 + fine * 0.25;
       // Tekstura chetida majburiy so'nish
       d *=
         smoothstep(0, 0.1, u) *
@@ -343,18 +347,19 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
     for (let py = H - 1; py >= 0; py--) {
       const i = py * W + px;
       const d = dens[i]!;
-      const alpha = smoothstep(0.04, 0.38, d);
+      const alpha = smoothstep(0.08, 0.27, d);
       const o = i * 4;
       if (alpha > 0) {
-        const edge = 1 - smoothstep(0.04, 0.3, d); // yupqa chet — nur o'tadi ("kumush chet")
-        const lightDay = clamp01(Math.exp(-topAcc[py]! * 9) * 0.85 + edge * 0.35 + 0.12);
-        const dc = mix([150, 162, 186], [255, 255, 255], lightDay);
+        const edge = 1 - smoothstep(0.08, 0.3, d); // yupqa chet — nur o'tadi ("kumush chet")
+        const lobe = 0.7 + (lobes[i]! - 0.45) * 1.1; // bo'lak tepasi yorug', orasidagi chuqurlik soyada
+        const lightDay = clamp01((Math.exp(-topAcc[py]! * 7) * 0.82 + 0.16) * lobe + edge * 0.3);
+        const dc = mix([138, 150, 176], [255, 255, 255], lightDay);
         dImg.data[o] = dc[0];
         dImg.data[o + 1] = dc[1];
         dImg.data[o + 2] = dc[2];
         dImg.data[o + 3] = alpha * 255;
 
-        const lightWarm = clamp01(Math.exp(-fromBottom * 8) * 0.95 + edge * 0.4);
+        const lightWarm = clamp01(Math.exp(-fromBottom * 7) * 0.95 * lobe + edge * 0.4);
         const shade = mix([70, 56, 98], [150, 96, 140], clamp01(lightWarm * 1.6));
         const wc = mix(shade, [255, 190, 132], clamp01(lightWarm ** 1.4 * 1.1));
         wImg.data[o] = wc[0];
