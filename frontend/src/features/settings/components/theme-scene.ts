@@ -703,6 +703,8 @@ export function drawScene(
   const tx = a.textures;
   const day = 1 - s.night;
 
+  const __t: number[] = [];
+  const __mark = (i: number) => (__t[i] = performance.now());
   __mark(0);
   // 1) Osmon → bufer (bo'lmasa to'g'ridan-to'g'ri)
   let skyCtx = ctx;
