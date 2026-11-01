@@ -575,7 +575,8 @@ html:has(.ld) {
   }
 }
 
-/* ---------- Telefon ---------- */
+/* ---------- Telefon ----------
+   O'qiladigan matn kadr bilan kichrayadi, lekin 14px dan pastga tushmaydi (360px telefonlarda ham). */
 @media (max-width: 600px) {
   .ld-header__bar {
     height: calc(60 * var(--u));
@@ -596,11 +597,11 @@ html:has(.ld) {
     font-size: calc(25 * var(--u));
   }
   .ld-hero__text {
-    font-size: calc(14.5 * var(--u));
+    font-size: max(14px, calc(14.5 * var(--u)));
   }
   .ld-hero__actions .ld-btn {
     height: calc(46 * var(--u));
-    font-size: calc(14.5 * var(--u));
+    font-size: max(14px, calc(14.5 * var(--u)));
   }
   .ld-section {
     padding-top: calc(64 * var(--u));
@@ -619,7 +620,7 @@ html:has(.ld) {
     font-size: calc(23 * var(--u));
   }
   .ld-section__lead {
-    font-size: calc(14.5 * var(--u));
+    font-size: max(14px, calc(14.5 * var(--u)));
   }
   .ld-features,
   .ld-steps {
@@ -650,14 +651,14 @@ html:has(.ld) {
   .ld-step p,
   .ld-footer p,
   .ld-footer address {
-    font-size: calc(14 * var(--u));
+    font-size: max(14px, calc(14 * var(--u)));
   }
   .ld-faq summary {
     padding-block: calc(18 * var(--u));
     font-size: calc(15 * var(--u));
   }
   .ld-faq details p {
-    font-size: calc(14 * var(--u));
+    font-size: max(14px, calc(14 * var(--u)));
   }
   .ld-footer {
     margin-top: calc(64 * var(--u));
