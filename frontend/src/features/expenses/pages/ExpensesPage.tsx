@@ -1,8 +1,19 @@
-import { MoreHorizontal, Pencil, Plus, SearchX, Tags, Trash2, Wallet } from 'lucide-react';
+import {
+  Calculator,
+  CalendarRange,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  SearchX,
+  Tags,
+  Trash2,
+  Wallet,
+} from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { t } from '@/i18n/uz';
 import { useListParams } from '@/shared/hooks/use-list-params';
+import { divideMoney } from '@/shared/lib/decimal';
 import { formatCompactMoney, formatDate } from '@/shared/lib/format';
 import { toastError } from '@/shared/lib/mutation';
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
@@ -94,6 +105,19 @@ function ExpensesRegister() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ExpenseDto | null>(null);
   const [deleting, setDeleting] = useState<ExpenseDto | null>(null);
+
+  const { dateFrom, dateTo, categoryId } = list.filters;
+  const periodLabel =
+    dateFrom && dateTo
+      ? dateFrom === dateTo
+        ? formatDate(dateFrom)
+        : `${formatDate(dateFrom)} – ${formatDate(dateTo)}`
+      : dateFrom
+        ? t.expenses.summary.from(formatDate(dateFrom))
+        : dateTo
+          ? t.expenses.summary.to(formatDate(dateTo))
+          : t.expenses.summary.allTime;
+  const categoryName = categoryId ? categories?.find((c) => c.id === categoryId)?.name : undefined;
 
   const openCreate = () => {
     setEditing(null);
@@ -210,13 +234,34 @@ function ExpensesRegister() {
           </>
         }
       />
-      <div className="grid gap-4 sm:grid-cols-3">
+      {/* Faqat ro'yxat javobidagi jami va son (A-27/D-19 kontrakti) — qo'shimcha so'rovsiz. */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
         <StatCard
           label={t.expenses.summary.total}
           icon={Wallet}
           loading={isPending}
           value={data ? formatCompactMoney(data.summary.totalAmount) : null}
           hint={data ? t.common.items(data.summary.count) : null}
+        />
+        <StatCard
+          label={t.expenses.summary.average}
+          icon={Calculator}
+          tone="info"
+          loading={isPending}
+          value={
+            data
+              ? formatCompactMoney(divideMoney(data.summary.totalAmount, data.summary.count))
+              : null
+          }
+          hint={t.expenses.summary.averageHint}
+        />
+        <StatCard
+          className="col-span-2 sm:col-span-1"
+          label={t.expenses.summary.period}
+          icon={CalendarRange}
+          tone="warning"
+          value={periodLabel}
+          hint={categoryName ?? t.expenses.summary.allCategories}
         />
       </div>
       <FilterBar

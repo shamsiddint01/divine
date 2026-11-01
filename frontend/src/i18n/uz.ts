@@ -669,6 +669,13 @@ export const uz = {
     summary: {
       total: 'Jami',
       count: 'Yozuvlar soni',
+      average: 'O‘rtacha xarajat',
+      averageHint: 'bitta yozuv uchun',
+      period: 'Davr',
+      allTime: 'Butun davr',
+      from: (date: string) => `${date} dan`,
+      to: (date: string) => `${date} gacha`,
+      allCategories: 'barcha kategoriyalar',
     },
     form: {
       createTitle: 'Yangi xarajat',
