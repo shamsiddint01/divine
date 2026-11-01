@@ -394,15 +394,34 @@ await layerIsUzbek('mahsulot formasi (xatolar bilan)', async () => {
   await waitFor(textOnPage('Nomini kiriting'));
 });
 
-// 7. Yagona qora mavzu va sidebar yig'ish
+// 7. Mavzu: birinchi kirishda qora; Sozlamalardagi banner bilan kunduzgi rejimga va qaytib
+await evaluate(`localStorage.removeItem('divine.theme')`);
 await go('/');
 check(
-  'Qora mavzu doim yoqiq (almashtirgich yo‘q)',
+  'Birinchi kirishda qora mavzu (standart)',
   await waitFor(
-    `document.documentElement.classList.contains('dark') && /^(rgb\\(0, 0, 0\\)|(ok)?(lab|lch)\\(0 )/.test(getComputedStyle(document.body).backgroundColor) && ![...document.querySelectorAll('button')].some((b) => /rejimga o‘tish/.test(b.getAttribute('aria-label') ?? ''))`,
+    `document.documentElement.classList.contains('dark') && /^(rgb\\(0, 0, 0\\)|(ok)?(lab|lch)\\(0 )/.test(getComputedStyle(document.body).backgroundColor)`,
     2000,
   ),
 );
+await go('/settings');
+await clickText('Kunduzgi rejimga o‘tish');
+check(
+  'Sozlamalar banneri: kunduzgi rejim yoqiladi va saqlanadi',
+  await waitFor(
+    `!document.documentElement.classList.contains('dark') && localStorage.getItem('divine.theme') === 'light' && document.querySelector('[role=switch]')?.getAttribute('aria-busy') === 'false'`,
+    6000,
+  ),
+);
+await clickText('Tungi rejimga o‘tish');
+check(
+  'Sozlamalar banneri: tungi rejimga qaytadi',
+  await waitFor(
+    `document.documentElement.classList.contains('dark') && document.querySelector('[role=switch]')?.getAttribute('aria-busy') === 'false'`,
+    6000,
+  ),
+);
+await go('/');
 await clickText('Yon panelni yig‘ish');
 check(
   'Sidebar yig‘iladi (faqat ikonkalar)',

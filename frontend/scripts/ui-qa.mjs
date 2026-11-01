@@ -17,8 +17,7 @@ const arg = (name, fallback) => {
 };
 const BASE = arg('base', 'http://localhost:5180');
 const SIZES = arg('sizes', '1440,1280,1024,768,390').split(',').map(Number);
-// Yagona mavzu — qora (index.html'da <html class="dark">).
-const THEMES = ['dark'];
+const THEMES = arg('themes', 'light,dark').split(',');
 const SHOTS = arg('shots', '');
 const ROUTES = arg(
   'routes',
@@ -163,6 +162,9 @@ let problems = 0;
 for (const theme of THEMES) {
   await send('Page.navigate', { url: BASE + '/' });
   await sleep(1500);
+  await send('Runtime.evaluate', {
+    expression: `localStorage.setItem('divine.theme', '${theme}')`,
+  });
   for (const width of SIZES) {
     await send('Emulation.setDeviceMetricsOverride', {
       width,
