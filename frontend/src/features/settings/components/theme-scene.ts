@@ -336,8 +336,8 @@ export function drawScene(
   // Yulduzlar aksi — xira, biroz titraydi
   if (s.night > 0.01) {
     for (const st of a.stars) {
-      if (st.y > 0.6) continue;
-      const ry = hy + (1 - st.y) * 0.0 + st.y * waterH * 0.95 + 2;
+      // Ko'zgu: ufqqa yaqin yulduz — ufq ostida, baland yulduz — suvning pastida
+      const ry = hy + 2 + (1 - st.y) * (waterH - 4);
       const jitter = Math.sin(time * 1.3 + st.phase) * 1.2;
       ctx.fillStyle = rgba(WHITE, s.night * 0.3 * (0.6 + 0.4 * Math.sin(time * st.speed + st.phase)));
       ctx.fillRect(st.x * w + jitter, ry, st.r * 1.6, Math.max(0.6, st.r * 0.5));
