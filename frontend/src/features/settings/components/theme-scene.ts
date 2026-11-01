@@ -262,23 +262,58 @@ function canvas(w: number, h: number) {
   return c;
 }
 
-/** Kumulus bulut: gumbazsimon tepa, tekisroq tag, fbm bilan yirtiq chet; ikki yoritish varianti. */
+/**
+ * Kumulus bulut, ikki yoritish varianti. Uch bosqich:
+ *  1) shakl — "egiltirilgan" (domain warp) koordinatalarda bir nechta gumbaz; tagi tekis;
+ *  2) zichlik — chetlari fbm bilan yemiriladi, tekstura chegarasida yumshoq so'nadi (to'rtburchak yo'q);
+ *  3) hajmli yoritish — nuqtadan yorug'lik manbaigacha bo'lgan bulut qalinligi yig'iladi:
+ *     kunduzi yorug'lik tepadan (tepasi oq, tagi kulrang), shomda — ufqdan, pastdan (tagi oltin).
+ */
 function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
-  const W = 320;
-  const H = 150;
+  const W = 360;
+  const H = 170;
   const r = rng(seed);
-  const noise = makeNoise(seed * 31 + 5);
-  const detail = makeNoise(seed * 17 + 11);
-  const n = 6 + Math.floor(r() * 3);
-  const puffs = Array.from({ length: n }, (_, i) => {
-    const t = i / (n - 1);
-    const mid = 1 - Math.abs(t - 0.5) * 2; // o'rtadagilar kattaroq va balandroq
-    return {
-      x: 0.14 + t * 0.72 + (r() - 0.5) * 0.06,
-      y: 0.68 - mid * 0.18 - r() * 0.06,
-      rad: 0.17 + mid * 0.16 + r() * 0.05,
-    };
-  });
+  const shape = makeNoise(seed * 31 + 5);
+  const erode = makeNoise(seed * 17 + 11);
+  const warpX = makeNoise(seed * 7 + 3);
+  const warpY = makeNoise(seed * 13 + 9);
+  const aspect = W / H;
+
+  // Asos qatori — keng, past gumbazlar; o'rtada balandroq "minoralar"
+  const puffs: { x: number; y: number; rad: number }[] = [];
+  const base = 5 + Math.floor(r() * 3);
+  for (let i = 0; i < base; i++) {
+    const t = i / (base - 1);
+    puffs.push({ x: 0.16 + t * 0.68 + (r() - 0.5) * 0.04, y: 0.66, rad: 0.15 + r() * 0.07 });
+  }
+  const towers = 3 + Math.floor(r() * 3);
+  for (let i = 0; i < towers; i++) {
+    const t = 0.3 + r() * 0.4;
+    puffs.push({ x: t, y: 0.5 - r() * 0.12, rad: 0.13 + r() * 0.08 });
+  }
+
+  const dens = new Float32Array(W * H);
+  for (let py = 0; py < H; py++) {
+    const v = py / H;
+    for (let px = 0; px < W; px++) {
+      const u = px / W;
+      const wu = u + (fbm(warpX, u * 3, v * 3, 3) - 0.5) * 0.12;
+      const wv = v + (fbm(warpY, u * 3, v * 3, 3) - 0.5) * 0.12;
+      let m = 0;
+      for (const p of puffs) {
+        const d = Math.hypot((wu - p.x) * aspect, wv - p.y) / p.rad;
+        m = Math.max(m, 1 - d);
+      }
+      m *= smoothstep(0.86, 0.72, v); // tekis tag
+      const billow = fbm(shape, u * 5 * aspect, v * 5, 5);
+      const fine = fbm(erode, u * 14 * aspect, v * 14, 3);
+      let d = m * 1.35 - (1 - billow) * 0.55 - (1 - fine) * 0.12 + 0.18;
+      // Tekstura chetida majburiy so'nish
+      d *= smoothstep(0, 0.1, u) * smoothstep(1, 0.9, u) * smoothstep(0, 0.12, v) * smoothstep(1, 0.92, v);
+      dens[py * W + px] = clamp01(d);
+    }
+  }
+
   const day = canvas(W, H);
   const warm = canvas(W, H);
   const dCtx = day.getContext('2d');
@@ -286,48 +321,40 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
   if (!dCtx || !wCtx) return [day, warm];
   const dImg = dCtx.createImageData(W, H);
   const wImg = wCtx.createImageData(W, H);
-  const aspect = W / H;
-  for (let py = 0; py < H; py++) {
-    const v = py / H;
-    for (let px = 0; px < W; px++) {
-      const u = px / W;
-      let m = 0;
-      for (const p of puffs) {
-        const d = Math.hypot((u - p.x) * aspect, v - p.y) / p.rad;
-        m = Math.max(m, 1 - d);
+  const step = 1 / H;
+  for (let px = 0; px < W; px++) {
+    // Tepadan pastga: nuqtagacha yig'ilgan qalinlik (kunduzgi yorug'lik tepadan)
+    let fromTop = 0;
+    const topAcc = new Float32Array(H);
+    for (let py = 0; py < H; py++) {
+      topAcc[py] = fromTop;
+      fromTop += dens[py * W + px]! * step;
+    }
+    // Pastdan tepaga: shom/tongda yorug'lik ufqdan
+    let fromBottom = 0;
+    for (let py = H - 1; py >= 0; py--) {
+      const i = py * W + px;
+      const d = dens[i]!;
+      const alpha = smoothstep(0.04, 0.38, d);
+      const o = i * 4;
+      if (alpha > 0) {
+        const edge = 1 - smoothstep(0.04, 0.3, d); // yupqa chet — nur o'tadi ("kumush chet")
+        const lightDay = clamp01(Math.exp(-topAcc[py]! * 9) * 0.85 + edge * 0.35 + 0.12);
+        const dc = mix([150, 162, 186], [255, 255, 255], lightDay);
+        dImg.data[o] = dc[0];
+        dImg.data[o + 1] = dc[1];
+        dImg.data[o + 2] = dc[2];
+        dImg.data[o + 3] = alpha * 255;
+
+        const lightWarm = clamp01(Math.exp(-fromBottom * 8) * 0.95 + edge * 0.4);
+        const shade = mix([70, 56, 98], [150, 96, 140], clamp01(lightWarm * 1.6));
+        const wc = mix(shade, [255, 190, 132], clamp01(lightWarm ** 1.4 * 1.1));
+        wImg.data[o] = wc[0];
+        wImg.data[o + 1] = wc[1];
+        wImg.data[o + 2] = wc[2];
+        wImg.data[o + 3] = alpha * 255;
       }
-      m *= smoothstep(0.9, 0.74, v); // tekis tag
-      const nv = fbm(noise, u * 4.2 * aspect, v * 4.2, 5);
-      const density = m * 1.25 + (nv - 0.5) * 0.85;
-      const alpha = smoothstep(0.08, 0.42, density);
-      if (alpha <= 0) continue;
-      const height = 1 - v; // tepasi yorug'
-      const fine = (fbm(detail, u * 11 * aspect, v * 11, 3) - 0.5) * 0.22;
-      const core = smoothstep(0.15, 0.9, density); // zich ichki qism — o'z soyasi
-      const rim = (1 - smoothstep(0.1, 0.38, density)) * 0.22; // yupqa chet nur o'tkazadi ("kumush chet")
-      const i = (py * W + px) * 4;
-
-      // Kunduz: oq tepa, pastki/ichki qismi kulrang-ko'kish soya
-      const lit = clamp01(0.5 + 0.55 * smoothstep(0.2, 0.75, height) - core * 0.18 + fine + rim);
-      const dc = mix([170, 182, 202], [255, 255, 255], lit);
-      dImg.data[i] = dc[0];
-      dImg.data[i + 1] = dc[1];
-      dImg.data[i + 2] = dc[2];
-      dImg.data[i + 3] = alpha * 255;
-
-      // Shom/tong: quyosh ufqda — bulut pastdan yoritiladi; tepasi binafsha-kulrang soyada
-      const under = clamp01(
-        0.25 + 0.75 * smoothstep(0.25, 0.85, 1 - height) + fine + rim * 1.4 - core * 0.1,
-      );
-      const wc = mix(
-        mix([92, 70, 116], [176, 104, 136], clamp01(under * 1.4)),
-        [255, 196, 140],
-        clamp01(under * under * 1.2),
-      );
-      wImg.data[i] = wc[0];
-      wImg.data[i + 1] = wc[1];
-      wImg.data[i + 2] = wc[2];
-      wImg.data[i + 3] = alpha * 255;
+      fromBottom += d * step;
     }
   }
   dCtx.putImageData(dImg, 0, 0);
@@ -610,7 +637,7 @@ function drawSky(
   if (tx && cloudAlpha > 0.01) {
     for (const c of a.clouds) {
       const cw = c.width * h;
-      const ch = cw * (150 / 320);
+      const ch = cw * (170 / 360);
       const span = w + cw * 1.2;
       const x = ((((c.x * span + time * c.speed * w) % span) + span) % span) - cw * 0.6;
       const y = c.y * hy - ch * 0.55;
