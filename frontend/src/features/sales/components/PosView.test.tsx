@@ -1,13 +1,16 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { t } from '@/i18n/uz';
 import { setMockLatency } from '@/mocks';
 import { db } from '@/mocks/db';
 import { FAIL_MESSAGE, failRoutes, restoreRoutes } from '@/test/fail-routes';
 import { PAGE, renderApp } from '@/test/render-app';
 
-afterEach(restoreRoutes);
+afterEach(() => {
+  restoreRoutes();
+  vi.restoreAllMocks();
+});
 
 describe('POS — sotuv oqimi', () => {
   it('mijoz ismisiz sotuv rad etiladi (BR-05); ism kiritilsa sotuv yakunlanadi va qoldiq kamayadi', async () => {
@@ -78,5 +81,31 @@ describe('POS — sotuv oqimi', () => {
       PAGE,
     );
     setMockLatency(0, 0);
+  });
+
+  it('xl dan kichik ekranda savat pastki paneldan ochiladi; kartada savatdagi miqdor ko‘rinadi', async () => {
+    const real = window.matchMedia;
+    vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
+      ...real(query),
+      matches: query.includes('1279.98px'),
+    }));
+    renderApp('/sales');
+    const user = userEvent.setup();
+
+    const cards = await screen.findAllByRole('button', { name: /so‘m/ }, PAGE);
+    const card = cards.find((c) => !c.hasAttribute('disabled'));
+    if (!card) throw new Error('mahsulot topilmadi');
+    // Bo'sh savatda panel ko'rinmaydi, savat yon ustunda ham yo'q.
+    expect(screen.queryByRole('button', { name: new RegExp(t.sales.cart.open) })).toBeNull();
+    expect(screen.queryByText(t.sales.cart.empty)).toBeNull();
+
+    await user.click(card);
+    await user.click(card);
+    expect(card).toHaveTextContent(t.sales.cart.inCart('2'));
+
+    await user.click(screen.getByRole('button', { name: new RegExp(t.sales.cart.open) }));
+    const sheet = await screen.findByRole('dialog', {}, PAGE);
+    expect(within(sheet).getByLabelText(new RegExp(t.sales.cart.quantity))).toHaveValue('2');
+    expect(within(sheet).getByRole('button', { name: t.sales.confirm })).toBeEnabled();
   });
 });
