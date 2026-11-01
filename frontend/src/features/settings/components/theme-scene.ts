@@ -286,12 +286,12 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
   const base = 5 + Math.floor(r() * 3);
   for (let i = 0; i < base; i++) {
     const t = i / (base - 1);
-    puffs.push({ x: 0.16 + t * 0.68 + (r() - 0.5) * 0.04, y: 0.66, rad: 0.15 + r() * 0.07 });
+    puffs.push({ x: 0.17 + t * 0.66 + (r() - 0.5) * 0.04, y: 0.64, rad: 0.2 + r() * 0.08 });
   }
   const towers = 3 + Math.floor(r() * 3);
   for (let i = 0; i < towers; i++) {
     const t = 0.3 + r() * 0.4;
-    puffs.push({ x: t, y: 0.5 - r() * 0.12, rad: 0.13 + r() * 0.08 });
+    puffs.push({ x: t, y: 0.46 - r() * 0.1, rad: 0.17 + r() * 0.08 });
   }
 
   const dens = new Float32Array(W * H);
@@ -301,15 +301,17 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
       const u = px / W;
       const wu = u + (fbm(warpX, u * 3, v * 3, 3) - 0.5) * 0.12;
       const wv = v + (fbm(warpY, u * 3, v * 3, 3) - 0.5) * 0.12;
-      let m = 0;
+      // Metaball: bo'laklar silliq qo'shilib yaxlit tana hosil qiladi (alohida sharlar emas)
+      let field = 0;
       for (const p of puffs) {
         const d = Math.hypot((wu - p.x) * aspect, wv - p.y) / p.rad;
-        m = Math.max(m, 1 - d);
+        field += Math.exp(-d * d * 1.6);
       }
-      m *= smoothstep(0.86, 0.72, v); // tekis tag
+      let m = smoothstep(0.3, 1.05, field);
+      m *= smoothstep(0.84, 0.7, v); // tekis tag
       const billow = fbm(shape, u * 5 * aspect, v * 5, 5);
       const fine = fbm(erode, u * 14 * aspect, v * 14, 3);
-      let d = m * 1.35 - (1 - billow) * 0.55 - (1 - fine) * 0.12 + 0.18;
+      let d = m * 1.15 - (1 - billow) * 0.38 - (1 - fine) * 0.1 + 0.12;
       // Tekstura chetida majburiy so'nish
       d *=
         smoothstep(0, 0.1, u) *
