@@ -291,8 +291,9 @@ html:has(.ld) {
 }
 
 /* ---------- Bo'limlar ---------- */
+/* Yon chekka — .ld-main'da (hero bilan bir xil); bo'lim faqat vertikal oraliq beradi */
 .ld-section {
-  padding: calc(104 * var(--u)) var(--edge) 0;
+  padding-top: calc(104 * var(--u));
   scroll-margin-top: calc(40 * var(--u));
 }
 .ld-section__head {
