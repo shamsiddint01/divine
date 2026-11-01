@@ -16,7 +16,13 @@ function Card({ className, ...props }: ComponentProps<'div'>) {
 }
 
 function CardHeader({ className, ...props }: ComponentProps<'div'>) {
-  return <div data-slot="card-header" className={cn('grid gap-1.5 px-4 sm:px-6', className)} {...props} />;
+  return (
+    <div
+      data-slot="card-header"
+      className={cn('grid gap-1.5 px-4 sm:px-6', className)}
+      {...props}
+    />
+  );
 }
 
 function CardTitle({ className, ...props }: ComponentProps<'div'>) {

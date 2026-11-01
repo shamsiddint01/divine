@@ -53,7 +53,12 @@ function SheetFooter({ className, ...props }: ComponentProps<'div'>) {
 }
 
 function SheetTitle({ className, ...props }: ComponentProps<typeof SheetPrimitive.Title>) {
-  return <SheetPrimitive.Title className={cn('text-base font-semibold sm:text-lg', className)} {...props} />;
+  return (
+    <SheetPrimitive.Title
+      className={cn('text-base font-semibold sm:text-lg', className)}
+      {...props}
+    />
+  );
 }
 
 function SheetDescription({
