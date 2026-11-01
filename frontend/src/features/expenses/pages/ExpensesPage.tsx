@@ -234,7 +234,7 @@ function ExpensesRegister() {
           </>
         }
       />
-      {/* Faqat ro'yxat javobidagi jami va son (A-27/D-19 kontrakti) — qo'shimcha so'rovsiz. */}
+      {/* Faqat ro'yxat javobidagi summary (jami va son) va tanlangan filtrlar — qo'shimcha so'rovsiz. */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
         <StatCard
           label={t.expenses.summary.total}
