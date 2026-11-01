@@ -175,17 +175,24 @@ export function createSceneAssets(seed = 7): SceneAssets {
     phase: r() * Math.PI * 2,
     speed: 0.6 + r() * 1.8,
   }));
-  const clouds = Array.from({ length: 6 }, (_, i) => ({
-    x: i / 6 + r() * 0.1,
-    y: 0.12 + r() * 0.32,
-    scale: 0.7 + r() * 0.6,
-    speed: 0.004 + r() * 0.006,
-    puffs: Array.from({ length: 5 + Math.floor(r() * 3) }, (_, k) => ({
-      dx: (k - 3) * 0.032 + (r() - 0.5) * 0.02,
-      dy: (r() - 0.5) * 0.05 - Math.abs(k - 3) * 0.006,
-      r: 0.05 + r() * 0.035,
-    })),
-  }));
+  // To'p-to'p kumulus: o'rtasi baland, chetlari past, tagi tekisroq
+  const clouds = Array.from({ length: 5 }, (_, i) => {
+    const n = 5 + Math.floor(r() * 3);
+    return {
+      x: i / 5 + r() * 0.08,
+      y: 0.16 + r() * 0.4,
+      scale: 0.55 + r() * 0.5,
+      speed: 0.004 + r() * 0.005,
+      puffs: Array.from({ length: n }, (_, k) => {
+        const off = k - (n - 1) / 2;
+        return {
+          dx: off * 0.026 + (r() - 0.5) * 0.01,
+          dy: -(1 - Math.abs(off) / n) * 0.05 + (r() - 0.5) * 0.012,
+          r: 0.04 + (1 - Math.abs(off) / n) * 0.035 + r() * 0.01,
+        };
+      }),
+    };
+  });
   const streaks = Array.from({ length: 34 }, () => ({
     y: r(),
     x: r(),
@@ -318,9 +325,11 @@ export function drawScene(
         const pr = puff.r * h * 1.6 * c.scale;
         const px = cx + puff.dx * w * c.scale;
         const py = cy + puff.dy * h * c.scale;
-        const g = ctx.createRadialGradient(px, py - pr * 0.3, 0, px, py, pr);
+        // Zich o'zak, yumshoq chet: yuqorisi oq (yoki shomda pushti), tagi soya/iliq nur
+        const g = ctx.createRadialGradient(px, py - pr * 0.35, 0, px, py, pr);
         g.addColorStop(0, rgba(top, cloudAlpha));
-        g.addColorStop(0.6, rgba(under, cloudAlpha * 0.75));
+        g.addColorStop(0.5, rgba(top, cloudAlpha * 0.96));
+        g.addColorStop(0.78, rgba(under, cloudAlpha * 0.7));
         g.addColorStop(1, rgba(under, 0));
         ctx.fillStyle = g;
         ctx.fillRect(px - pr, py - pr, pr * 2, pr * 2);
