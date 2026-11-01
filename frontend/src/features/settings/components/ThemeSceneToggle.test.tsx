@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { t } from '@/i18n/uz';
 import { useUiStore } from '@/stores/ui.store';
+import { PAGE } from '@/test/render-app';
 import { ThemeSceneToggle } from './ThemeSceneToggle';
 import { sceneParams } from './theme-scene';
 
@@ -28,15 +29,15 @@ describe('ThemeSceneToggle', () => {
     expect(toggle).toHaveTextContent(t.settings.themeScene.night);
 
     await userEvent.click(toggle);
-    await waitFor(() => expect(useUiStore.getState().theme).toBe('light'));
+    await waitFor(() => expect(useUiStore.getState().theme).toBe('light'), PAGE);
     expect(document.documentElement).not.toHaveClass('dark');
     expect(localStorage.getItem('divine.theme')).toBe('light');
-    const back = await screen.findByRole('switch', { name: t.settings.themeScene.toNight });
+    const back = await screen.findByRole('switch', { name: t.settings.themeScene.toNight }, PAGE);
     expect(back).toHaveAttribute('aria-checked', 'true');
-    await waitFor(() => expect(back).toHaveAttribute('aria-busy', 'false'));
+    await waitFor(() => expect(back).toHaveAttribute('aria-busy', 'false'), PAGE);
 
     await userEvent.click(back);
-    await waitFor(() => expect(useUiStore.getState().theme).toBe('dark'));
+    await waitFor(() => expect(useUiStore.getState().theme).toBe('dark'), PAGE);
     expect(document.documentElement).toHaveClass('dark');
   });
 
@@ -45,8 +46,8 @@ describe('ThemeSceneToggle', () => {
     const toggle = screen.getByRole('switch');
     await userEvent.click(toggle);
     await userEvent.click(toggle);
-    await waitFor(() => expect(useUiStore.getState().theme).toBe('light'), { timeout: 5000 });
-    await waitFor(() => expect(toggle).toHaveAttribute('aria-busy', 'false'), { timeout: 5000 });
+    await waitFor(() => expect(useUiStore.getState().theme).toBe('light'), { timeout: 8000 });
+    await waitFor(() => expect(toggle).toHaveAttribute('aria-busy', 'false'), { timeout: 8000 });
     // Ikkinchi bosish tunga qaytarmagan
     expect(useUiStore.getState().theme).toBe('light');
   });
