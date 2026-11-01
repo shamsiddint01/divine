@@ -622,32 +622,41 @@ html:has(.ld) {
   .ld-section__lead {
     font-size: max(14px, calc(14.5 * var(--u)));
   }
-  .ld-features,
-  .ld-steps {
-    grid-template-columns: minmax(0, 1fr);
+  /* Imkoniyatlar — 2×2 ixcham to'r (bir ustunda 4 karta butun ekranni egallardi) */
+  .ld-features {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: calc(10 * var(--u));
   }
   .ld-steps {
+    grid-template-columns: minmax(0, 1fr);
     gap: calc(28 * var(--u));
   }
   .ld-card {
-    padding: calc(20 * var(--u));
+    padding: calc(14 * var(--u));
+    border-radius: calc(14 * var(--u));
   }
   .ld-card__icon {
-    width: calc(38 * var(--u));
-    height: calc(38 * var(--u));
+    width: calc(32 * var(--u));
+    height: calc(32 * var(--u));
+    border-radius: calc(9 * var(--u));
   }
   .ld-card__icon svg {
-    width: calc(19 * var(--u));
-    height: calc(19 * var(--u));
+    width: calc(17 * var(--u));
+    height: calc(17 * var(--u));
   }
   .ld-card h3 {
-    margin-top: calc(16 * var(--u));
-    font-size: calc(16 * var(--u));
+    margin-top: calc(12 * var(--u));
+    font-size: max(14px, calc(14.5 * var(--u)));
+    line-height: 1.25;
   }
   .ld-step h3 {
     font-size: calc(16.5 * var(--u));
   }
-  .ld-card p,
+  .ld-card p {
+    margin-top: calc(6 * var(--u));
+    font-size: max(12.5px, calc(12.5 * var(--u)));
+    line-height: 1.5;
+  }
   .ld-step p,
   .ld-footer p,
   .ld-footer address {
