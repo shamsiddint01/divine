@@ -163,7 +163,9 @@ export function SalesChart() {
             {isPending ? (
               <Skeleton className="mt-1 h-6 w-16" />
             ) : (
-              <p className="text-lg font-semibold tabular-nums sm:text-xl">{formatInteger(count)}</p>
+              <p className="text-lg font-semibold tabular-nums sm:text-xl">
+                {formatInteger(count)}
+              </p>
             )}
           </div>
         </div>

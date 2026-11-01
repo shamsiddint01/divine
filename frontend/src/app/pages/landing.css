@@ -527,9 +527,9 @@ html:has(.ld) {
   display: block;
   padding: 14px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: 26px;
+  font-size: 21px;
   font-weight: 550;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.015em;
 }
 .ld-menu__actions {
   display: grid;
@@ -585,11 +585,28 @@ html:has(.ld) {
     padding: calc(40 * var(--v)) calc(20 * var(--u));
     border-radius: calc(18 * var(--u));
   }
+  .ld-brand {
+    font-size: calc(17 * var(--u));
+  }
+  .ld-brand svg {
+    width: calc(26 * var(--u));
+    height: calc(26 * var(--u));
+  }
   .ld-hero__title {
-    font-size: calc(30 * var(--u));
+    font-size: calc(25 * var(--u));
   }
   .ld-hero__text {
-    font-size: calc(15.5 * var(--u));
+    font-size: calc(14.5 * var(--u));
+  }
+  .ld-hero__actions .ld-btn {
+    height: calc(46 * var(--u));
+    font-size: calc(14.5 * var(--u));
+  }
+  .ld-section {
+    padding-top: calc(64 * var(--u));
+  }
+  .ld-section__head {
+    margin-bottom: calc(28 * var(--u));
   }
   .ld-hero__text span {
     display: inline;
@@ -599,10 +616,10 @@ html:has(.ld) {
     align-self: stretch;
   }
   .ld-section__title {
-    font-size: calc(28 * var(--u));
+    font-size: calc(23 * var(--u));
   }
   .ld-section__lead {
-    font-size: calc(15.5 * var(--u));
+    font-size: calc(14.5 * var(--u));
   }
   .ld-features,
   .ld-steps {
@@ -612,19 +629,39 @@ html:has(.ld) {
     gap: calc(28 * var(--u));
   }
   .ld-card {
-    padding: calc(22 * var(--u));
+    padding: calc(20 * var(--u));
+  }
+  .ld-card__icon {
+    width: calc(38 * var(--u));
+    height: calc(38 * var(--u));
+  }
+  .ld-card__icon svg {
+    width: calc(19 * var(--u));
+    height: calc(19 * var(--u));
+  }
+  .ld-card h3 {
+    margin-top: calc(16 * var(--u));
+    font-size: calc(16 * var(--u));
+  }
+  .ld-step h3 {
+    font-size: calc(16.5 * var(--u));
   }
   .ld-card p,
   .ld-step p,
   .ld-footer p,
   .ld-footer address {
-    font-size: calc(14.5 * var(--u));
+    font-size: calc(14 * var(--u));
   }
   .ld-faq summary {
-    font-size: calc(16 * var(--u));
+    padding-block: calc(18 * var(--u));
+    font-size: calc(15 * var(--u));
   }
   .ld-faq details p {
-    font-size: calc(14.5 * var(--u));
+    font-size: calc(14 * var(--u));
+  }
+  .ld-footer {
+    margin-top: calc(64 * var(--u));
+    padding-top: calc(40 * var(--u));
   }
   .ld-footer__bottom {
     flex-direction: column;
