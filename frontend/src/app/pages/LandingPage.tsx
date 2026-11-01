@@ -4,11 +4,9 @@ import { type CSSProperties, type RefObject, useEffect, useId, useRef, useState 
 import { Link } from 'react-router';
 import { t } from '@/i18n/uz';
 import { useMediaQuery } from '@/shared/hooks/use-media-query';
+// "Bepul sinab ko'rish" / "Bepul boshlash" — o'z-o'zidan ro'yxatdan o'tish yo'q, Telegram kanal orqali.
+import { PHONE_HREF, TELEGRAM_URL } from '@/shared/lib/contacts';
 import './landing.css';
-
-/** "Bepul sinab ko'rish" / "Bepul boshlash" — o'z-o'zidan ro'yxatdan o'tish yo'q, Telegram kanal orqali. */
-const TELEGRAM_URL = 'https://t.me/+BvvsmvXvWZQ1YjAy';
-const PHONE_HREF = `tel:${t.landing.footer.phone.replace(/\s/g, '')}`;
 
 const SECTIONS = [
   { id: 'imkoniyatlar', label: t.landing.nav.features },

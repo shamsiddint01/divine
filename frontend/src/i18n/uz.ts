@@ -182,8 +182,20 @@ export const uz = {
     checking: 'Sessiya tekshirilmoqda…',
     demoTitle: 'Demo rejim',
     demoHint: (password: string) =>
-      `Ma’lumotlar namunaviy. Istalgan demo user logini (masalan, admin yoki aziz) va parol: ${password}. Users sahifasida yaratilgan user — o‘z paroli bilan.`,
-    serverModeHint: 'Haqiqiy server bilan kirish.',
+      `Ma’lumotlar namunaviy. Istalgan demo user logini (masalan, admin yoki aziz) va parol: ${password}.`,
+    demoSignIn: 'Demo hisob bilan kirish',
+    or: 'yoki',
+    forgot: 'Parolni unutdingizmi?',
+    backHome: 'Bosh sahifa',
+    noAccount: 'Hisobingiz yo‘qmi?',
+    help: 'Yordam',
+    panelTitle: 'Do‘koningiz nazorati — bitta ilovada',
+    panelLead: 'Savdo, ombor, kirim va xarajatlarni telefon yoki kompyuterdan boshqaring.',
+    panelPoints: [
+      'Kassa: sotuv bir necha soniyada',
+      'Ombor qoldig‘i real vaqtda',
+      'Kunlik va oylik hisobotlar',
+    ],
   },
   landing: {
     home: 'Divine.uz — bosh sahifa',

@@ -8,6 +8,8 @@ interface FormFieldProps {
   label: string;
   error?: string;
   hint?: ReactNode;
+  /** Label qatorining o'ng tomonidagi kichik amal (masalan, "Parolni unutdingizmi?"). */
+  action?: ReactNode;
   required?: boolean;
   optional?: boolean;
   className?: string;
@@ -20,6 +22,7 @@ export function FormField({
   label,
   error,
   hint,
+  action,
   required,
   optional,
   className,
@@ -27,24 +30,43 @@ export function FormField({
 }: FormFieldProps) {
   return (
     <div className={cn('grid gap-1.5', className)}>
-      <Label htmlFor={id}>
-        {label}
-        {required ? (
-          <span className="text-destructive" aria-label={t.common.required}>
-            *
-          </span>
-        ) : null}
-        {optional ? (
-          <span className="font-normal text-muted-foreground">({t.common.optional})</span>
-        ) : null}
-      </Label>
+      {action ? (
+        <div className="flex items-center justify-between gap-2">
+        <Label htmlFor={id}>
+          {label}
+          {required ? (
+            <span className="text-destructive" aria-label={t.common.required}>
+              *
+            </span>
+          ) : null}
+          {optional ? (
+            <span className="font-normal text-muted-foreground">({t.common.optional})</span>
+          ) : null}
+        </Label>
+          {action}
+        </div>
+      ) : (
+        <Label htmlFor={id}>
+          {label}
+          {required ? (
+            <span className="text-destructive" aria-label={t.common.required}>
+              *
+            </span>
+          ) : null}
+          {optional ? (
+            <span className="font-normal text-muted-foreground">({t.common.optional})</span>
+          ) : null}
+        </Label>
+      )}
       {children}
       {error ? (
         <p role="alert" className="text-xs text-destructive">
           {error}
         </p>
       ) : hint ? (
-        <p className="text-xs text-muted-foreground">{hint}</p>
+        <p id={`${id}-hint`} className="text-xs text-muted-foreground">
+          {hint}
+        </p>
       ) : null}
     </div>
   );
