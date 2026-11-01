@@ -184,6 +184,33 @@ export const uz = {
       `Ma’lumotlar namunaviy. Istalgan demo user logini (masalan, admin yoki aziz) va parol: ${password}. Users sahifasida yaratilgan user — o‘z paroli bilan.`,
     serverModeHint: 'Haqiqiy server bilan kirish.',
   },
+  landing: {
+    signIn: 'Kirish',
+    heroTitle: 'Bozor va do‘koningiz uchun oddiy ERP',
+    heroDescription:
+      'Mahsulot, ombor, sotuv va hisobotlar bir joyda — har kungi savdoni qog‘ozsiz va aniq yuriting.',
+    start: 'Boshlash',
+    featuresTitle: 'Imkoniyatlar',
+    features: {
+      warehouse: {
+        title: 'Ombor nazorati',
+        description: 'Har bir ombordagi qoldiqni real vaqtda ko‘rib, kam qolgan mahsulotni darhol bilasiz.',
+      },
+      sales: {
+        title: 'Sotuv va mijozlar',
+        description: 'Sotuvni bir necha bosishda rasmiylashtirib, har bir mijozning xaridlar tarixini saqlaysiz.',
+      },
+      incoming: {
+        title: 'Kirim va xarajatlar',
+        description: 'Kelgan tovar va har bir xarajat hujjat bilan yoziladi, pul qayerga ketgani aniq bo‘ladi.',
+      },
+      reports: {
+        title: 'Hisobotlar',
+        description: 'Savdo, foyda va ombor bo‘yicha hisobotlarni istalgan davr uchun bir zumda olasiz.',
+      },
+    },
+    footer: '© 2026 Divine.uz',
+  },
   forbidden: {
     title: 'Ruxsat yo‘q',
     description:
