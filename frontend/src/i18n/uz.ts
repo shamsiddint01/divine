@@ -269,6 +269,11 @@ export const uz = {
         a: '“Bepul sinab ko‘rish” tugmasini bosing — Telegram kanalimiz orqali bog‘lanib, ishga tushirishda yordam beramiz.',
       },
     ],
+    final: {
+      title: 'Bugunoq sinab ko‘ring',
+      lead: 'Telegram kanalimizga qo‘shiling — ishga tushirishda yordam beramiz.',
+    },
+    variants: { label: 'Landing varianti', v1: '1-variant', v2: '2-variant' },
     footer: {
       about:
         'Do‘koningiz savdosi, ombordagi tovar, kirim va xarajatlarni bir joyda kuzating. Ilova o‘zbek tilida, telefonda ishlaydi va maxsus bilim talab qilmaydi. Abu Saxiy bozori savdogarlari uchun, savdogarlar bilan birga yaratilgan.',
