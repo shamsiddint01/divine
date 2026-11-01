@@ -24,6 +24,11 @@ interface ProductPickerProps {
   inCart: Record<string, string>;
 }
 
+// Ustunlar soni ekranga emas, ro'yxat kengligiga qarab (container query): savat yonida ham, to'liq
+// kenglikda ham karta ~200px dan torayib ketmaydi.
+const PRODUCT_GRID =
+  'grid grid-cols-1 gap-3 @min-[400px]:grid-cols-2 @min-[620px]:grid-cols-3 @min-[880px]:grid-cols-4';
+
 /** POS'ning chap qismi: shtrix-kod skaneri, qidiruv va mahsulot kartochkalari. */
 export function ProductPicker({ warehouseId, onPick, onBarcode, inCart }: ProductPickerProps) {
   const [search, setSearch] = useState('');
@@ -66,7 +71,7 @@ export function ProductPicker({ warehouseId, onPick, onBarcode, inCart }: Produc
   };
 
   return (
-    <div className="space-y-4">
+    <div className="@container space-y-4">
       <div className="grid gap-1.5">
         <Label htmlFor="pos-barcode">{t.sales.barcodeLabel}</Label>
         <div className="relative">
@@ -111,7 +116,7 @@ export function ProductPicker({ warehouseId, onPick, onBarcode, inCart }: Produc
       {error && !data ? (
         <ErrorState message={error.message} onRetry={() => refetch()} />
       ) : isPending ? (
-        <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
+        <div className={PRODUCT_GRID}>
           {Array.from({ length: 9 }, (_, i) => (
             <Skeleton key={i} className="h-24" />
           ))}
@@ -124,11 +129,12 @@ export function ProductPicker({ warehouseId, onPick, onBarcode, inCart }: Produc
         />
       ) : (
         <div
-          className={cn('grid gap-3 sm:grid-cols-2 2xl:grid-cols-3', isFetching && 'opacity-60')}
+          className={cn(PRODUCT_GRID, isFetching && 'opacity-60')}
         >
           {data?.data.map((p) => {
             const left = inCart[p.id] ? subQty(p.stock, inCart[p.id] ?? '0') : p.stock;
             const out = compareQty(left, '0') <= 0;
+            const taken = inCart[p.id];
             return (
               <button
                 key={p.id}
@@ -136,32 +142,40 @@ export function ProductPicker({ warehouseId, onPick, onBarcode, inCart }: Produc
                 disabled={out}
                 onClick={() => onPick(p)}
                 className={cn(
-                  'group flex flex-col justify-between gap-2 rounded-lg border bg-card p-3 text-left transition-all',
+                  'group relative flex flex-col justify-between gap-2 rounded-lg border bg-card p-3 text-left transition-all',
+                  taken && 'border-primary/60 bg-primary/[0.04] ring-1 ring-primary/20',
                   out
                     ? 'cursor-not-allowed opacity-60'
-                    : 'hover:border-primary/50 hover:shadow-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none',
+                    : 'hover:border-primary/50 hover:shadow-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none active:scale-[0.98]',
                 )}
               >
+                {taken ? (
+                  <span className="absolute -top-2 -right-2 rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground tabular-nums shadow-sm">
+                    <span className="sr-only">{t.sales.cart.inCart(formatQuantity(taken))}</span>
+                    <span aria-hidden>×{formatQuantity(taken)}</span>
+                  </span>
+                ) : null}
                 <div className="space-y-0.5">
                   <p className="line-clamp-2 text-sm font-medium">{p.name}</p>
-                  <p className="text-xs text-muted-foreground">{p.groupName}</p>
+                  <p className="truncate text-xs text-muted-foreground">{p.groupName}</p>
                 </div>
-                <div className="flex items-end justify-between gap-2">
+                <div className="flex flex-wrap items-end justify-between gap-x-2 gap-y-1.5">
                   <span className="text-sm font-semibold tabular-nums">
                     {formatMoney(p.salePrice)}
                   </span>
                   {out ? (
                     <Badge variant="destructive">{t.sales.outOfStock}</Badge>
                   ) : (
-                    <span className="flex items-center gap-1.5">
+                    <span className="ml-auto flex items-center gap-1.5">
                       <Badge
                         variant={p.isLowStock ? 'warning' : 'secondary'}
                         className="tabular-nums"
                       >
                         {formatQuantity(left)} {t.units[p.unit]}
                       </Badge>
+                      {/* Sensorli ekranda hover yo'q — "qo'shish" belgisi doim ko'rinadi. */}
                       <span
-                        className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                        className="flex size-6 items-center justify-center rounded-md bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground"
                         aria-hidden
                       >
                         <Plus className="size-3.5" />
