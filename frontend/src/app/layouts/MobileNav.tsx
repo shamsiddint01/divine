@@ -56,7 +56,9 @@ export function MobileNav() {
                 >
                   <Icon className="size-5" aria-hidden />
                 </span>
-                <span className="max-w-full truncate px-0.5 tracking-tight">{section.shortTitle}</span>
+                <span className="max-w-full truncate px-0.5 tracking-tight">
+                  {section.shortTitle}
+                </span>
               </>
             );
             const only = section.items.length === 1 ? section.items[0] : undefined;
@@ -79,7 +81,9 @@ export function MobileNav() {
                       >
                         <sell.icon className="size-[18px]" aria-hidden />
                       </span>
-                      <span className="max-w-full truncate px-0.5 tracking-tight">{t.nav.sellShort}</span>
+                      <span className="max-w-full truncate px-0.5 tracking-tight">
+                        {t.nav.sellShort}
+                      </span>
                     </NavLink>
                   </li>
                 ) : null}
