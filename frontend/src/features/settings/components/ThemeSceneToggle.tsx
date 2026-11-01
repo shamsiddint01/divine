@@ -27,7 +27,11 @@ interface Transition {
   switched: boolean;
 }
 
-const restState = (theme: Theme): SceneState => ({ dir: 'toDay', p: theme === 'light' ? 1 : 0, direct: false });
+const restState = (theme: Theme): SceneState => ({
+  dir: 'toDay',
+  p: theme === 'light' ? 1 : 0,
+  direct: false,
+});
 
 /**
  * Sozlamalar tepasidagi mavzu banneri: suv, tuman, osmon. Butun banner — `role="switch"` tugma:

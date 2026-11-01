@@ -68,7 +68,11 @@ const smooth = (t: number) => t * t * (3 - 2 * t);
 const smoothstep = (a: number, b: number, v: number) => smooth(clamp01((v - a) / (b - a)));
 /** Qo'ng'iroqsimon egri: `c` atrofida 1, undan uzoqlashgan sari 0. */
 const bell = (v: number, c: number, w: number) => Math.exp(-(((v - c) / w) ** 2));
-const mix = (a: Rgb, b: Rgb, t: number): Rgb => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+const mix = (a: Rgb, b: Rgb, t: number): Rgb => [
+  lerp(a[0], b[0], t),
+  lerp(a[1], b[1], t),
+  lerp(a[2], b[2], t),
+];
 const rgba = (c: Rgb, a = 1) =>
   `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${clamp01(a).toFixed(3)})`;
 export const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
@@ -79,7 +83,11 @@ function skyAt(keys: SkyKey[], p: number): Sky {
   const a = keys[i]!;
   const b = keys[i + 1]!;
   const t = smooth(clamp01((p - a.at) / (b.at - a.at)));
-  return { top: mix(a.top, b.top, t), mid: mix(a.mid, b.mid, t), horizon: mix(a.horizon, b.horizon, t) };
+  return {
+    top: mix(a.top, b.top, t),
+    mid: mix(a.mid, b.mid, t),
+    horizon: mix(a.horizon, b.horizon, t),
+  };
 }
 
 /** Sahna parametrlari: rang va har bir qatlamning "kuchi" (0..1). */
@@ -279,7 +287,14 @@ export function drawScene(
     mg.addColorStop(1, rgba([190, 200, 255], 0));
     ctx.fillStyle = mg;
     ctx.fillRect(moonX - moonR * 5, moonY - moonR * 5, moonR * 10, moonR * 10);
-    const md = ctx.createRadialGradient(moonX - moonR * 0.3, moonY - moonR * 0.3, 0, moonX, moonY, moonR);
+    const md = ctx.createRadialGradient(
+      moonX - moonR * 0.3,
+      moonY - moonR * 0.3,
+      0,
+      moonX,
+      moonY,
+      moonR,
+    );
     md.addColorStop(0, rgba(WHITE, s.night));
     md.addColorStop(1, rgba(MOON, s.night * 0.92));
     ctx.fillStyle = md;
@@ -339,7 +354,10 @@ export function drawScene(
       // Ko'zgu: ufqqa yaqin yulduz — ufq ostida, baland yulduz — suvning pastida
       const ry = hy + 2 + (1 - st.y) * (waterH - 4);
       const jitter = Math.sin(time * 1.3 + st.phase) * 1.2;
-      ctx.fillStyle = rgba(WHITE, s.night * 0.3 * (0.6 + 0.4 * Math.sin(time * st.speed + st.phase)));
+      ctx.fillStyle = rgba(
+        WHITE,
+        s.night * 0.3 * (0.6 + 0.4 * Math.sin(time * st.speed + st.phase)),
+      );
       ctx.fillRect(st.x * w + jitter, ry, st.r * 1.6, Math.max(0.6, st.r * 0.5));
     }
   }
@@ -355,7 +373,8 @@ export function drawScene(
       width: sunR * 2.4,
     });
   }
-  if (s.night > 0.01) columns.push({ x: moonX, color: MOON, alpha: 0.5 * s.night, width: moonR * 2 });
+  if (s.night > 0.01)
+    columns.push({ x: moonX, color: MOON, alpha: 0.5 * s.night, width: moonR * 2 });
   for (const col of columns) {
     const rows = 16;
     for (let i = 0; i < rows; i++) {
