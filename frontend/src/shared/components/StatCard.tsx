@@ -49,7 +49,7 @@ export function StatCard({
         'h-full gap-2 p-3 sm:gap-3 sm:p-5',
         dense && 'max-sm:gap-1 max-sm:p-2.5',
         hero &&
-          'border-primary/20 bg-gradient-to-br from-primary/[0.09] via-card to-card p-4 sm:p-6',
+          'border-primary/35 bg-gradient-to-br from-primary/[0.2] via-card to-card p-4 sm:p-6',
         className,
       )}
     >
