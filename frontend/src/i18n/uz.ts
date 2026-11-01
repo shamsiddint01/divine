@@ -200,7 +200,7 @@ export const uz = {
       how: 'Qanday ishlaydi',
       faq: 'Savollar',
     },
-    heroTitle: 'Bozor va do‘koningiz uchun ERP',
+    heroTitle: 'Bozor va do‘koningiz uchun onlayn platforma',
     heroLines: ['Savdo, ombor va xarajatlarni daftar o‘rniga', 'bitta ilovada yuriting.'],
     featuresTitle: 'Imkoniyatlar',
     featuresLead: 'Har kungi savdo uchun kerak bo‘lgan hamma narsa — ortiqchasiz.',
