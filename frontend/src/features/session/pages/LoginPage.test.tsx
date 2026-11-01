@@ -121,6 +121,8 @@ describe('logout va RBAC (UX)', () => {
         .getAllByRole('link')
         .map((a) => [a.textContent, a.getAttribute('href')]),
     ).toEqual([
+      // Kassa — sotuvchining asosiy ishi, pastki panel o'rtasida alohida tugma.
+      ['Sotuv', '/sales'],
       ['Katalog', '/products'],
       ['Operatsiyalar', '/expenses'],
     ]);
