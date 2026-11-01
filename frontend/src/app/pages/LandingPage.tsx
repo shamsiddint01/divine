@@ -79,7 +79,15 @@ const scrollToSection = (id: string) =>
   document.getElementById(id)?.scrollIntoView({ block: 'start' });
 
 /** Telefon/planshet menyusi: to'liq ekranli qora panel (fokus, Esc va scroll qulfi — Radix). */
+/** "Kirish" manzili: himoyalangan sahifadan kelgan mehmonning qaytish yo'li login'ga uzatiladi. */
+function useLoginHref() {
+  const [params] = useSearchParams();
+  const redirect = safeRedirect(params.get('redirect'));
+  return redirect === '/' ? '/login' : `/login?redirect=${encodeURIComponent(redirect)}`;
+}
+
 function MobileMenu() {
+  const loginHref = useLoginHref();
   const [open, setOpen] = useState(false);
   const [target, setTarget] = useState<string | null>(null);
   return (
@@ -185,6 +193,7 @@ function useScrollReveal(root: RefObject<HTMLDivElement | null>, enabled: boolea
  * header ostida o'qish progressi, oxirida yakuniy CTA.
  */
 export function LandingPage() {
+  const loginHref = useLoginHref();
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const root = useRef<HTMLDivElement>(null);
   const progress = useRef<HTMLDivElement>(null);

@@ -503,7 +503,12 @@ check(
 );
 await go('/users');
 check(
-  'Auth: chiqilgandan keyin himoyalangan sahifa → /login?redirect',
+  'Auth: kirmagan holatda himoyalangan sahifa → avval /welcome?redirect',
+  await waitFor(`location.pathname === '/welcome' && location.search === '?redirect=%2Fusers'`),
+);
+await evaluate(`document.querySelector('a[href="/login?redirect=%2Fusers"]').click()`);
+check(
+  'Auth: landing "Kirish" → /login?redirect (qaytish manzili saqlanadi)',
   await waitFor(`location.pathname === '/login' && location.search === '?redirect=%2Fusers'`),
 );
 const submitLogin = async (login, password) => {

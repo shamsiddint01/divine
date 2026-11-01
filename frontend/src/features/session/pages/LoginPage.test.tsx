@@ -18,13 +18,27 @@ async function fillAndSubmit(login: string, password: string) {
 }
 
 describe('login sahifasi (mock auth)', () => {
-  it('tizimdan chiqilgan holatda himoyalangan sahifa → /login?redirect=…', async () => {
+  it('kirmagan mehmon: avval /welcome, "Kirish" → /login (qaytish manzili saqlanadi)', async () => {
     const { router } = renderApp('/products', { loggedOut: true });
+    expect(
+      await screen.findByRole('heading', { level: 1, name: t.landing.heroTitle }, PAGE),
+    ).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/welcome');
+    expect(router.state.location.search).toBe('?redirect=%2Fproducts');
+
+    const [signIn] = screen.getAllByRole('link', { name: t.landing.signIn });
+    await userEvent.click(signIn!);
     expect(
       await screen.findByRole('heading', { level: 1, name: t.auth.title }, PAGE),
     ).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/login');
     expect(router.state.location.search).toBe('?redirect=%2Fproducts');
+  });
+
+  it('bosh sahifa ("/") — kirmagan bo‘lsa /welcome ga, ortiqcha redirect’siz', async () => {
+    const { router } = renderApp('/', { loggedOut: true });
+    await waitFor(() => expect(router.state.location.pathname).toBe('/welcome'), PAGE);
+    expect(router.state.location.search).toBe('');
   });
 
   it('bo‘sh forma → o‘zbekcha validatsiya xabarlari', async () => {
@@ -71,7 +85,7 @@ describe('login sahifasi (mock auth)', () => {
   });
 
   it('muvaffaqiyatli kirish → redirect manziliga (case-insensitive login)', async () => {
-    const { router } = renderApp('/products', { loggedOut: true });
+    const { router } = renderApp('/login?redirect=%2Fproducts', { loggedOut: true });
     await fillAndSubmit('ADMIN', MOCK_DEMO_PASSWORD);
     await waitFor(() => expect(router.state.location.pathname).toBe('/products'));
     expect(
