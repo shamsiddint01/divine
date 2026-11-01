@@ -36,6 +36,7 @@ import { type Column, DataTable } from '@/shared/components/DataTable';
 import { DateRangeFilter } from '@/shared/components/DateRangeFilter';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { ErrorState } from '@/shared/components/ErrorState';
+import { FilterBar } from '@/shared/components/FilterBar';
 import { type FilterOption, FilterSelect } from '@/shared/components/FilterSelect';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { SearchInput } from '@/shared/components/SearchInput';
