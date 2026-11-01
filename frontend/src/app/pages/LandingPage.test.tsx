@@ -24,9 +24,15 @@ describe('landing sahifa (/welcome)', () => {
 
   it('"Bepul sinab ko‘rish" va "Bepul boshlash" Telegram kanalni yangi oynada ochadi', async () => {
     renderApp('/welcome', { loggedOut: true });
-    const tryFree = await screen.findByRole('link', { name: new RegExp(t.landing.tryFree) }, PAGE);
+    // Hero va yakuniy blokdagi "Bepul sinab ko'rish" + headerdagi "Bepul boshlash".
+    const tryFree = await screen.findAllByRole(
+      'link',
+      { name: new RegExp(t.landing.tryFree) },
+      PAGE,
+    );
+    expect(tryFree).toHaveLength(2);
     const start = screen.getByRole('link', { name: new RegExp(t.landing.start) });
-    for (const link of [tryFree, start]) {
+    for (const link of [...tryFree, start]) {
       expect(link).toHaveAttribute('href', TELEGRAM);
       expect(link).toHaveAttribute('target', '_blank');
       expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
