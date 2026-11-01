@@ -399,7 +399,7 @@ await go('/');
 check(
   'Qora mavzu doim yoqiq (almashtirgich yo‘q)',
   await waitFor(
-    `document.documentElement.classList.contains('dark') && getComputedStyle(document.body).backgroundColor === 'rgb(0, 0, 0)' && ![...document.querySelectorAll('button')].some((b) => /rejimga o‘tish/.test(b.getAttribute('aria-label') ?? ''))`,
+    `document.documentElement.classList.contains('dark') && ['rgb(0, 0, 0)', 'oklch(0 0 0)'].includes(getComputedStyle(document.body).backgroundColor) && ![...document.querySelectorAll('button')].some((b) => /rejimga o‘tish/.test(b.getAttribute('aria-label') ?? ''))`,
     2000,
   ),
 );
