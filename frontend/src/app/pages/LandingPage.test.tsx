@@ -51,4 +51,19 @@ describe('landing sahifa (/welcome)', () => {
     await userEvent.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
+
+  it('?v=2 — 2-variant: yakuniy CTA va variant almashtirgich; 1-variantda yakuniy CTA yo‘q', async () => {
+    const { router } = renderApp('/welcome?v=2', { loggedOut: true });
+    const final = await screen.findByRole('region', { name: t.landing.final.title }, PAGE);
+    expect(
+      within(final).getByRole('link', { name: new RegExp(t.landing.tryFree) }),
+    ).toHaveAttribute('href', TELEGRAM);
+    // JS kuzatuvchisi bo'lmasa (jsdom) hech narsa yashirilmaydi.
+    expect(final.closest('.ld')).not.toHaveAttribute('data-reveal-ready');
+
+    const switcher = screen.getByRole('navigation', { name: t.landing.variants.label });
+    await userEvent.click(within(switcher).getByRole('link', { name: t.landing.variants.v1 }));
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+    expect(screen.queryByRole('region', { name: t.landing.final.title })).toBeNull();
+  });
 });
