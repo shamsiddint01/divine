@@ -194,19 +194,23 @@ export const uz = {
     features: {
       warehouse: {
         title: 'Ombor nazorati',
-        description: 'Har bir ombordagi qoldiqni real vaqtda ko‘rib, kam qolgan mahsulotni darhol bilasiz.',
+        description:
+          'Har bir ombordagi qoldiqni real vaqtda ko‘rib, kam qolgan mahsulotni darhol bilasiz.',
       },
       sales: {
         title: 'Sotuv va mijozlar',
-        description: 'Sotuvni bir necha bosishda rasmiylashtirib, har bir mijozning xaridlar tarixini saqlaysiz.',
+        description:
+          'Sotuvni bir necha bosishda rasmiylashtirib, har bir mijozning xaridlar tarixini saqlaysiz.',
       },
       incoming: {
         title: 'Kirim va xarajatlar',
-        description: 'Kelgan tovar va har bir xarajat hujjat bilan yoziladi, pul qayerga ketgani aniq bo‘ladi.',
+        description:
+          'Kelgan tovar va har bir xarajat hujjat bilan yoziladi, pul qayerga ketgani aniq bo‘ladi.',
       },
       reports: {
         title: 'Hisobotlar',
-        description: 'Savdo, foyda va ombor bo‘yicha hisobotlarni istalgan davr uchun bir zumda olasiz.',
+        description:
+          'Savdo, foyda va ombor bo‘yicha hisobotlarni istalgan davr uchun bir zumda olasiz.',
       },
     },
     footer: '© 2026 Divine.uz',
