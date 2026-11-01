@@ -190,17 +190,21 @@ export function PosView() {
         />
       </div>
       <div className="grid grid-cols-[auto_1fr] gap-2 pt-1">
+        {/* Ikonka: asosiy tugma summa bilan birga sig'ishi uchun (nomi aria-label va title'da). */}
         <Button
           variant="outline"
-          size="lg"
+          size="icon"
+          className="size-10"
           onClick={() => setConfirmClear(true)}
           disabled={createSale.isPending || (lines.length === 0 && !customer.name)}
+          aria-label={t.sales.clear}
+          title={t.sales.clear}
         >
           <RotateCcw />
-          {t.sales.clear}
         </Button>
         <Button
           size="lg"
+          className="min-w-0 px-4"
           onClick={submit}
           disabled={lines.length === 0 || createSale.isPending || !warehouseId}
         >
