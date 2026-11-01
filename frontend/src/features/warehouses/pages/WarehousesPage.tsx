@@ -69,7 +69,7 @@ function WarehouseCard({
         </div>
         <StatusBadge status={w.status} />
       </div>
-      <div className="grid grid-cols-3 divide-x border-y bg-muted/30 [&+div]:border-t-0">
+      <div className="grid grid-cols-3 divide-x border-y bg-muted/30">
         <div className="p-3 sm:p-4">
           <p className="text-xs text-muted-foreground">{t.warehouses.productCount}</p>
           <p className="mt-1 text-base font-semibold tabular-nums sm:text-lg">
@@ -138,12 +138,11 @@ function WarehouseCard({
           ) : null}
         </div>
         <Button asChild size="sm" variant="secondary">
-            <Link to={`/warehouses/${w.id}`}>
-              {t.warehouses.open}
-              <ArrowRight />
-            </Link>
-          </Button>
-        </div>
+          <Link to={`/warehouses/${w.id}`}>
+            {t.warehouses.open}
+            <ArrowRight />
+          </Link>
+        </Button>
       </div>
     </Card>
   );
