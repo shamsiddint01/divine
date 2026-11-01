@@ -28,35 +28,28 @@ export function FormField({
   className,
   children,
 }: FormFieldProps) {
+  const labelEl = (
+    <Label htmlFor={id}>
+      {label}
+      {required ? (
+        <span className="text-destructive" aria-label={t.common.required}>
+          *
+        </span>
+      ) : null}
+      {optional ? (
+        <span className="font-normal text-muted-foreground">({t.common.optional})</span>
+      ) : null}
+    </Label>
+  );
   return (
     <div className={cn('grid gap-1.5', className)}>
       {action ? (
         <div className="flex items-center justify-between gap-2">
-        <Label htmlFor={id}>
-          {label}
-          {required ? (
-            <span className="text-destructive" aria-label={t.common.required}>
-              *
-            </span>
-          ) : null}
-          {optional ? (
-            <span className="font-normal text-muted-foreground">({t.common.optional})</span>
-          ) : null}
-        </Label>
+          {labelEl}
           {action}
         </div>
       ) : (
-        <Label htmlFor={id}>
-          {label}
-          {required ? (
-            <span className="text-destructive" aria-label={t.common.required}>
-              *
-            </span>
-          ) : null}
-          {optional ? (
-            <span className="font-normal text-muted-foreground">({t.common.optional})</span>
-          ) : null}
-        </Label>
+        labelEl
       )}
       {children}
       {error ? (
