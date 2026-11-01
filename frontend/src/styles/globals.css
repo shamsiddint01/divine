@@ -4,80 +4,57 @@
 @import '@fontsource-variable/inter';
 
 /* Divine.uz dizayn tizimi — shadcn/ui tokenlari asosida.
-   Ranglar faqat shu o'zgaruvchilar orqali ishlatiladi; komponentlarda xom hex yo'q. */
+   Ranglar faqat shu o'zgaruvchilar orqali ishlatiladi; komponentlarda xom hex yo'q.
+   Yagona mavzu — qora fon (landing bilan bir xil asos). <html class="dark"> index.html'da turadi. */
 @custom-variant dark (&:is(.dark *));
 
 :root {
   --radius: 0.625rem;
 
-  --background: oklch(0.984 0.003 247.858);
-  --foreground: oklch(0.208 0.042 265.755);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.208 0.042 265.755);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.208 0.042 265.755);
-  --primary: oklch(0.488 0.217 264.376);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.955 0.012 255);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  /* Status ranglari WCAG AA (≥4.5:1) bo'yicha hisoblangan: oq kartada ham, och fonli badge'da ham. */
-  --destructive: oklch(0.525 0.245 27.325);
-  --success: oklch(0.505 0.13 155);
-  --warning: oklch(0.515 0.15 65);
-  --info: oklch(0.515 0.15 245);
-  --border: oklch(0.922 0.013 255.508);
-  --input: oklch(0.9 0.015 255.508);
-  --ring: oklch(0.488 0.217 264.376 / 45%);
-
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-accent: oklch(0.955 0.02 264);
-  --sidebar-accent-foreground: oklch(0.42 0.2 264.376);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-
-  /* Grafik: bitta seriya — dataviz validatoridan o'tgan (yorug' fon) */
-  --chart-1: #2a78d6;
-  --chart-grid: oklch(0.929 0.013 255.508);
-  --chart-axis: oklch(0.554 0.046 257.417);
-}
-
-.dark {
-  --background: oklch(0.155 0.03 264.5);
-  --foreground: oklch(0.968 0.007 247.896);
-  --card: oklch(0.2 0.035 265);
-  --card-foreground: oklch(0.968 0.007 247.896);
-  --popover: oklch(0.21 0.035 265);
-  --popover-foreground: oklch(0.968 0.007 247.896);
+  /* Sirtlar: qora fon → karta → popover/menyu — har biri bir pog'ona yorug'roq, chegara 11% oq */
+  --background: oklch(0 0 0);
+  --foreground: oklch(0.97 0.003 264);
+  --card: oklch(0.16 0.005 264);
+  --card-foreground: oklch(0.97 0.003 264);
+  --popover: oklch(0.195 0.006 264);
+  --popover-foreground: oklch(0.97 0.003 264);
   --primary: oklch(0.62 0.19 262);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.27 0.035 262);
-  --secondary-foreground: oklch(0.968 0.007 247.896);
-  --muted: oklch(0.27 0.035 262);
-  --muted-foreground: oklch(0.72 0.035 256.8);
-  --accent: oklch(0.28 0.04 262);
-  --accent-foreground: oklch(0.968 0.007 247.896);
+  --secondary: oklch(0.24 0.007 264);
+  --secondary-foreground: oklch(0.97 0.003 264);
+  --muted: oklch(0.22 0.006 264);
+  --muted-foreground: oklch(0.72 0.012 260);
+  --accent: oklch(0.26 0.01 264);
+  --accent-foreground: oklch(0.97 0.003 264);
+  /* Status ranglari WCAG AA (≥4.5:1) bo'yicha: qora fonda, kartada va och fonli badge'da ham. */
   --destructive: oklch(0.68 0.19 22.2);
   --success: oklch(0.72 0.14 155);
   --warning: oklch(0.8 0.14 75);
   --info: oklch(0.72 0.12 245);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 14%);
-  --ring: oklch(0.62 0.19 262 / 50%);
+  --border: oklch(1 0 0 / 11%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.62 0.19 262 / 55%);
 
-  --sidebar: oklch(0.18 0.033 265);
-  --sidebar-foreground: oklch(0.968 0.007 247.896);
-  --sidebar-accent: oklch(0.27 0.05 264);
-  --sidebar-accent-foreground: oklch(0.85 0.08 264);
-  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar: oklch(0.11 0.004 264);
+  --sidebar-foreground: oklch(0.97 0.003 264);
+  --sidebar-accent: oklch(0.26 0.05 264);
+  --sidebar-accent-foreground: oklch(0.86 0.08 264);
+  --sidebar-border: oklch(1 0 0 / 9%);
 
-  /* Grafik: tungi fon uchun alohida tanlangan pog'ona (validatordan o'tgan) */
+  /* Grafik: qora fon uchun tanlangan pog'ona (dataviz validatoridan o'tgan) */
   --chart-1: #3987e5;
-  --chart-grid: oklch(1 0 0 / 8%);
-  --chart-axis: oklch(0.72 0.035 256.8);
+  --chart-grid: oklch(1 0 0 / 9%);
+  --chart-axis: oklch(0.72 0.012 260);
+}
+
+/* Qora fonda oddiy soya ko'rinmaydi — ko'tarilgan sirt (menyu, oyna, hover'dagi karta) nozik oq chegara
+   bilan ajraladi. Tailwind shadow-* utilitalari shu qiymatlardan build paytida olinadi. */
+@theme {
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.6);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.7);
+  --shadow: 0 0 0 1px rgb(255 255 255 / 0.05), 0 2px 6px -1px rgb(0 0 0 / 0.8);
+  --shadow-md: 0 0 0 1px rgb(255 255 255 / 0.08), 0 8px 22px -6px rgb(0 0 0 / 0.9);
+  --shadow-lg: 0 0 0 1px rgb(255 255 255 / 0.09), 0 18px 40px -12px rgb(0 0 0 / 0.95);
 }
 
 @theme inline {
@@ -121,10 +98,8 @@
     @apply border-border outline-ring/50;
   }
   html {
-    color-scheme: light;
-  }
-  html.dark {
     color-scheme: dark;
+    background: var(--background);
   }
   body {
     @apply bg-background font-sans text-foreground antialiased;
