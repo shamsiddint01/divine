@@ -54,6 +54,9 @@ export function ThemeSceneToggle() {
   const hovered = useRef(false);
   const clock = useRef({ last: 0, time: 0, mist: 0 });
   const frame = useRef(0);
+  // Moslashuvchan sifat: kadr uzoq vaqt sekin bo'lsa (kuchsiz qurilma), canvas piksel zichligi pasayadi
+  const quality = useRef({ scale: 1, avgMs: 16, frames: 0 });
+  const resizeRef = useRef<() => void>(() => {});
   // Zanjirdagi eng so'nggi holatlar (rAF ichida eskirgan qiymat ishlatilmasin)
   const live = useRef({ reduceMotion, setTheme });
   useEffect(() => {
@@ -66,6 +69,22 @@ export function ThemeSceneToggle() {
     const dt = c.last ? Math.min(0.1, (now - c.last) / 1000) : 0;
     c.last = now;
     c.time += dt;
+    if (dt > 0 && dt < 0.1) {
+      const q = quality.current;
+      q.avgMs = q.avgMs * 0.92 + dt * 1000 * 0.08;
+      q.frames++;
+      // ~42 fps dan past barqaror bo'lsa — bir pog'ona pastroq aniqlik (eng kami 1×)
+      if (q.frames > 50 && q.avgMs > 24) {
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        const next = Math.max(1 / dpr, q.scale - 0.25);
+        if (next < q.scale) {
+          q.scale = next;
+          resizeRef.current();
+        }
+        q.frames = 0;
+        q.avgMs = 16;
+      }
+    }
     // Hover'da tuman tezroq suzadi (silliq tezlanish)
     c.mist += dt * (hovered.current ? 2.4 : 1);
 
@@ -102,7 +121,7 @@ export function ThemeSceneToggle() {
   const kickRef = useRef<() => void>(() => {});
   const kick = useCallback(() => kickRef.current(), []);
 
-  // O'lcham: canvas piksellari = CSS o'lcham × devicePixelRatio (≤2); maket siljimaydi
+  // O'lcham: canvas piksellari = CSS o'lcham × devicePixelRatio (≤2, sifat bo'yicha); maket siljimaydi
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -110,12 +129,13 @@ export function ThemeSceneToggle() {
     assets.current.textures ??= createSceneTextures();
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const dpr = Math.min(2, window.devicePixelRatio || 1) * quality.current.scale;
       size.current = { w: rect.width, h: rect.height };
       canvas.width = Math.round(rect.width * dpr);
       canvas.height = Math.round(rect.height * dpr);
       render(performance.now());
     };
+    resizeRef.current = resize;
     resize();
     if (typeof ResizeObserver === 'undefined') return;
     const ro = new ResizeObserver(resize);
