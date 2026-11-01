@@ -44,7 +44,7 @@ export function PasswordRevealDialog({
         </DialogHeader>
         <div className="flex items-center justify-center gap-3">
           <p
-            className="rounded-lg border bg-muted/50 px-5 py-3 font-mono text-3xl font-semibold tracking-[0.4em] tabular-nums"
+            className="rounded-lg border bg-muted/50 px-5 py-3 font-mono text-2xl font-semibold tracking-[0.4em] sm:text-3xl tabular-nums"
             aria-live="polite"
           >
             {password}

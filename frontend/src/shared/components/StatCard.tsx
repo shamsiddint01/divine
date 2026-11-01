@@ -83,7 +83,7 @@ export function StatCard({
             className={cn(
               'text-lg font-semibold tracking-tight tabular-nums sm:text-2xl',
               dense && 'max-sm:text-sm max-sm:leading-snug',
-              hero && 'text-3xl font-bold sm:text-4xl',
+              hero && 'text-[26px] font-bold sm:text-4xl',
             )}
           >
             {value}

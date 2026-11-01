@@ -68,7 +68,7 @@ export function SaleReceiptDialog({
             <Separator />
             <div className="flex items-baseline justify-between">
               <span className="font-medium">{t.sales.cart.total}</span>
-              <span className="text-xl font-bold tabular-nums">
+              <span className="text-lg font-bold tabular-nums sm:text-xl">
                 {formatMoney(sale.totalAmount)}
               </span>
             </div>

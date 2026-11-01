@@ -47,7 +47,7 @@ function WarehouseCard({
 }) {
   const active = w.status === 'ACTIVE';
   return (
-    <Card className="gap-0 overflow-hidden p-0 transition-shadow hover:shadow-md">
+    <Card className="gap-0 overflow-hidden p-0 transition-shadow sm:p-0 hover:shadow-md">
       <div className="flex items-start justify-between gap-3 p-4 sm:p-5">
         <div className="flex min-w-0 gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">

@@ -145,7 +145,7 @@ export function SalesChart() {
             {isPending ? (
               <Skeleton className="mt-1 h-6 w-36" />
             ) : (
-              <p className="text-xl font-semibold tabular-nums">{formatMoney(total)}</p>
+              <p className="text-lg font-semibold tabular-nums sm:text-xl">{formatMoney(total)}</p>
             )}
           </div>
           <div>
@@ -153,7 +153,7 @@ export function SalesChart() {
             {isPending ? (
               <Skeleton className="mt-1 h-6 w-28" />
             ) : (
-              <p className="text-xl font-semibold tabular-nums">
+              <p className="text-lg font-semibold tabular-nums sm:text-xl">
                 {formatCompactMoney(divideMoney(total, days))}
               </p>
             )}
@@ -163,7 +163,7 @@ export function SalesChart() {
             {isPending ? (
               <Skeleton className="mt-1 h-6 w-16" />
             ) : (
-              <p className="text-xl font-semibold tabular-nums">{formatInteger(count)}</p>
+              <p className="text-lg font-semibold tabular-nums sm:text-xl">{formatInteger(count)}</p>
             )}
           </div>
         </div>

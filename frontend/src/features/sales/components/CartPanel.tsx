@@ -74,7 +74,7 @@ export function CartPanel({ lines, onQuantity, onRemove }: CartPanelProps) {
         </div>
         <div className="flex items-baseline justify-between">
           <span className="font-medium">{t.sales.cart.total}</span>
-          <span className="text-2xl font-bold tracking-tight tabular-nums">
+          <span className="text-xl font-bold tracking-tight tabular-nums sm:text-2xl">
             {formatMoney(totals.totalAmount)}
           </span>
         </div>

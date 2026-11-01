@@ -45,7 +45,7 @@ function AlertDialogTitle({
   ...props
 }: ComponentProps<typeof AlertDialogPrimitive.Title>) {
   return (
-    <AlertDialogPrimitive.Title className={cn('text-lg font-semibold', className)} {...props} />
+    <AlertDialogPrimitive.Title className={cn('text-base font-semibold sm:text-lg', className)} {...props} />
   );
 }
 

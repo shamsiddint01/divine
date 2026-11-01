@@ -355,7 +355,7 @@ export function ReportsPage() {
         })}
       </div>
 
-      <Card className="gap-4 p-4">
+      <Card className="gap-4 p-4 sm:p-4">
         <FilterBar
           search={
             has('search') ? (

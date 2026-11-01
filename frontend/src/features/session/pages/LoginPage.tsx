@@ -127,12 +127,12 @@ export function LoginPage() {
             <div className="mx-auto flex size-11 items-center justify-center rounded-xl bg-primary text-lg font-bold text-primary-foreground shadow-sm lg:hidden">
               {t.app.name.charAt(0)}
             </div>
-            <h1 className="text-2xl font-semibold tracking-tight">{t.auth.title}</h1>
+            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t.auth.title}</h1>
             <p className="text-sm text-muted-foreground">{t.auth.subtitle}</p>
           </div>
 
           <Card className="shadow-sm">
-            <CardContent className="space-y-5 p-6">
+            <CardContent className="space-y-5 p-5 sm:p-6">
               {reason === 'expired' && !login.isError ? (
                 <Notice tone="info" icon={Info}>
                   {t.auth.sessionExpired}

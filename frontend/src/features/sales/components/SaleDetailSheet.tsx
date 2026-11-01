@@ -97,7 +97,7 @@ export function SaleDetailSheet({
                 ) : null}
                 <div className="flex items-baseline justify-between pt-1">
                   <span className="font-medium">{t.sales.cart.total}</span>
-                  <MoneyText value={sale.totalAmount} className="text-xl font-bold" />
+                  <MoneyText value={sale.totalAmount} className="text-lg font-bold sm:text-xl" />
                 </div>
               </div>
             </>

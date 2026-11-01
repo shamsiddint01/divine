@@ -200,7 +200,7 @@ export function AuditLogView() {
 
   return (
     <div className="space-y-4">
-      <Card className="gap-3 p-4">
+      <Card className="gap-3 p-4 sm:p-4">
         <div className="flex items-start gap-3">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <ScrollText className="size-[18px]" />

@@ -574,7 +574,7 @@ export function IncomingEditorPage() {
               <div>
                 <p className="text-xs text-muted-foreground">{t.incoming.form.totalQuantity}</p>
                 <p
-                  className="text-2xl font-bold tabular-nums"
+                  className="text-xl font-bold tabular-nums sm:text-2xl"
                   data-testid="incoming-total-quantity"
                 >
                   {qtyLabel}
@@ -582,7 +582,7 @@ export function IncomingEditorPage() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">{t.incoming.form.totalAmount}</p>
-                <p className="text-xl font-semibold tabular-nums">
+                <p className="text-lg font-semibold tabular-nums sm:text-xl">
                   {formatMoney(totals.totalAmount)}
                 </p>
               </div>
