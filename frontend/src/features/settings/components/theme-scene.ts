@@ -703,6 +703,7 @@ export function drawScene(
   const tx = a.textures;
   const day = 1 - s.night;
 
+  __mark(0);
   // 1) Osmon → bufer (bo'lmasa to'g'ridan-to'g'ri)
   let skyCtx = ctx;
   if (tx) {
@@ -718,6 +719,7 @@ export function drawScene(
   drawSky(skyCtx, w, h, hy, s, a, tx, time);
   if (tx) ctx.drawImage(tx.sky, 0, 0, w, hy);
 
+  __mark(1);
   // 2) Suv: ko'zgu aksi kichraytirilgan osmondan (tabiiy xiralik); pastga — kameraga yaqin suv —
   //    to'lqin kattaroq. Qatorlar 1px: aks "zinapoya" bo'lib ko'rinmaydi.
   ctx.fillStyle = rgba(mix(s.sky.top, [0, 0, 0], 0.5));
@@ -746,6 +748,7 @@ export function drawScene(
       }
     }
   }
+  __mark(2);
   // Fresnel: ufq yonida aks kuchli, yaqin suv chuqur va qorong'iroq
   const deep = mix(s.sky.top, [2, 6, 18], 0.55);
   const fres = ctx.createLinearGradient(0, hy, 0, h);
@@ -758,6 +761,7 @@ export function drawScene(
   ctx.fillStyle = rgba(mix(s.sky.horizon, WHITE, 0.4), 0.35);
   ctx.fillRect(0, hy, w, 1);
 
+  __mark(3);
   // Mayda to'lqin yaltirashlari
   const ripple = mix([150, 170, 230], WHITE, day);
   for (let i = 0; i < 46; i++) {
@@ -770,6 +774,7 @@ export function drawScene(
     ctx.fillRect(xx * w, yy, len, 1);
   }
 
+  __mark(4);
   // 3) Quyosh/oy yo'li: suvda titrab turuvchi yaltirash uchqunlari
   const paths: { x: number; color: Rgb; strength: number; width: number }[] = [];
   const sunVisible = smoothstep(-0.12, 0.04, s.sun);
@@ -812,6 +817,7 @@ export function drawScene(
   }
   ctx.globalCompositeOperation = 'source-over';
 
+  __mark(5);
   // 4) Tuman: ikki qatlam, har xil tezlik (parallaks); tunda qalin, kunduzi yupqa havo
   if (tx) {
     const amount = lerp(0.22, 0.95, s.night) + s.warmth * 0.15;
@@ -837,6 +843,7 @@ export function drawScene(
     ctx.globalAlpha = 1;
   }
 
+  __mark(6);
   // 5) Vinyetka va donadorlik (kinematografik yakun, gradient chiziqlarisiz)
   const vig = ctx.createRadialGradient(
     w / 2,
@@ -857,4 +864,7 @@ export function drawScene(
       ctx.fillRect(0, 0, w, h);
     }
   }
+  __mark(7);
+  const g = globalThis as unknown as { __prof?: number[][] };
+  (g.__prof ??= []).push(__t.slice(1).map((v, k) => v - __t[k]!));
 }
