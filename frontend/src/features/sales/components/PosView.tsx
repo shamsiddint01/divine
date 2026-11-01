@@ -196,55 +196,61 @@ export function PosView() {
         </CardContent>
       </Card>
 
-      <Card className="gap-4 xl:sticky xl:top-20">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <ShoppingCart className="size-4" />
-            {t.sales.cart.title}
-          </CardTitle>
+      {compact ? (
+        <>
           {lines.length > 0 ? (
-            <Badge variant="secondary">{t.sales.cart.itemsCount(lines.length)}</Badge>
+            // Sahifa oxirigacha ekran pastida turadi (sticky): kassir ro'yxatni aylantirib savatni izlamaydi.
+            <button
+              type="button"
+              onClick={() => setCartOpen(true)}
+              aria-haspopup="dialog"
+              aria-label={`${t.sales.cart.open}: ${t.sales.cart.itemsCount(lines.length)}, ${formatMoney(totals.totalAmount)}`}
+              className="sticky bottom-[calc(var(--mobile-nav-h)+0.75rem)] z-30 flex h-14 items-center gap-3 rounded-xl bg-primary px-4 text-primary-foreground shadow-lg shadow-primary/25 transition-transform outline-none focus-visible:ring-[3px] focus-visible:ring-ring active:scale-[0.99]"
+            >
+              <span className="relative">
+                <ShoppingCart className="size-5" aria-hidden />
+                <span className="absolute -top-2 -right-2.5 flex size-5 items-center justify-center rounded-full bg-primary-foreground text-[11px] font-bold text-primary tabular-nums">
+                  {lines.length}
+                </span>
+              </span>
+              <span className="ml-1 text-sm font-medium">{t.sales.cart.title}</span>
+              <span className="ml-auto text-base font-semibold tabular-nums">
+                {formatMoney(totals.totalAmount)}
+              </span>
+              <ChevronUp className="size-4 opacity-80" aria-hidden />
+            </button>
           ) : null}
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <CartPanel
-            lines={lines}
-            onQuantity={(id, q) => setLines((prev) => setLineQuantity(prev, id, q))}
-            onRemove={(id) => setLines((prev) => removeLine(prev, id))}
-          />
-          <Separator />
-          <div className="space-y-1">
-            <p className="text-sm font-semibold">{t.sales.customer.title}</p>
-            <CustomerFields
-              value={customer}
-              onChange={(v) => {
-                setCustomer(v);
-                if (errors.name || errors.phone) setErrors({});
-              }}
-              errors={errors}
-            />
-          </div>
-          <div className="grid grid-cols-[auto_1fr] gap-2 pt-1">
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => setConfirmClear(true)}
-              disabled={createSale.isPending || (lines.length === 0 && !customer.name)}
+          <Sheet open={cartOpen && lines.length > 0} onOpenChange={setCartOpen}>
+            <SheetContent
+              side="bottom"
+              className="max-h-[92dvh] gap-0 rounded-t-2xl pb-[env(safe-area-inset-bottom)]"
             >
-              <RotateCcw />
-              {t.sales.clear}
-            </Button>
-            <Button
-              size="lg"
-              onClick={submit}
-              disabled={lines.length === 0 || createSale.isPending || !warehouseId}
-            >
-              {createSale.isPending ? <Loader2 className="animate-spin" /> : null}
-              {createSale.isPending ? t.sales.processing : t.sales.confirm}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+              <SheetHeader className="flex-row items-center gap-2 px-5 py-4">
+                <SheetTitle className="flex items-center gap-2">
+                  <ShoppingCart className="size-4" aria-hidden />
+                  {t.sales.cart.title}
+                </SheetTitle>
+                <Badge variant="secondary">{t.sales.cart.itemsCount(lines.length)}</Badge>
+                <SheetDescription className="sr-only">{t.sales.cart.emptyHint}</SheetDescription>
+              </SheetHeader>
+              <div className="space-y-4 overflow-y-auto p-5">{checkout}</div>
+            </SheetContent>
+          </Sheet>
+        </>
+      ) : (
+        <Card className="sticky top-20 gap-4">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <ShoppingCart className="size-4" />
+              {t.sales.cart.title}
+            </CardTitle>
+            {lines.length > 0 ? (
+              <Badge variant="secondary">{t.sales.cart.itemsCount(lines.length)}</Badge>
+            ) : null}
+          </CardHeader>
+          <CardContent className="space-y-4">{checkout}</CardContent>
+        </Card>
+      )}
 
       <SaleReceiptDialog sale={receipt} onClose={() => setReceipt(null)} />
       <ConfirmDialog
