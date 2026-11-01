@@ -188,12 +188,24 @@ export const uz = {
     serverModeHint: 'Haqiqiy server bilan kirish.',
   },
   landing: {
+    home: 'Divine.uz — bosh sahifa',
+    menu: 'Menyu',
+    mainMenu: 'Sahifa bo‘limlari',
+    menuOpen: 'Menyuni ochish',
+    menuClose: 'Menyuni yopish',
     signIn: 'Kirish',
+    start: 'Bepul boshlash',
+    tryFree: 'Bepul sinab ko‘rish',
+    opensTelegram: 'Telegram kanalimiz yangi oynada ochiladi',
+    nav: {
+      features: 'Imkoniyatlar',
+      how: 'Qanday ishlaydi',
+      faq: 'Savollar',
+    },
     heroTitle: 'Bozor va do‘koningiz uchun oddiy ERP',
-    heroDescription:
-      'Mahsulot, ombor, sotuv va hisobotlar bir joyda — har kungi savdoni qog‘ozsiz va aniq yuriting.',
-    start: 'Boshlash',
+    heroLines: ['Savdo, ombor va xarajatlarni daftar o‘rniga', 'bitta oddiy ilovada yuriting.'],
     featuresTitle: 'Imkoniyatlar',
+    featuresLead: 'Har kungi savdo uchun kerak bo‘lgan hamma narsa — ortiqchasiz.',
     features: {
       warehouse: {
         title: 'Ombor nazorati',
@@ -216,7 +228,55 @@ export const uz = {
           'Savdo, foyda va ombor bo‘yicha hisobotlarni istalgan davr uchun bir zumda olasiz.',
       },
     },
-    footer: '© 2026 Divine.uz',
+    howTitle: 'Qanday ishlaydi',
+    howLead: 'Uch qadam — va daftar kerak bo‘lmaydi.',
+    steps: [
+      {
+        title: 'Mahsulot va omborlarni kiriting',
+        description: 'Mahsulot nomi, narxi va shtrix-kodi; har bir filial — alohida ombor.',
+      },
+      {
+        title: 'Kirim va sotuvni yozing',
+        description:
+          'Kelgan tovarni kirim qiling, kassada skaner yoki qidiruv bilan soting — qoldiq o‘zi kamayadi.',
+      },
+      {
+        title: 'Natijani ko‘ring',
+        description: 'Bugungi savdo, foyda, xarajat va kam qolgan tovar — bosh sahifada va hisobotlarda.',
+      },
+    ],
+    faqTitle: 'Ko‘p beriladigan savollar',
+    faq: [
+      {
+        q: 'Ilova qaysi tilda?',
+        a: 'To‘liq o‘zbek tilida (lotin yozuvi). Pul so‘mda, sanalar Toshkent vaqtida.',
+      },
+      {
+        q: 'Telefonda ishlaydimi?',
+        a: 'Ha. Ilova brauzerda ochiladi — telefon, planshet va kompyuterda bir xil ishlaydi, o‘rnatish shart emas.',
+      },
+      {
+        q: 'Bir nechta filial yoki omborni yuritsa bo‘ladimi?',
+        a: 'Ha. Har bir ombor qoldig‘i alohida hisoblanadi, sotuvchiga faqat o‘z ombori ko‘rinadi.',
+      },
+      {
+        q: 'Sotuvchilar nimani ko‘radi?',
+        a: 'Administrator har bir userga rol beradi. Sotuvchi sotuv qiladi, lekin kelgan narx, foyda va boshqa sozlamalarni ko‘rmaydi.',
+      },
+      {
+        q: 'Qanday boshlayman?',
+        a: '“Bepul sinab ko‘rish” tugmasini bosing — Telegram kanalimiz orqali bog‘lanib, ishga tushirishda yordam beramiz.',
+      },
+    ],
+    footer: {
+      about:
+        'Do‘koningiz savdosi, ombordagi tovar, kirim va xarajatlarni bir joyda kuzating. Ilova o‘zbek tilida, telefonda ishlaydi va maxsus bilim talab qilmaydi. Abu Saxiy bozori savdogarlari uchun, savdogarlar bilan birga yaratilgan.',
+      contactTitle: 'Biz bilan bog‘lanish',
+      phone: '+998 00 000 00 00',
+      address: ['Abu Saxiy savdo majmuasi,', 'Toshkent shahri,', 'O‘zbekiston'],
+      copyright: '© Divine.uz, 2026. Barcha huquqlar himoyalangan.',
+      telegram: 'Telegram kanal',
+    },
   },
   forbidden: {
     title: 'Ruxsat yo‘q',
