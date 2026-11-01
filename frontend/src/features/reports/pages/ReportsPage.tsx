@@ -357,12 +357,14 @@ export function ReportsPage() {
       <Card className="gap-4 p-4">
         <FilterBar
           search={
-            <SearchInput
-              value={list.search}
-              onChange={list.setSearch}
-              placeholder={t.reports.filters.searchCustomer}
-              className="sm:w-64"
-            />
+            has('search') ? (
+              <SearchInput
+                value={list.search}
+                onChange={list.setSearch}
+                placeholder={t.reports.filters.searchCustomer}
+                className="sm:w-64"
+              />
+            ) : undefined
           }
           active={list.activeFilterCount > (list.search ? 1 : 0)}
         >
@@ -375,8 +377,6 @@ export function ReportsPage() {
                 list.setFilter('dateTo', r.to ?? '');
               }}
             />
-          ) : null}
-          {has('search') ? (
           ) : null}
           {has('productId') ? (
             <ProductCombobox
