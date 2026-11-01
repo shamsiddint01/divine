@@ -276,7 +276,7 @@ export const uz = {
     footer: {
       about:
         'Do‘koningiz savdosi, ombordagi tovar, kirim va xarajatlarni bir joyda kuzating. Ilova o‘zbek tilida, telefonda ishlaydi va maxsus bilim talab qilmaydi. Abu Saxiy bozori savdogarlari uchun, savdogarlar bilan birga yaratilgan.',
-      contactTitle: 'Biz bilan bog‘lanish',
+      contactTitle: 'Murojaat uchun',
       phone: '+998 90 133 38 31',
       address: ['Abu Saxiy savdo majmuasi,', 'Toshkent shahri,', 'O‘zbekiston'],
       copyright: '© Divine.uz, 2026. Barcha huquqlar himoyalangan.',
