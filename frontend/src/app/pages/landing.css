@@ -757,7 +757,7 @@ html:has(.ld) {
 }
 
 /* ======================================================================
-   2-variant (/welcome?v=2): scroll bilan paydo bo'lish, progress chizig'i, yakuniy CTA.
+   Scroll bilan paydo bo'lish, progress chizig'i, yakuniy CTA.
    Elementlar faqat JS kuzatuvchi ulangach (`data-reveal-ready`) yashiriladi — JS ishlamasa hammasi ko'rinadi.
    ====================================================================== */
 
@@ -811,33 +811,6 @@ html:has(.ld) {
   }
 }
 
-/* Dev-only variant almashtirgich */
-.ld-variants {
-  position: fixed;
-  left: 12px;
-  bottom: calc(12px + env(safe-area-inset-bottom));
-  z-index: 70;
-  display: flex;
-  gap: 2px;
-  padding: 3px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 999px;
-  background: rgba(20, 20, 20, 0.85);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  font-size: 12px;
-  font-weight: 600;
-}
-.ld-variants a {
-  padding: 6px 12px;
-  border-radius: 999px;
-  color: rgba(255, 255, 255, 0.7);
-}
-.ld-variants a[aria-current='page'] {
-  background: var(--ld-accent);
-  color: #fff;
-}
-
 @media (prefers-reduced-motion: no-preference) {
   .ld[data-reveal-ready] [data-reveal] {
     transition:
@@ -865,7 +838,7 @@ html:has(.ld) {
   }
 
   /* Bo'lim sarlavhasi ostida marjon chiziq chiziladi */
-  .ld[data-variant='2'] .ld-section__head .ld-section__title::after {
+  .ld .ld-section__head .ld-section__title::after {
     content: '';
     display: block;
     width: calc(56 * var(--u));
@@ -876,8 +849,8 @@ html:has(.ld) {
     transform: scaleX(0);
     transition: transform 0.9s 0.25s var(--ld-ease);
   }
-  .ld[data-variant='2'] .ld-section__head[data-revealed] .ld-section__title::after,
-  .ld[data-variant='2']:not([data-reveal-ready]) .ld-section__title::after {
+  .ld .ld-section__head[data-revealed] .ld-section__title::after,
+  .ld:not([data-reveal-ready]) .ld-section__title::after {
     transform: scaleX(1);
   }
 

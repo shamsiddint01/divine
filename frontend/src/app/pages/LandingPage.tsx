@@ -1,7 +1,7 @@
 import { BarChart3, LogIn, Plus, Send, ShoppingCart, Truck, Warehouse, X } from 'lucide-react';
 import { Dialog } from 'radix-ui';
 import { type CSSProperties, type RefObject, useEffect, useId, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Link } from 'react-router';
 import { t } from '@/i18n/uz';
 import { useMediaQuery } from '@/shared/hooks/use-media-query';
 import './landing.css';
@@ -150,7 +150,7 @@ function MobileMenu() {
 const stagger = (i: number) => ({ '--i': i }) as CSSProperties;
 
 /**
- * 2-variant: sahifa pastga aylantirilganda `[data-reveal]` elementlar ekranga kirgan sari paydo bo'ladi.
+ * Sahifa pastga aylantirilganda `[data-reveal]` elementlar ekranga kirgan sari paydo bo'ladi.
  * JS ishlamasa yoki harakat o'chirilgan bo'lsa hech narsa yashirilmaydi (`data-reveal-ready` faqat shu yerda).
  */
 function useScrollReveal(root: RefObject<HTMLDivElement | null>, enabled: boolean) {
@@ -181,35 +181,17 @@ function useScrollReveal(root: RefObject<HTMLDivElement | null>, enabled: boolea
   }, [root, enabled]);
 }
 
-/** Faqat dev serverda: 1- va 2-variantni tez almashtirish (production'da ko'rinmaydi). */
-function VariantSwitcher({ variant }: { variant: 1 | 2 }) {
-  if (!import.meta.env.DEV) return null;
-  return (
-    <nav className="ld-variants" aria-label={t.landing.variants.label}>
-      <Link to="/welcome" aria-current={variant === 1 ? 'page' : undefined}>
-        {t.landing.variants.v1}
-      </Link>
-      <Link to="/welcome?v=2" aria-current={variant === 2 ? 'page' : undefined}>
-        {t.landing.variants.v2}
-      </Link>
-    </nav>
-  );
-}
-
 /**
- * `/welcome`: login talab qilmaydigan ochiq tanishtiruv sahifasi.
- * `?v=2` — tanlov uchun 2-variant: scroll bilan paydo bo'ladigan bo'limlar, progress chizig'i va yakuniy
- * CTA. Egasi tanlagach, keraksiz variant o'chiriladi.
+ * `/welcome`: login talab qilmaydigan ochiq tanishtiruv sahifasi. Bo'limlar scroll bilan paydo bo'ladi,
+ * header ostida o'qish progressi, oxirida yakuniy CTA.
  */
 export function LandingPage() {
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
-  const [params] = useSearchParams();
-  const variant = params.get('v') === '2' ? 2 : 1;
   const root = useRef<HTMLDivElement>(null);
   const progress = useRef<HTMLDivElement>(null);
   const [scrolled, setScrolled] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
-  useScrollReveal(root, variant === 2 && !reduceMotion);
+  useScrollReveal(root, !reduceMotion);
 
   useEffect(() => {
     const onScroll = () => {
@@ -226,11 +208,10 @@ export function LandingPage() {
   }, []);
 
   return (
-    <div className="ld" ref={root} data-variant={variant}>
-      <VariantSwitcher variant={variant} />
+    <div className="ld" ref={root}>
       <div className="ld-scale">
         <header className="ld-header" data-scrolled={scrolled}>
-          {variant === 2 ? <div ref={progress} className="ld-progress" aria-hidden /> : null}
+          <div ref={progress} className="ld-progress" aria-hidden />
           <div className="ld-header__bar">
             <Brand />
             <nav className="ld-nav" aria-label={t.landing.mainMenu}>
@@ -358,27 +339,25 @@ export function LandingPage() {
             </div>
           </section>
 
-          {variant === 2 ? (
-            <section className="ld-section" aria-labelledby="ld-final-title">
-              <div className="ld-final" data-reveal>
-                <h2 id="ld-final-title" className="ld-section__title">
-                  {t.landing.final.title}
-                </h2>
-                <p className="ld-section__lead">{t.landing.final.lead}</p>
-                <div className="ld-final__actions">
-                  <span data-reveal="pop" style={stagger(2)}>
-                    <TelegramButton label={t.landing.tryFree} />
-                  </span>
-                  <span data-reveal="pop" style={stagger(3)}>
-                    <Link to="/login" className="ld-btn ld-btn--ghost">
-                      <LogIn />
-                      {t.landing.signIn}
-                    </Link>
-                  </span>
-                </div>
+          <section className="ld-section" aria-labelledby="ld-final-title">
+            <div className="ld-final" data-reveal>
+              <h2 id="ld-final-title" className="ld-section__title">
+                {t.landing.final.title}
+              </h2>
+              <p className="ld-section__lead">{t.landing.final.lead}</p>
+              <div className="ld-final__actions">
+                <span data-reveal="pop" style={stagger(2)}>
+                  <TelegramButton label={t.landing.tryFree} />
+                </span>
+                <span data-reveal="pop" style={stagger(3)}>
+                  <Link to="/login" className="ld-btn ld-btn--ghost">
+                    <LogIn />
+                    {t.landing.signIn}
+                  </Link>
+                </span>
               </div>
-            </section>
-          ) : null}
+            </div>
+          </section>
         </main>
 
         <footer className="ld-footer">
