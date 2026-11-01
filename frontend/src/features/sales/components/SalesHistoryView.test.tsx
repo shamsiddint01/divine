@@ -16,7 +16,7 @@ function as(login: string) {
 
 describe('Sotuvlar tarixi (Phase 10, OWN-04/05/06)', () => {
   it('sotuvchi: faqat o‘z sotuvlari; foyda ustuni, foyda yig‘masi va user filtri yo‘q', async () => {
-    renderApp('/sales?tab=history', { loggedOut: true });
+    renderApp('/login?redirect=%2Fsales%3Ftab%3Dhistory', { loggedOut: true });
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText(t.auth.login, {}, PAGE), 'aziz');
     await user.type(
@@ -34,7 +34,7 @@ describe('Sotuvlar tarixi (Phase 10, OWN-04/05/06)', () => {
 
 describe('mock API backend bilan bir xil', () => {
   it('sotuvchi: ro‘yxat faqat o‘ziniki (`userId` chetlab o‘tolmaydi), begona sotuv 404, tannarx yo‘q', async () => {
-    renderApp('/sales', { loggedOut: true });
+    renderApp('/login?redirect=%2Fsales', { loggedOut: true });
     const s = as('aziz');
     const me = s.currentUserId;
     const foreign = s.sales.find((x) => x.userId !== me)!;

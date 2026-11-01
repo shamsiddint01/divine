@@ -80,7 +80,7 @@ describe('mock API backend bilan bir xil (OWN-01, OWN-06, BR-21)', () => {
   }
 
   it('sotuvchi: faqat biriktirilgan ACTIVE omborlar, ko‘rsatkichlarsiz; detal 403', async () => {
-    renderApp('/warehouses', { loggedOut: true });
+    renderApp('/login?redirect=%2Fwarehouses', { loggedOut: true });
     const s = as('dilnoza');
     const seller = s.users.find((u) => u.login === 'dilnoza')!;
     const assigned = seller.warehouseIds;

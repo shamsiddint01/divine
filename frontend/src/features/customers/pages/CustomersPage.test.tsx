@@ -44,7 +44,7 @@ describe('Mijozlar sahifasi (Phase 9)', () => {
 
 describe('mock API backend bilan bir xil (OWN-07, A-23)', () => {
   it('sotuvchi: qidiruvda faqat id, name, phone; yig‘ma saralash 400; detal/tarix/tahrirlash 403; izoh 403', async () => {
-    renderApp('/sales', { loggedOut: true });
+    renderApp('/login?redirect=%2Fsales', { loggedOut: true });
     as('aziz');
     const list = await mockRequest<Paginated<CustomerDto>>('/customers', {
       query: { pageSize: 5, sort: 'lastPurchaseAt:desc' },

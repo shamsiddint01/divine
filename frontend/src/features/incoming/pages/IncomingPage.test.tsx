@@ -94,7 +94,7 @@ describe('Kirim: mock API backend bilan bir xil (API §9, Phase 8)', () => {
   });
 
   it('sotuvchi: ro‘yxat, yaratish va tasdiqlash → 403 (narx ma’lumoti qaytmaydi)', async () => {
-    renderApp('/incoming', { loggedOut: true });
+    renderApp('/login?redirect=%2Fincoming', { loggedOut: true });
     const s = as('aziz');
     const own = s.users.find((u) => u.login === 'aziz')!.warehouseIds[0]!;
     const productId = s.products.find((p) => p.status === 'ACTIVE')!.id;

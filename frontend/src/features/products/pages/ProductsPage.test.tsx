@@ -53,7 +53,7 @@ describe('Mahsulotlar: kelgan narxi faqat ruxsati borlarga (OWN-06)', () => {
   });
 
   it('sotuvchi: ustun, qo‘shish/amallar yo‘q; tafsilot oynasida kelgan narxi va sotuvlar yo‘q', async () => {
-    renderApp('/products', { loggedOut: true });
+    renderApp('/login?redirect=%2Fproducts', { loggedOut: true });
     const user = await loginAsSeller();
     const table = await screen.findByRole('table', {}, PAGE);
     await waitFor(() => expect(within(table).getAllByRole('row').length).toBeGreaterThan(1));
@@ -72,7 +72,7 @@ describe('Mahsulotlar: kelgan narxi faqat ruxsati borlarga (OWN-06)', () => {
 
 describe('mock API backend bilan bir xil: sotuvchiga kelgan narxi berilmaydi', () => {
   async function asSeller() {
-    renderApp('/products', { loggedOut: true });
+    renderApp('/login?redirect=%2Fproducts', { loggedOut: true });
     const s = db();
     s.currentUserId = s.users.find((u) => u.login === 'aziz')!.id;
     return s;

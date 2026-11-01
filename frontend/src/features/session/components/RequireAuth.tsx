@@ -24,7 +24,7 @@ export function SessionLoader() {
 
 /**
  * Himoyalangan qism (RBAC §5): sessiya tekshirilmaguncha hech narsa ko'rsatilmaydi; anonim bo'lsa —
- * `/login?redirect=…`. Sessiya tugasa (refresh ham o'tmadi) — login sahifasi "sessiya tugadi" xabari bilan.
+ * `/welcome?redirect=…` (u yerdan "Kirish" → `/login?redirect=…`). Sessiya tugasa (refresh ham o'tmadi) — login sahifasi "sessiya tugadi" xabari bilan.
  * 403 bo'lsa — permissionlar eskirgan bo'lishi mumkin: `/auth/me` qayta yuklanadi.
  */
 export function RequireAuth({ children }: { children: ReactNode }) {
@@ -56,12 +56,11 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     // O'zi chiqqan userning sahifasi keyingi kirgan odamga (boshqa user bo'lishi mumkin) qaytarilmaydi.
     if (reason === 'signedOut') return <Navigate to="/login" replace />;
     const redirect = `${location.pathname}${location.search}`;
-    return (
-      <Navigate
-        to={redirect === '/' ? '/login' : `/login?redirect=${encodeURIComponent(redirect)}`}
-        replace
-      />
-    );
+    const query = redirect === '/' ? '' : `?redirect=${encodeURIComponent(redirect)}`;
+    // Sessiya tugagan/aloqa uzilgan user — to'g'ridan-to'g'ri qayta kirishga (xabar bilan);
+    // hali kirmagan mehmon — avval tanishtiruv sahifasiga, u yerdan "Kirish" (redirect saqlanadi).
+    const target = reason === 'expired' || reason === 'offline' ? '/login' : '/welcome';
+    return <Navigate to={`${target}${query}`} replace />;
   }
   return children;
 }

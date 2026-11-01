@@ -14,7 +14,7 @@ afterEach(restoreRoutes);
 
 describe('Bosh sahifa (Phase 12, OWN-08)', () => {
   it('sotuvchi: faqat o‘z bugungi ko‘rsatkichlari; admin grafik, top va kam qoldiq yo‘q', async () => {
-    renderApp('/', { loggedOut: true });
+    renderApp('/login', { loggedOut: true });
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText(t.auth.login, {}, PAGE), 'aziz');
     await user.type(

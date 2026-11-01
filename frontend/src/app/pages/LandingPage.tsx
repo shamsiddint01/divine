@@ -1,7 +1,8 @@
 import { BarChart3, LogIn, Plus, Send, ShoppingCart, Truck, Warehouse, X } from 'lucide-react';
 import { Dialog } from 'radix-ui';
 import { type CSSProperties, type RefObject, useEffect, useId, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
+import { safeRedirect } from '@/features/session/lib/safe-redirect';
 import { t } from '@/i18n/uz';
 import { useMediaQuery } from '@/shared/hooks/use-media-query';
 // "Bepul sinab ko'rish" / "Bepul boshlash" — o'z-o'zidan ro'yxatdan o'tish yo'q, Telegram kanal orqali.
@@ -132,7 +133,7 @@ function MobileMenu() {
             </ul>
           </nav>
           <div className="ld-menu__actions">
-            <Link to="/login" className="ld-btn ld-btn--ghost">
+            <Link to={loginHref} className="ld-btn ld-btn--ghost">
               <LogIn />
               {t.landing.signIn}
             </Link>
@@ -224,7 +225,7 @@ export function LandingPage() {
               </ul>
             </nav>
             <div className="ld-header__actions">
-              <Link to="/login" className="ld-underline">
+              <Link to={loginHref} className="ld-underline">
                 {t.landing.signIn}
               </Link>
               <TelegramButton label={t.landing.start} />
@@ -271,7 +272,7 @@ export function LandingPage() {
               </p>
               <div className="ld-hero__actions">
                 <TelegramButton label={t.landing.tryFree} />
-                <Link to="/login" className="ld-btn ld-btn--ghost">
+                <Link to={loginHref} className="ld-btn ld-btn--ghost">
                   <LogIn />
                   {t.landing.signIn}
                 </Link>
@@ -348,7 +349,7 @@ export function LandingPage() {
                   <TelegramButton label={t.landing.tryFree} />
                 </span>
                 <span data-reveal="pop" style={stagger(3)}>
-                  <Link to="/login" className="ld-btn ld-btn--ghost">
+                  <Link to={loginHref} className="ld-btn ld-btn--ghost">
                     <LogIn />
                     {t.landing.signIn}
                   </Link>

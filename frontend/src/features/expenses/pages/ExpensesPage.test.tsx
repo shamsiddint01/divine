@@ -31,7 +31,7 @@ function as(login: string) {
 
 describe('Xarajatlar: sotuvchi faqat qo‘shadi (D-12, D-19)', () => {
   it('ro‘yxat, summalar va tahrirlash yo‘q; faol kategoriyani tanlab qo‘shadi, uning nomidan yoziladi', async () => {
-    renderApp('/expenses', { loggedOut: true });
+    renderApp('/login?redirect=%2Fexpenses', { loggedOut: true });
     const s = db();
     const inactive = s.expenseCategories[1]!;
     inactive.isActive = false;
@@ -94,7 +94,7 @@ describe('Xarajatlar: sotuvchi faqat qo‘shadi (D-12, D-19)', () => {
   });
 
   it('faol kategoriya yo‘q — tushuntirish ko‘rsatiladi, qo‘shish tugmasi o‘chiq', async () => {
-    renderApp('/expenses', { loggedOut: true });
+    renderApp('/login?redirect=%2Fexpenses', { loggedOut: true });
     for (const c of db().expenseCategories) c.isActive = false;
     await loginAs('aziz');
     expect(
@@ -188,7 +188,7 @@ describe('Xarajatlar: admin (D-19)', () => {
 
 describe('mock API backend bilan bir xil (RBAC §5, D-12, D-19)', () => {
   it('sotuvchi: kategoriyalar faqat faol va `id, name`; ro‘yxat, detal, tahrirlash, o‘chirish, kategoriya boshqaruvi 403', async () => {
-    renderApp('/sales', { loggedOut: true });
+    renderApp('/login?redirect=%2Fsales', { loggedOut: true });
     const s = as('aziz');
     s.expenseCategories[0]!.isActive = false;
     const list = await mockRequest<ExpenseCategoryDto[]>('/expense-categories', {
