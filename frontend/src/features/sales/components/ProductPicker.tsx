@@ -155,31 +155,33 @@ export function ProductPicker({ warehouseId, onPick, onBarcode, inCart }: Produc
                     <span aria-hidden>×{formatQuantity(taken)}</span>
                   </span>
                 ) : null}
-                <div className="space-y-0.5">
+                <div className="space-y-1">
                   <p className="line-clamp-2 text-sm font-medium">{p.name}</p>
-                  <p className="truncate text-xs text-muted-foreground">{p.groupName}</p>
-                </div>
-                <div className="flex flex-wrap items-end justify-between gap-x-2 gap-y-1.5">
-                  <span className="text-sm font-semibold tabular-nums">
-                    {formatMoney(p.salePrice)}
-                  </span>
-                  {out ? (
-                    <Badge variant="destructive">{t.sales.outOfStock}</Badge>
-                  ) : (
-                    <span className="ml-auto flex items-center gap-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate text-xs text-muted-foreground">{p.groupName}</p>
+                    {out ? (
+                      <Badge variant="destructive" className="shrink-0">
+                        {t.sales.outOfStock}
+                      </Badge>
+                    ) : (
                       <Badge
                         variant={p.isLowStock ? 'warning' : 'secondary'}
-                        className="tabular-nums"
+                        className="shrink-0 tabular-nums"
                       >
                         {formatQuantity(left)} {t.units[p.unit]}
                       </Badge>
-                      {/* Sensorli ekranda hover yo'q — "qo'shish" belgisi doim ko'rinadi. */}
-                      <span
-                        className="flex size-6 items-center justify-center rounded-md bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground"
-                        aria-hidden
-                      >
-                        <Plus className="size-3.5" />
-                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold tabular-nums">{formatMoney(p.salePrice)}</span>
+                  {out ? null : (
+                    // Sensorli ekranda hover yo'q — "qo'shish" belgisi doim ko'rinadi.
+                    <span
+                      className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground"
+                      aria-hidden
+                    >
+                      <Plus className="size-4" />
                     </span>
                   )}
                 </div>
