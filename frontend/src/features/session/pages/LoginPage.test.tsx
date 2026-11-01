@@ -122,7 +122,7 @@ describe('login sahifasi (mock auth)', () => {
 });
 
 describe('logout va RBAC (UX)', () => {
-  it('logout → toza /login (oldingi sahifaga redirect yo‘q); keyin himoyalangan sahifa ochilmaydi', async () => {
+  it('logout → toza /login (oldingi sahifaga redirect yo‘q); keyin himoyalangan sahifa → /welcome', async () => {
     const { router } = renderApp('/products');
     const nav = await screen.findByRole('navigation', { name: t.nav.mainMenu }, PAGE);
     const sidebar = nav.closest('aside') ?? document.body;
@@ -131,8 +131,9 @@ describe('logout va RBAC (UX)', () => {
     );
     await waitFor(() => expect(router.state.location.pathname).toBe('/login'));
     expect(router.state.location.search).toBe('');
+    // Himoyalangan sahifa ochilmaydi — mehmon sifatida tanishtiruv sahifasiga
     await router.navigate('/users');
-    await waitFor(() => expect(router.state.location.pathname).toBe('/login'));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/welcome'));
   });
 
   it('USER: menyuda faqat ruxsat etilgan bo‘limlar; admin bo‘limi URL bilan → "Ruxsat yo‘q"', async () => {
