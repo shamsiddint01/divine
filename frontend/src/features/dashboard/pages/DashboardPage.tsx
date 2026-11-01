@@ -155,90 +155,123 @@ function AdminDashboard() {
       {error && !data ? (
         <ErrorState message={error.message} onRetry={() => refetch()} />
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-          <StatCard
-            label={t.dashboard.kpi.todaySoldQty}
-            icon={ShoppingBag}
-            loading={isPending}
-            value={data ? formatQuantity(data.today.soldQuantity) : null}
-            hint={data ? t.dashboard.kpi.salesCount(data.today.salesCount) : null}
-          />
-          <StatCard
-            label={t.dashboard.kpi.todaySales}
-            icon={Wallet}
-            tone="success"
-            loading={isPending}
-            value={data ? formatCompactMoney(data.today.salesAmount) : null}
-            hint={
-              change ? (
-                <span>
-                  <span
-                    className={cn('font-medium', change.up ? 'text-success' : 'text-destructive')}
-                  >
-                    {change.text}
-                  </span>{' '}
-                  {t.dashboard.kpi.vsYesterday}
-                </span>
-              ) : null
-            }
-          />
-          <StatCard
-            label={t.dashboard.kpi.totalSoldQty}
-            icon={PackageCheck}
-            tone="info"
-            loading={isPending}
-            value={data ? formatQuantity(data.allTime.soldQuantity) : null}
-            hint={t.dashboard.kpi.allTime}
-          />
-          <StatCard
-            label={t.dashboard.kpi.totalSales}
-            icon={TrendingUp}
-            tone="info"
-            loading={isPending}
-            value={data ? formatCompactMoney(data.allTime.salesAmount) : null}
-            hint={data ? t.dashboard.kpi.salesCount(data.allTime.salesCount) : null}
-          />
-          <StatCard
-            label={t.dashboard.kpi.stockTotal}
-            icon={Boxes}
-            loading={isPending}
-            value={data ? formatQuantity(data.warehouse.totalQuantity) : null}
-            hint={data ? t.dashboard.kpi.positions(data.warehouse.productCount) : null}
-          />
-          <StatCard
-            label={t.dashboard.kpi.lowStock}
-            icon={PackageX}
-            tone={data && data.lowStock.count > 0 ? 'warning' : 'success'}
-            loading={isPending}
-            value={data ? data.lowStock.count : null}
-            hint={
-              data
-                ? data.lowStock.count > 0
-                  ? t.dashboard.kpi.needsAttention
-                  : t.dashboard.kpi.allGood
-                : null
-            }
-          />
-          <StatCard
-            label={t.dashboard.kpi.activeUsers}
-            icon={Users}
-            loading={isPending}
-            value={data ? `${data.users.active} / ${data.users.total}` : null}
-            hint={data ? t.dashboard.kpi.soldToday(data.users.soldToday) : null}
-          />
-          <StatCard
-            label={t.dashboard.kpi.averageCheck}
-            icon={Receipt}
-            tone="success"
-            loading={isPending}
-            value={
-              data
-                ? formatCompactMoney(divideMoney(data.today.salesAmount, data.today.salesCount))
-                : null
-            }
-            hint={t.dashboard.kpi.averageCheckHint}
-          />
-        </div>
+        <>
+          <section aria-labelledby="kpi-today" className="space-y-3">
+            <h2 id="kpi-today" className="text-sm font-medium text-muted-foreground">
+              {t.dashboard.sectionToday}
+            </h2>
+            {/* Asosiy raqam — bugungi savdo; qolgan bugungi ko'rsatkichlar uning yonida ixcham. */}
+            <div className="grid gap-3 sm:gap-4 xl:grid-cols-5">
+              <StatCard
+                hero
+                className="xl:col-span-2"
+                label={t.dashboard.kpi.todaySales}
+                icon={Wallet}
+                tone="success"
+                loading={isPending}
+                value={data ? formatCompactMoney(data.today.salesAmount) : null}
+                hint={
+                  data ? (
+                    <span>
+                      {change ? (
+                        <>
+                          <span
+                            className={cn(
+                              'font-medium',
+                              change.up ? 'text-success' : 'text-destructive',
+                            )}
+                          >
+                            {change.text}
+                          </span>{' '}
+                          {t.dashboard.kpi.vsYesterday} ·{' '}
+                        </>
+                      ) : null}
+                      {t.dashboard.kpi.salesCount(data.today.salesCount)}
+                    </span>
+                  ) : null
+                }
+              />
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 xl:col-span-3">
+                <StatCard
+                  dense
+                  label={t.dashboard.kpi.todaySoldQty}
+                  icon={ShoppingBag}
+                  loading={isPending}
+                  value={data ? formatQuantity(data.today.soldQuantity) : null}
+                  hint={data ? t.dashboard.kpi.salesCount(data.today.salesCount) : null}
+                />
+                <StatCard
+                  dense
+                  label={t.dashboard.kpi.averageCheck}
+                  icon={Receipt}
+                  tone="success"
+                  loading={isPending}
+                  value={
+                    data
+                      ? formatCompactMoney(
+                          divideMoney(data.today.salesAmount, data.today.salesCount),
+                        )
+                      : null
+                  }
+                  hint={t.dashboard.kpi.averageCheckHint}
+                />
+                <StatCard
+                  dense
+                  label={t.dashboard.kpi.activeUsers}
+                  icon={Users}
+                  loading={isPending}
+                  value={data ? `${data.users.active} / ${data.users.total}` : null}
+                  hint={data ? t.dashboard.kpi.soldToday(data.users.soldToday) : null}
+                />
+              </div>
+            </div>
+          </section>
+
+          <section aria-labelledby="kpi-overall" className="space-y-3">
+            <h2 id="kpi-overall" className="text-sm font-medium text-muted-foreground">
+              {t.dashboard.sectionOverall}
+            </h2>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+              <StatCard
+                label={t.dashboard.kpi.totalSales}
+                icon={TrendingUp}
+                tone="info"
+                loading={isPending}
+                value={data ? formatCompactMoney(data.allTime.salesAmount) : null}
+                hint={data ? t.dashboard.kpi.salesCount(data.allTime.salesCount) : null}
+              />
+              <StatCard
+                label={t.dashboard.kpi.totalSoldQty}
+                icon={PackageCheck}
+                tone="info"
+                loading={isPending}
+                value={data ? formatQuantity(data.allTime.soldQuantity) : null}
+                hint={t.dashboard.kpi.allTime}
+              />
+              <StatCard
+                label={t.dashboard.kpi.stockTotal}
+                icon={Boxes}
+                loading={isPending}
+                value={data ? formatQuantity(data.warehouse.totalQuantity) : null}
+                hint={data ? t.dashboard.kpi.positions(data.warehouse.productCount) : null}
+              />
+              <StatCard
+                label={t.dashboard.kpi.lowStock}
+                icon={PackageX}
+                tone={data && data.lowStock.count > 0 ? 'warning' : 'success'}
+                loading={isPending}
+                value={data ? data.lowStock.count : null}
+                hint={
+                  data
+                    ? data.lowStock.count > 0
+                      ? t.dashboard.kpi.needsAttention
+                      : t.dashboard.kpi.allGood
+                    : null
+                }
+              />
+            </div>
+          </section>
+        </>
       )}
 
       <div className="grid gap-4 lg:grid-cols-3">

@@ -24,6 +24,8 @@ interface StatCardProps {
   className?: string;
   /** Telefonda uch ustunli to'r uchun: ikonka yashiriladi, yozuvlar kichikroq. */
   dense?: boolean;
+  /** Sahifaning asosiy ko'rsatkichi: katta raqam, ajralib turadigan fon. */
+  hero?: boolean;
 }
 
 /**
@@ -39,12 +41,15 @@ export function StatCard({
   loading,
   className,
   dense = false,
+  hero = false,
 }: StatCardProps) {
   return (
     <Card
       className={cn(
         'h-full gap-2 p-3 sm:gap-3 sm:p-5',
         dense && 'max-sm:gap-1 max-sm:p-2.5',
+        hero &&
+          'border-primary/20 bg-gradient-to-br from-primary/[0.09] via-card to-card p-4 sm:p-6',
         className,
       )}
     >
@@ -69,7 +74,7 @@ export function StatCard({
       </div>
       {loading ? (
         <div className="space-y-2">
-          <Skeleton className="h-6 w-full max-w-32 sm:h-7" />
+          <Skeleton className={cn('h-6 w-full max-w-32 sm:h-7', hero && 'h-9 max-w-48 sm:h-10')} />
           <Skeleton className="h-4 w-3/4 max-w-24" />
         </div>
       ) : (
@@ -78,6 +83,7 @@ export function StatCard({
             className={cn(
               'text-lg font-semibold tracking-tight tabular-nums sm:text-2xl',
               dense && 'max-sm:text-sm max-sm:leading-snug',
+              hero && 'text-3xl font-bold sm:text-4xl',
             )}
           >
             {value}
@@ -87,6 +93,7 @@ export function StatCard({
             className={cn(
               'min-h-4 text-[11px] leading-snug text-muted-foreground sm:text-xs',
               dense && 'max-sm:min-h-0 max-sm:text-[10px]',
+              hero && 'text-xs sm:text-sm',
             )}
           >
             {hint}

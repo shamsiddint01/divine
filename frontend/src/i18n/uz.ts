@@ -243,6 +243,8 @@ export const uz = {
   dashboard: {
     description: 'Bugungi savdo, ombor holati va jamoa faoliyati bir qarashda',
     greeting: (name: string) => `Xush kelibsiz, ${name}`,
+    sectionToday: 'Bugun',
+    sectionOverall: 'Umumiy holat',
     kpi: {
       todaySoldQty: 'Bugun sotilgan mahsulot',
       todaySales: 'Bugungi savdo',
