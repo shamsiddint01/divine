@@ -98,7 +98,8 @@ function MobileMenu() {
             // Bo'lim tanlangan bo'lsa — menyu yopilgach (scroll qulfi yechilgach) o'sha bo'limga o'tiladi.
             if (!target) return;
             e.preventDefault();
-            scrollToSection(target);
+            // Radix scroll qulfi shu tik ichida yechiladi va joyni tiklaydi — o'tish undan keyin.
+            window.setTimeout(() => scrollToSection(target), 60);
             setTarget(null);
           }}
         >
