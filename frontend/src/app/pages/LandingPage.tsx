@@ -157,17 +157,22 @@ function useScrollReveal(root: RefObject<HTMLDivElement | null>, enabled: boolea
   useEffect(() => {
     const el = root.current;
     if (!el || !enabled || !('IntersectionObserver' in window)) return;
+    const pending = new Set(el.querySelectorAll('[data-reveal]'));
+    const reveal = (node: Element) => {
+      node.setAttribute('data-revealed', '');
+      observer.unobserve(node);
+      pending.delete(node);
+    };
     const observer = new IntersectionObserver(
       (entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          entry.target.setAttribute('data-revealed', '');
-          observer.unobserve(entry.target);
-        }
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        for (const entry of entries) if (entry.isIntersecting) reveal(entry.target);
+        // Tez aylantirilganda (yoki #bo'limga sakralganda) ekrandan o'tib ketganlar yashirin qolmasin.
+        for (const node of pending) if (node.getBoundingClientRect().bottom < 0) reveal(node);
       },
       { rootMargin: '0px 0px -8% 0px', threshold: 0.12 },
     );
-    el.querySelectorAll('[data-reveal]').forEach((node) => observer.observe(node));
+    pending.forEach((node) => observer.observe(node));
     el.setAttribute('data-reveal-ready', '');
     return () => {
       observer.disconnect();
