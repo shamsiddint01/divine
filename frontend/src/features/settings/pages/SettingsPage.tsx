@@ -31,7 +31,6 @@ import { Input } from '@/shared/ui/input';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { Switch } from '@/shared/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
-import { useUiStore } from '@/stores/ui.store';
 import type { SettingsDto } from '@/shared/types/api';
 import { useResetDemo, useSaveSettings, useSettings } from '../api/settings';
 
