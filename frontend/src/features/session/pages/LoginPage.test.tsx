@@ -79,11 +79,31 @@ describe('login sahifasi (mock auth)', () => {
     ).toBeInTheDocument();
   });
 
-  it('demo rejimda kirish ma’lumoti ko‘rsatiladi', async () => {
-    renderApp('/login', { loggedOut: true });
+  it('demo rejimda kirish ma’lumoti ko‘rsatiladi; "Demo hisob bilan kirish" bir bosishda kiradi', async () => {
+    const { router } = renderApp('/login', { loggedOut: true });
     expect(
       await screen.findByText(t.auth.demoHint(MOCK_DEMO_PASSWORD), {}, PAGE),
     ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: t.auth.demoSignIn }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'));
+  });
+
+  it('"Parolni unutdingizmi?" izohni ochadi; "Bosh sahifa" /welcome ga qaytaradi', async () => {
+    const { router } = renderApp('/login', { loggedOut: true });
+    const forgot = await screen.findByRole('button', { name: t.auth.forgot }, PAGE);
+    expect(forgot).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText(t.auth.passwordHint)).toBeNull();
+    await userEvent.click(forgot);
+    expect(forgot).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText(t.auth.passwordHint)).toHaveAttribute('id', 'login-password-hint');
+    // Label o'zgarmagan: parol maydoni hamon "Parol" nomi bilan topiladi
+    expect(screen.getByLabelText(t.auth.password, { selector: 'input' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: new RegExp(t.landing.tryFree) })).toHaveAttribute(
+      'href',
+      'https://t.me/+BvvsmvXvWZQ1YjAy',
+    );
+    await userEvent.click(screen.getByRole('link', { name: t.auth.backHome }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/welcome'));
   });
 });
 

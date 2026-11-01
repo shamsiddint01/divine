@@ -315,7 +315,7 @@ export function LoginPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="h-11 w-full"
+                      className="h-11 w-full bg-transparent"
                       disabled={login.isPending}
                       onClick={signInWithDemo}
                     >
@@ -345,12 +345,10 @@ export function LoginPage() {
           </div>
         </div>
 
-        <footer className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-xs text-muted-foreground lg:justify-between">
+        {/* Katta ekranda versiya brend panelida — bu yerda takrorlanmaydi */}
+        <footer className="flex flex-col items-center gap-1 text-center text-xs text-muted-foreground lg:items-start">
           <span>{t.landing.footer.copyright}</span>
-          <span className="lg:hidden" aria-hidden>
-            ·
-          </span>
-          <span>{t.app.version}</span>
+          <span className="lg:hidden">{t.app.version}</span>
         </footer>
       </section>
     </main>
