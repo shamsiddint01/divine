@@ -25,7 +25,8 @@ const FEATURES = [
 
 /** Belgi: do'kon peshtoqini eslatuvchi uchta qiya chiziq (marjon gradient). */
 function Logo() {
-  const id = useId();
+  // Sahifada belgi bir necha marta — gradient id'lari to'qnashmasin (url(#…) uchun xavfsiz belgilar).
+  const id = `ld-logo-${useId().replace(/[^\w-]/g, '')}`;
   return (
     <svg viewBox="0 0 32 32" aria-hidden>
       <defs>
