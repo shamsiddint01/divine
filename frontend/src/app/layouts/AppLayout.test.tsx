@@ -60,6 +60,11 @@ describe('ilova karkasi (layout)', () => {
         .getAllByRole('button')
         .map((b) => b.textContent),
     ).toEqual(['Asosiy', 'Katalog', 'Operatsiyalar', 'Boshqaruv']);
+    // Kassa — guruh ichida emas, alohida tugma.
+    expect(within(bottom).getByRole('link', { name: t.nav.sellShort })).toHaveAttribute(
+      'href',
+      '/sales',
+    );
     expect(within(bottom).getByRole('button', { name: 'Asosiy' })).toHaveAttribute(
       'aria-current',
       'page',
