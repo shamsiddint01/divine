@@ -10,6 +10,7 @@ import { DataPagination } from '@/shared/components/DataPagination';
 import { type Column, DataTable } from '@/shared/components/DataTable';
 import { DateRangeFilter } from '@/shared/components/DateRangeFilter';
 import { EmptyState } from '@/shared/components/EmptyState';
+import { FilterBar } from '@/shared/components/FilterBar';
 import { FilterSelect } from '@/shared/components/FilterSelect';
 import { MoneyText } from '@/shared/components/MoneyText';
 import { PageHeader } from '@/shared/components/PageHeader';
@@ -218,12 +219,16 @@ function ExpensesRegister() {
           hint={data ? t.common.items(data.summary.count) : null}
         />
       </div>
-      <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center">
-        <SearchInput
-          value={list.search}
-          onChange={list.setSearch}
-          placeholder={t.expenses.searchPlaceholder}
-        />
+      <FilterBar
+        search={
+          <SearchInput
+            value={list.search}
+            onChange={list.setSearch}
+            placeholder={t.expenses.searchPlaceholder}
+          />
+        }
+        active={list.activeFilterCount > (list.search ? 1 : 0)}
+      >
         <DateRangeFilter
           value={{ from: list.filters.dateFrom, to: list.filters.dateTo }}
           onChange={(r) => {
@@ -246,7 +251,7 @@ function ExpensesRegister() {
             {t.common.clearFilters}
           </Button>
         ) : null}
-      </div>
+      </FilterBar>
       <DataTable
         columns={columns}
         rows={data?.data}

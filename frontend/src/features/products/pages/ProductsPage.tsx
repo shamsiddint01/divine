@@ -23,6 +23,7 @@ import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { DataPagination } from '@/shared/components/DataPagination';
 import { type Column, DataTable } from '@/shared/components/DataTable';
 import { EmptyState } from '@/shared/components/EmptyState';
+import { FilterBar } from '@/shared/components/FilterBar';
 import { FilterSelect } from '@/shared/components/FilterSelect';
 import { MoneyText, QtyText } from '@/shared/components/MoneyText';
 import { PageHeader } from '@/shared/components/PageHeader';
@@ -275,13 +276,17 @@ export function ProductsPage() {
         }
       />
 
-      <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center">
-        <SearchInput
-          value={list.search}
-          onChange={list.setSearch}
-          placeholder={t.products.searchPlaceholder}
-          className="lg:w-80"
-        />
+      <FilterBar
+        search={
+          <SearchInput
+            value={list.search}
+            onChange={list.setSearch}
+            placeholder={t.products.searchPlaceholder}
+            className="lg:w-80"
+          />
+        }
+        active={list.activeFilterCount > (list.search ? 1 : 0)}
+      >
         <FilterSelect
           value={list.filters.groupId}
           onChange={(v) => list.setFilter('groupId', v)}
@@ -321,7 +326,7 @@ export function ProductsPage() {
             {t.common.clearFilters}
           </Button>
         ) : null}
-      </div>
+      </FilterBar>
 
       <DataTable
         columns={columns}

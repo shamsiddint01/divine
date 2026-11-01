@@ -22,6 +22,7 @@ import { type Column, DataTable } from '@/shared/components/DataTable';
 import { DateRangeFilter } from '@/shared/components/DateRangeFilter';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { DetailErrorPage } from '@/shared/components/DetailErrorPage';
+import { FilterBar } from '@/shared/components/FilterBar';
 import { FilterSelect } from '@/shared/components/FilterSelect';
 import { MoneyText, QtyText } from '@/shared/components/MoneyText';
 import { PageHeader } from '@/shared/components/PageHeader';
@@ -129,12 +130,17 @@ function StockTab({ warehouseId }: { warehouseId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        <SearchInput
-          value={list.search}
-          onChange={list.setSearch}
-          placeholder={t.warehouses.stockSearch}
-        />
+      <FilterBar
+        search={
+          <SearchInput
+            value={list.search}
+            onChange={list.setSearch}
+            placeholder={t.warehouses.stockSearch}
+          />
+        }
+        active={list.activeFilterCount > (list.search ? 1 : 0)}
+        inlineFrom="sm"
+      >
         <FilterSelect
           value={list.filters.groupId}
           onChange={(v) => list.setFilter('groupId', v)}
@@ -150,7 +156,7 @@ function StockTab({ warehouseId }: { warehouseId: string }) {
             { value: 'out', label: t.products.stockOut },
           ]}
         />
-      </div>
+      </FilterBar>
       <DataTable
         columns={visibleColumns}
         rows={data?.data}
@@ -284,12 +290,17 @@ function MovementsTab({ warehouseId }: { warehouseId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        <SearchInput
-          value={list.search}
-          onChange={list.setSearch}
-          placeholder={t.warehouses.stockSearch}
-        />
+      <FilterBar
+        search={
+          <SearchInput
+            value={list.search}
+            onChange={list.setSearch}
+            placeholder={t.warehouses.stockSearch}
+          />
+        }
+        active={list.activeFilterCount > (list.search ? 1 : 0)}
+        inlineFrom="sm"
+      >
         <FilterSelect
           value={list.filters.movementType}
           onChange={(v) => list.setFilter('movementType', v)}
@@ -306,7 +317,7 @@ function MovementsTab({ warehouseId }: { warehouseId: string }) {
             list.setFilter('dateTo', r.to);
           }}
         />
-      </div>
+      </FilterBar>
       <DataTable
         columns={columns}
         rows={data?.data}

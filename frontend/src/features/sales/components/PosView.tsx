@@ -22,22 +22,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Label } from '@/shared/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
 import { Separator } from '@/shared/ui/separator';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/shared/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui/sheet';
 import type { ProductDto, SaleDto } from '@/shared/types/api';
 import { useCreateSale } from '../api/sales';
-import {
-  type CartLine,
-  addToCart,
-  cartTotals,
-  removeLine,
-  setLineQuantity,
-} from '../lib/cart';
+import { type CartLine, addToCart, cartTotals, removeLine, setLineQuantity } from '../lib/cart';
 import { CartPanel } from './CartPanel';
 import { type CustomerDraft, CustomerFields } from './CustomerFields';
 import { ProductPicker } from './ProductPicker';

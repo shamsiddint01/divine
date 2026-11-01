@@ -12,6 +12,7 @@ import { formatDateTime } from '@/shared/lib/format';
 import { type Column, DataTable } from '@/shared/components/DataTable';
 import { DateRangeFilter } from '@/shared/components/DateRangeFilter';
 import { EmptyState } from '@/shared/components/EmptyState';
+import { FilterBar } from '@/shared/components/FilterBar';
 import { FilterSelect } from '@/shared/components/FilterSelect';
 import { SearchInput } from '@/shared/components/SearchInput';
 import { Badge } from '@/shared/ui/badge';
@@ -209,7 +210,17 @@ export function AuditLogView() {
             <p className="text-sm text-muted-foreground">{t.audit.description}</p>
           </div>
         </div>
-        <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center">
+        <FilterBar
+          search={
+            <SearchInput
+              value={list.search}
+              onChange={list.setSearch}
+              placeholder={t.audit.filters.entityId}
+              className="sm:w-56"
+            />
+          }
+          active={list.activeFilterCount > (list.search ? 1 : 0)}
+        >
           <DateRangeFilter
             value={{ from: list.filters.dateFrom, to: list.filters.dateTo }}
             onChange={(r) => {
@@ -237,18 +248,12 @@ export function AuditLogView() {
             options={(users ?? []).map((u) => ({ value: u.id, label: u.fullName ?? u.login }))}
             className="sm:w-56"
           />
-          <SearchInput
-            value={list.search}
-            onChange={list.setSearch}
-            placeholder={t.audit.filters.entityId}
-            className="sm:w-56"
-          />
           {list.activeFilterCount > 0 ? (
             <Button variant="ghost" onClick={list.reset}>
               {t.common.clearFilters}
             </Button>
           ) : null}
-        </div>
+        </FilterBar>
       </Card>
 
       <DataTable

@@ -21,6 +21,7 @@ import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { DataPagination } from '@/shared/components/DataPagination';
 import { type Column, DataTable } from '@/shared/components/DataTable';
 import { EmptyState } from '@/shared/components/EmptyState';
+import { FilterBar } from '@/shared/components/FilterBar';
 import { FilterSelect } from '@/shared/components/FilterSelect';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { SearchInput } from '@/shared/components/SearchInput';
@@ -243,12 +244,17 @@ export function UsersPage() {
           ) : null
         }
       />
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        <SearchInput
-          value={list.search}
-          onChange={list.setSearch}
-          placeholder={t.users.searchPlaceholder}
-        />
+      <FilterBar
+        search={
+          <SearchInput
+            value={list.search}
+            onChange={list.setSearch}
+            placeholder={t.users.searchPlaceholder}
+          />
+        }
+        active={list.activeFilterCount > (list.search ? 1 : 0)}
+        inlineFrom="sm"
+      >
         <FilterSelect
           value={list.filters.role}
           onChange={(v) => list.setFilter('role', v)}
@@ -269,7 +275,7 @@ export function UsersPage() {
             { value: 'BLOCKED', label: t.status.BLOCKED },
           ]}
         />
-      </div>
+      </FilterBar>
       <DataTable
         columns={columns}
         rows={data?.data}

@@ -12,6 +12,7 @@ import { DataPagination } from '@/shared/components/DataPagination';
 import { type Column, DataTable } from '@/shared/components/DataTable';
 import { DateRangeFilter } from '@/shared/components/DateRangeFilter';
 import { EmptyState } from '@/shared/components/EmptyState';
+import { FilterBar } from '@/shared/components/FilterBar';
 import { FilterSelect } from '@/shared/components/FilterSelect';
 import { MoneyText } from '@/shared/components/MoneyText';
 import { SearchInput } from '@/shared/components/SearchInput';
@@ -140,12 +141,16 @@ export function SalesHistoryView() {
           />
         ) : null}
       </div>
-      <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center">
-        <SearchInput
-          value={list.search}
-          onChange={list.setSearch}
-          placeholder={t.sales.history.searchPlaceholder}
-        />
+      <FilterBar
+        search={
+          <SearchInput
+            value={list.search}
+            onChange={list.setSearch}
+            placeholder={t.sales.history.searchPlaceholder}
+          />
+        }
+        active={list.activeFilterCount > (list.search ? 1 : 0)}
+      >
         <DateRangeFilter
           value={{ from: list.filters.dateFrom, to: list.filters.dateTo }}
           onChange={(r) => {
@@ -180,7 +185,7 @@ export function SalesHistoryView() {
             {t.common.clearFilters}
           </Button>
         ) : null}
-      </div>
+      </FilterBar>
       <DataTable
         columns={visibleColumns}
         rows={data?.data}

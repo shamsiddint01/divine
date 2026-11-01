@@ -128,9 +128,7 @@ export function ProductPicker({ warehouseId, onPick, onBarcode, inCart }: Produc
           description={t.table.noResultsHint}
         />
       ) : (
-        <div
-          className={cn(PRODUCT_GRID, isFetching && 'opacity-60')}
-        >
+        <div className={cn(PRODUCT_GRID, isFetching && 'opacity-60')}>
           {data?.data.map((p) => {
             const left = inCart[p.id] ? subQty(p.stock, inCart[p.id] ?? '0') : p.stock;
             const out = compareQty(left, '0') <= 0;

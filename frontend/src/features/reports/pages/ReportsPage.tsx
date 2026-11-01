@@ -355,7 +355,17 @@ export function ReportsPage() {
       </div>
 
       <Card className="gap-4 p-4">
-        <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center">
+        <FilterBar
+          search={
+            <SearchInput
+              value={list.search}
+              onChange={list.setSearch}
+              placeholder={t.reports.filters.searchCustomer}
+              className="sm:w-64"
+            />
+          }
+          active={list.activeFilterCount > (list.search ? 1 : 0)}
+        >
           {has('date') ? (
             <DateRangeFilter
               value={{ from: dateFrom, to: dateTo }}
@@ -367,12 +377,6 @@ export function ReportsPage() {
             />
           ) : null}
           {has('search') ? (
-            <SearchInput
-              value={list.search}
-              onChange={list.setSearch}
-              placeholder={t.reports.filters.searchCustomer}
-              className="sm:w-64"
-            />
           ) : null}
           {has('productId') ? (
             <ProductCombobox
@@ -429,7 +433,7 @@ export function ReportsPage() {
               {t.common.clearFilters}
             </Button>
           ) : null}
-        </div>
+        </FilterBar>
 
         {active === 'finance' ? (
           finance.error && !finance.data ? (
