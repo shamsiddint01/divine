@@ -957,6 +957,13 @@ export const uz = {
 
   settings: {
     unsaved: 'Saqlanmagan o‘zgarishlar bor',
+    themeScene: {
+      night: 'Tungi rejim',
+      day: 'Kunduzgi rejim',
+      toDay: 'Kunduzgi rejimga o‘tish',
+      toNight: 'Tungi rejimga o‘tish',
+      hint: 'Almashtirish uchun bosing',
+    },
     description: 'Tizim sozlamalari',
     tabs: { general: 'Umumiy', audit: 'Audit jurnali' },
     sections: {

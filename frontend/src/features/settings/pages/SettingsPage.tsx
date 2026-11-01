@@ -33,6 +33,7 @@ import { Switch } from '@/shared/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
 import type { SettingsDto } from '@/shared/types/api';
 import { useResetDemo, useSaveSettings, useSettings } from '../api/settings';
+import { ThemeSceneToggle } from '../components/ThemeSceneToggle';
 
 function Section({
   icon: Icon,
@@ -253,6 +254,7 @@ export function SettingsPage() {
 
   return (
     <>
+      <ThemeSceneToggle />
       <PageHeader title={t.nav.settings} description={t.settings.description} />
       {canAudit ? (
         <Tabs

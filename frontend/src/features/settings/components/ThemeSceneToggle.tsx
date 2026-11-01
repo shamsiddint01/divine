@@ -51,7 +51,9 @@ export function ThemeSceneToggle() {
   const frame = useRef(0);
   // Zanjirdagi eng so'nggi holatlar (rAF ichida eskirgan qiymat ishlatilmasin)
   const live = useRef({ reduceMotion, setTheme });
-  live.current = { reduceMotion, setTheme };
+  useEffect(() => {
+    live.current = { reduceMotion, setTheme };
+  }, [reduceMotion, setTheme]);
 
   /** Bitta kadr: vaqtni oldinga surish, o'tishni hisoblash va chizish. */
   const render = useCallback((now: number) => {
@@ -66,7 +68,7 @@ export function ThemeSceneToggle() {
     if (tr) {
       const raw = Math.min(1, (now - tr.start) / tr.duration);
       const eased = tr.direct ? raw : easeInOutCubic(raw);
-      scene.current = { dir: tr.dir, p: tr.dir === 'toDay' ? eased : eased, direct: tr.direct };
+      scene.current = { dir: tr.dir, p: eased, direct: tr.direct };
       if (!tr.switched && raw >= 0.5) {
         tr.switched = true;
         live.current.setTheme(tr.target);
