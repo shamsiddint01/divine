@@ -267,16 +267,18 @@ export function drawScene(
   ctx.beginPath();
   ctx.rect(0, 0, w, hy);
   ctx.clip();
-  if (s.sun > -0.2) {
+  // Quyosh ufq ostida chuqur bo'lsa (tun) — na disk, na yog'du; ufqqa yaqinlashgan sari ko'rinadi
+  const sunVisible = smoothstep(-0.12, 0.04, s.sun);
+  if (sunVisible > 0.01) {
     const altitude = clamp01(s.sun);
     const sunColor = mix([255, 160, 70], [255, 248, 222], altitude);
     const glowR = sunR * lerp(7, 4, altitude);
     const sg = ctx.createRadialGradient(sunX, sunY, sunR * 0.6, sunX, sunY, glowR);
-    sg.addColorStop(0, rgba(sunColor, 0.55));
+    sg.addColorStop(0, rgba(sunColor, 0.55 * sunVisible));
     sg.addColorStop(1, rgba(sunColor, 0));
     ctx.fillStyle = sg;
     ctx.fillRect(sunX - glowR, sunY - glowR, glowR * 2, glowR * 2);
-    ctx.fillStyle = rgba(sunColor);
+    ctx.fillStyle = rgba(sunColor, sunVisible);
     ctx.beginPath();
     ctx.arc(sunX, sunY, sunR, 0, Math.PI * 2);
     ctx.fill();
@@ -364,12 +366,12 @@ export function drawScene(
 
   // Quyosh/oy aksi: suvdagi jilvalanuvchi ustun
   const columns: { x: number; color: Rgb; alpha: number; width: number }[] = [];
-  if (s.sun > -0.1) {
+  if (sunVisible > 0.01) {
     const altitude = clamp01(s.sun);
     columns.push({
       x: sunX,
       color: mix([255, 170, 90], [255, 250, 230], altitude),
-      alpha: lerp(0.75, 0.35, altitude) * clamp01((s.sun + 0.1) * 4),
+      alpha: lerp(0.75, 0.35, altitude) * sunVisible,
       width: sunR * 2.4,
     });
   }
