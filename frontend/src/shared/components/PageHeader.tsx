@@ -48,7 +48,9 @@ export function PageHeader({ title, description, breadcrumbs, actions }: PageHea
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0 space-y-1">
           <h1 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
-          {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+          {description ? (
+            <p className="text-[13px] text-muted-foreground sm:text-sm">{description}</p>
+          ) : null}
         </div>
         {actions ? <div className="flex shrink-0 flex-wrap gap-2">{actions}</div> : null}
       </div>
