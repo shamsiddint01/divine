@@ -5,12 +5,54 @@
 
 /* Divine.uz dizayn tizimi — shadcn/ui tokenlari asosida.
    Ranglar faqat shu o'zgaruvchilar orqali ishlatiladi; komponentlarda xom hex yo'q.
-   Yagona mavzu — qora fon (landing bilan bir xil asos). <html class="dark"> index.html'da turadi. */
+   Standart mavzu — qora (index.html'da <html class="dark">, birinchi kirishda shu ko'rinadi);
+   yorug' mavzu Sozlamalardagi banner orqali yoqiladi (ui.store). */
 @custom-variant dark (&:is(.dark *));
 
 :root {
   --radius: 0.625rem;
 
+  --background: oklch(0.984 0.003 247.858);
+  --foreground: oklch(0.208 0.042 265.755);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.208 0.042 265.755);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.208 0.042 265.755);
+  --primary: oklch(0.488 0.217 264.376);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.968 0.007 247.896);
+  --secondary-foreground: oklch(0.208 0.042 265.755);
+  --muted: oklch(0.968 0.007 247.896);
+  --muted-foreground: oklch(0.554 0.046 257.417);
+  --accent: oklch(0.955 0.012 255);
+  --accent-foreground: oklch(0.208 0.042 265.755);
+  /* Status ranglari WCAG AA (≥4.5:1) bo'yicha hisoblangan: oq kartada ham, och fonli badge'da ham. */
+  --destructive: oklch(0.525 0.245 27.325);
+  --success: oklch(0.505 0.13 155);
+  --warning: oklch(0.515 0.15 65);
+  --info: oklch(0.515 0.15 245);
+  --border: oklch(0.922 0.013 255.508);
+  --input: oklch(0.9 0.015 255.508);
+  --ring: oklch(0.488 0.217 264.376 / 45%);
+
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.208 0.042 265.755);
+  --sidebar-accent: oklch(0.955 0.02 264);
+  --sidebar-accent-foreground: oklch(0.42 0.2 264.376);
+  --sidebar-border: oklch(0.929 0.013 255.508);
+
+  /* Grafik: bitta seriya — dataviz validatoridan o'tgan (yorug' fon) */
+  --chart-1: #2a78d6;
+  --chart-grid: oklch(0.929 0.013 255.508);
+  --chart-axis: oklch(0.554 0.046 257.417);
+
+  /* Soyalar (pastdagi @theme) — yorug' fonda oddiy kulrang soya, chegara halqasi yo'q */
+  --elev-ring: rgb(0 0 0 / 0);
+  --elev-soft: rgb(0 0 0 / 0.05);
+  --elev-shadow: rgb(0 0 0 / 0.1);
+}
+
+.dark {
   /* Sirtlar: qora fon → karta → popover/menyu — har biri bir pog'ona yorug'roq, chegara 11% oq */
   --background: oklch(0 0 0);
   --foreground: oklch(0.97 0.003 264);
@@ -45,16 +87,21 @@
   --chart-1: #3987e5;
   --chart-grid: oklch(1 0 0 / 9%);
   --chart-axis: oklch(0.72 0.012 260);
+
+  /* Qora fonda oddiy soya ko'rinmaydi — ko'tarilgan sirt (menyu, oyna, hover'dagi karta) nozik oq
+     halqa bilan ajraladi */
+  --elev-ring: rgb(255 255 255 / 0.08);
+  --elev-soft: rgb(0 0 0 / 0.6);
+  --elev-shadow: rgb(0 0 0 / 0.9);
 }
 
-/* Qora fonda oddiy soya ko'rinmaydi — ko'tarilgan sirt (menyu, oyna, hover'dagi karta) nozik oq chegara
-   bilan ajraladi. Tailwind shadow-* utilitalari shu qiymatlardan build paytida olinadi. */
+/* Tailwind shadow-* utilitalari: rang qismlari mavzu o'zgaruvchilaridan (yorug'/qora alohida) */
 @theme {
-  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.6);
-  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.7);
-  --shadow: 0 0 0 1px rgb(255 255 255 / 0.05), 0 2px 6px -1px rgb(0 0 0 / 0.8);
-  --shadow-md: 0 0 0 1px rgb(255 255 255 / 0.08), 0 8px 22px -6px rgb(0 0 0 / 0.9);
-  --shadow-lg: 0 0 0 1px rgb(255 255 255 / 0.09), 0 18px 40px -12px rgb(0 0 0 / 0.95);
+  --shadow-xs: 0 1px 2px 0 var(--elev-soft);
+  --shadow-sm: 0 1px 3px 0 var(--elev-shadow), 0 1px 2px -1px var(--elev-shadow);
+  --shadow: 0 0 0 1px var(--elev-ring), 0 1px 3px 0 var(--elev-shadow);
+  --shadow-md: 0 0 0 1px var(--elev-ring), 0 4px 12px -2px var(--elev-shadow);
+  --shadow-lg: 0 0 0 1px var(--elev-ring), 0 12px 32px -8px var(--elev-shadow);
 }
 
 @theme inline {
@@ -98,8 +145,11 @@
     @apply border-border outline-ring/50;
   }
   html {
-    color-scheme: dark;
+    color-scheme: light;
     background: var(--background);
+  }
+  html.dark {
+    color-scheme: dark;
   }
   body {
     @apply bg-background font-sans text-foreground antialiased;
