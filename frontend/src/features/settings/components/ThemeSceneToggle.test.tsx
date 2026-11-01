@@ -46,8 +46,8 @@ describe('ThemeSceneToggle', () => {
     const toggle = screen.getByRole('switch');
     await userEvent.click(toggle);
     await userEvent.click(toggle);
-    await waitFor(() => expect(useUiStore.getState().theme).toBe('light'), { timeout: 8000 });
-    await waitFor(() => expect(toggle).toHaveAttribute('aria-busy', 'false'), { timeout: 8000 });
+    await waitFor(() => expect(useUiStore.getState().theme).toBe('light'), PAGE);
+    await waitFor(() => expect(toggle).toHaveAttribute('aria-busy', 'false'), PAGE);
     // Ikkinchi bosish tunga qaytarmagan
     expect(useUiStore.getState().theme).toBe('light');
   });
