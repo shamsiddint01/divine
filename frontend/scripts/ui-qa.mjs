@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Divine.uz UI QA: real Chrome (headless) orqali barcha route'larni turli viewport va mavzularda tekshiradi.
-//   node scripts/ui-qa.mjs [--base http://localhost:5180] [--sizes 1440,1280,1024,768,390] [--themes light,dark]
+//   node scripts/ui-qa.mjs [--base http://localhost:5180] [--sizes 1440,1280,1024,768,390]
 //                          [--shots ./qa-shots] [--routes /,/products]
 // Tekshiradi: gorizontal overflow, JS xatolari / console.error, nomsiz tugmalar, label'siz input'lar.
 // Haqiqiy backend (http rejim): QA_LOGIN=<login> QA_PASSWORD_FILE=<fayl> — avval UI orqali kiradi
@@ -17,7 +17,8 @@ const arg = (name, fallback) => {
 };
 const BASE = arg('base', 'http://localhost:5180');
 const SIZES = arg('sizes', '1440,1280,1024,768,390').split(',').map(Number);
-const THEMES = arg('themes', 'light,dark').split(',');
+// Yagona mavzu — qora (index.html'da <html class="dark">).
+const THEMES = ['dark'];
 const SHOTS = arg('shots', '');
 const ROUTES = arg(
   'routes',
@@ -162,9 +163,6 @@ let problems = 0;
 for (const theme of THEMES) {
   await send('Page.navigate', { url: BASE + '/' });
   await sleep(1500);
-  await send('Runtime.evaluate', {
-    expression: `localStorage.setItem('divine.theme', '${theme}')`,
-  });
   for (const width of SIZES) {
     await send('Emulation.setDeviceMetricsOverride', {
       width,
