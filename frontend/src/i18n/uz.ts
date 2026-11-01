@@ -61,6 +61,8 @@ export const uz = {
     filters: 'Filtrlar',
     all: 'Barchasi',
     clearFilters: 'Filtrlarni tozalash',
+    filtersActive: 'Filtrlar (faol)',
+    showResults: 'Natijalarni ko‘rsatish',
     reset: 'Tiklash',
     confirm: 'Tasdiqlash',
     export: 'Eksport',
