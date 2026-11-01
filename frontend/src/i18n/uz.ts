@@ -893,6 +893,7 @@ export const uz = {
   },
 
   settings: {
+    unsaved: 'Saqlanmagan o‘zgarishlar bor',
     description: 'Tizim sozlamalari',
     tabs: { general: 'Umumiy', audit: 'Audit jurnali' },
     sections: {

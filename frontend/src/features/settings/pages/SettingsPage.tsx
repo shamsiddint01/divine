@@ -220,17 +220,33 @@ function SettingsForm({ initial: raw }: { initial: SettingsDto }) {
         </Section>
       </div>
 
-      <div className="sticky bottom-[calc(var(--mobile-nav-h,0px)+1rem)] z-10 flex justify-end">
-        <Button
-          size="lg"
-          onClick={onSave}
-          disabled={!dirty || save.isPending}
-          className="shadow-lg"
+      {/* Saqlash paneli faqat o'zgarish bo'lganda: doim turgan nofaol tugma kontentni to'sib turmaydi. */}
+      {dirty || save.isPending ? (
+        <div
+          role="region"
+          aria-label={t.settings.unsaved}
+          className="sticky bottom-[calc(var(--mobile-nav-h,0px)+1rem)] z-10 flex flex-col gap-3 rounded-xl border bg-card/95 p-3 shadow-lg backdrop-blur animate-in fade-in-0 slide-in-from-bottom-2 sm:flex-row sm:items-center sm:justify-between sm:pl-5"
         >
-          {save.isPending ? <Loader2 className="animate-spin" /> : <Save />}
-          {t.common.saveChanges}
-        </Button>
-      </div>
+          <p className="flex items-center gap-2 text-sm font-medium">
+            <span className="size-2 rounded-full bg-warning" aria-hidden />
+            {t.settings.unsaved}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              className="flex-1 sm:flex-none"
+              onClick={() => setDraft(initial)}
+              disabled={save.isPending}
+            >
+              {t.common.cancel}
+            </Button>
+            <Button className="flex-1 sm:flex-none" onClick={onSave} disabled={save.isPending}>
+              {save.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+              {t.common.saveChanges}
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
