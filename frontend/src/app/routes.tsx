@@ -12,6 +12,7 @@ const page = <T extends Record<string, React.ComponentType>>(
 ) => lazy(async () => ({ default: (await load())[name] as React.ComponentType }));
 
 const LoginPage = page(() => import('@/features/session/pages/LoginPage'), 'LoginPage');
+const LandingPage = page(() => import('./pages/LandingPage'), 'LandingPage');
 const DashboardPage = page(
   () => import('@/features/dashboard/pages/DashboardPage'),
   'DashboardPage',
@@ -54,6 +55,15 @@ export const routes: RouteObject[] = [
     element: (
       <Suspense fallback={<SessionLoader />}>
         <LoginPage />
+      </Suspense>
+    ),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: '/welcome',
+    element: (
+      <Suspense fallback={<SessionLoader />}>
+        <LandingPage />
       </Suspense>
     ),
     errorElement: <RouteErrorPage />,
