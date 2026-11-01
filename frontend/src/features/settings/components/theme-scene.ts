@@ -253,6 +253,8 @@ export interface SceneTextures {
   grain: HTMLCanvasElement;
   /** Har kadrda osmon shu yerga chiziladi, keyin suvga ko'zgu sifatida ko'chiriladi. */
   sky: HTMLCanvasElement;
+  /** Osmonning kichraytirilgan nusxasi — suvdagi aks tabiiy xira (va arzon) bo'lishi uchun. */
+  skySmall: HTMLCanvasElement;
 }
 
 function canvas(w: number, h: number) {
@@ -309,7 +311,11 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
       const fine = fbm(erode, u * 14 * aspect, v * 14, 3);
       let d = m * 1.35 - (1 - billow) * 0.55 - (1 - fine) * 0.12 + 0.18;
       // Tekstura chetida majburiy so'nish
-      d *= smoothstep(0, 0.1, u) * smoothstep(1, 0.9, u) * smoothstep(0, 0.12, v) * smoothstep(1, 0.92, v);
+      d *=
+        smoothstep(0, 0.1, u) *
+        smoothstep(1, 0.9, u) *
+        smoothstep(0, 0.12, v) *
+        smoothstep(1, 0.92, v);
       dens[py * W + px] = clamp01(d);
     }
   }
@@ -493,6 +499,7 @@ export function createSceneTextures(): SceneTextures | null {
     mist: mistSprite(),
     grain: grainSprite(),
     sky: canvas(1, 1),
+    skySmall: canvas(1, 1),
   };
 }
 
@@ -697,18 +704,32 @@ export function drawScene(
   drawSky(skyCtx, w, h, hy, s, a, tx, time);
   if (tx) ctx.drawImage(tx.sky, 0, 0, w, hy);
 
-  // 2) Suv: ko'zgu aksi, chuqurlashgan sari to'lqin kattaroq (kamera yaqinidagi suv)
+  // 2) Suv: ko'zgu aksi kichraytirilgan osmondan (tabiiy xiralik); pastga — kameraga yaqin suv —
+  //    to'lqin kattaroq. Qatorlar 1px: aks "zinapoya" bo'lib ko'rinmaydi.
   ctx.fillStyle = rgba(mix(s.sky.top, [0, 0, 0], 0.5));
   ctx.fillRect(0, hy, w, waterH);
   if (tx) {
-    const row = 1.5;
-    for (let y = 0; y < waterH; y += row) {
-      const depth = y / waterH;
-      const amp = 0.4 + depth * depth * 7;
-      const dx =
-        Math.sin(y * 0.55 - time * 1.7) * amp + Math.sin(y * 0.17 + time * 0.8) * amp * 0.6;
-      const sy = Math.max(0, hy - y - row);
-      ctx.drawImage(tx.sky, 0, sy * dpr, w * dpr, row * dpr, dx, hy + y, w, row + 0.5);
+    const small = tx.skySmall;
+    const sw = Math.max(1, Math.round(w / 3));
+    const sh = Math.max(1, Math.round(hy / 3));
+    if (small.width !== sw || small.height !== sh) {
+      small.width = sw;
+      small.height = sh;
+    }
+    const sctx = small.getContext('2d');
+    if (sctx) {
+      sctx.imageSmoothingQuality = 'high';
+      sctx.drawImage(tx.sky, 0, 0, sw, sh);
+      ctx.imageSmoothingQuality = 'high';
+      const k = sh / hy;
+      for (let y = 0; y < waterH; y += 1) {
+        const depth = y / waterH;
+        const amp = 0.3 + depth * depth * 3.2;
+        const dx =
+          Math.sin(y * 0.5 - time * 1.6) * amp + Math.sin(y * 0.13 + time * 0.7) * amp * 0.7;
+        const sy = Math.max(0, (hy - y - 1) * k);
+        ctx.drawImage(small, 0, sy, sw, Math.max(0.5, k), dx - 4, hy + y, w + 8, 1.2);
+      }
     }
   }
   // Fresnel: ufq yonida aks kuchli, yaqin suv chuqur va qorong'iroq
@@ -729,8 +750,8 @@ export function drawScene(
     const seed = i * 12.9898;
     const yy = hy + 3 + ((((Math.sin(seed) * 43758.5453) % 1) + 1) % 1) * (waterH - 4);
     const xx = (((((Math.cos(seed) * 24634.6345) % 1) + 1) % 1) + time * 0.006) % 1;
-    const len = (0.03 + ((i * 7) % 11) / 90) * w * (0.4 + (yy - hy) / waterH);
-    const al = (0.04 + 0.07 * day) * (0.5 + 0.5 * Math.sin(time * 1.1 + i));
+    const len = (0.015 + ((i * 7) % 11) / 260) * w * (0.4 + (yy - hy) / waterH);
+    const al = (0.025 + 0.04 * day) * (0.5 + 0.5 * Math.sin(time * 1.1 + i));
     ctx.fillStyle = rgba(ripple, al);
     ctx.fillRect(xx * w, yy, len, 1);
   }
@@ -747,22 +768,35 @@ export function drawScene(
     });
   if (s.night > 0.01)
     paths.push({ x: w * 0.76, color: MOON, strength: s.night * 0.7, width: h * 0.12 });
-  const tick = Math.floor(time * 12);
+  const tick = Math.floor(time * 14);
+  ctx.globalCompositeOperation = 'lighter';
   for (const p of paths) {
-    for (let i = 0; i < 70; i++) {
+    // Yumshoq nur ustuni (aks), ufqda tor, kameraga yaqinlashgan sari kengayadi
+    ctx.save();
+    ctx.translate(p.x, hy);
+    ctx.scale(1, (waterH / p.width) * 1.6);
+    const col = ctx.createRadialGradient(0, 0, 0, 0, 0, p.width * 0.75);
+    col.addColorStop(0, rgba(p.color, 0.28 * p.strength));
+    col.addColorStop(1, rgba(p.color, 0));
+    ctx.fillStyle = col;
+    ctx.fillRect(-p.width, 0, p.width * 2, p.width);
+    ctx.restore();
+    // Yaltirash uchqunlari: mayda, har xil uzunlikda, har kadrda o'rnini o'zgartiradi
+    for (let i = 0; i < 90; i++) {
       const k = Math.sin((i + 1) * 78.233 + tick * 0.37) * 43758.5453;
       const rnd = k - Math.floor(k);
       const k2 = Math.sin((i + 1) * 12.989 + tick * 0.73) * 24634.634;
       const rnd2 = k2 - Math.floor(k2);
-      const depth = (i + 0.5) / 70;
-      const y = hy + 2 + depth * (waterH - 3);
-      const spread = p.width * (0.35 + depth * 0.9);
-      const x = p.x + (rnd - 0.5) * spread;
-      const len = 2 + rnd2 * (4 + depth * 10);
-      ctx.fillStyle = rgba(p.color, p.strength * (0.25 + 0.75 * rnd2) * (1 - depth * 0.55));
-      ctx.fillRect(x - len / 2, y, len, depth > 0.5 ? 1.5 : 1);
+      const depth = ((i * 0.618) % 1) ** 1.3;
+      const y = hy + 1.5 + depth * (waterH - 3);
+      const spread = p.width * (0.15 + depth * 0.85);
+      const x = p.x + (rnd - 0.5) * spread * (0.6 + rnd2 * 0.8);
+      const len = 1 + rnd2 * rnd2 * (2 + depth * 7);
+      ctx.fillStyle = rgba(p.color, p.strength * rnd2 * (1 - depth * 0.5) * 0.9);
+      ctx.fillRect(x - len / 2, y, len, 1);
     }
   }
+  ctx.globalCompositeOperation = 'source-over';
 
   // 4) Tuman: ikki qatlam, har xil tezlik (parallaks); tunda qalin, kunduzi yupqa havo
   if (tx) {
@@ -772,10 +806,19 @@ export function drawScene(
       { y: hy - h * 0.02, hgt: h * 0.26, speed: 0.022, alpha: 0.7, scale: 1 },
     ];
     for (const l of layers) {
+      // Pattern — tayyorlangan teksturani choksiz takrorlaydi (ustma-ust tushgan chiziq bo'lmaydi)
+      const pattern = ctx.createPattern(tx.mist, 'repeat-x');
+      if (!pattern) continue;
       const tileW = w * l.scale;
       const off = -((mistOffset * l.speed * w) % tileW);
+      pattern.setTransform(
+        new DOMMatrix()
+          .translateSelf(off, l.y)
+          .scaleSelf(tileW / tx.mist.width, l.hgt / tx.mist.height),
+      );
       ctx.globalAlpha = clamp01(amount * l.alpha);
-      for (let x = off; x < w; x += tileW) ctx.drawImage(tx.mist, x, l.y, tileW + 1, l.hgt);
+      ctx.fillStyle = pattern;
+      ctx.fillRect(0, l.y, w, l.hgt);
     }
     ctx.globalAlpha = 1;
   }
