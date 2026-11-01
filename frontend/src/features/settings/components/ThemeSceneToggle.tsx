@@ -8,6 +8,7 @@ import {
   type Direction,
   type SceneState,
   createSceneAssets,
+  createSceneTextures,
   drawScene,
   easeInOutCubic,
   sceneParams,
@@ -93,6 +94,7 @@ export function ThemeSceneToggle() {
     drawScene(ctx, w, h, sceneParams(scene.current), assets.current, {
       time: c.time,
       mistOffset: c.mist,
+      dpr,
     });
   }, []);
 
@@ -104,6 +106,8 @@ export function ThemeSceneToggle() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    // Bulut, oy, tuman teksturalari — bir marta (shovqin generatsiyasi, ~30–60 ms)
+    assets.current.textures ??= createSceneTextures();
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
       const dpr = Math.min(2, window.devicePixelRatio || 1);

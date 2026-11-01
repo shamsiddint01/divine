@@ -229,7 +229,9 @@ export function createSceneAssets(seed = 7): SceneAssets {
   const hills = (n: number, f1: number, f2: number) =>
     Array.from({ length: n }, (_, i) => {
       const t = i / (n - 1);
-      return clamp01(0.45 + 0.35 * Math.sin(t * f1 + r() * 0.3) * Math.sin(t * f2 + 1.1) + 0.2 * r());
+      return clamp01(
+        0.45 + 0.35 * Math.sin(t * f1 + r() * 0.3) * Math.sin(t * f2 + 1.1) + 0.2 * r(),
+      );
     });
   return {
     stars,
@@ -271,7 +273,11 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
   const puffs = Array.from({ length: n }, (_, i) => {
     const t = i / (n - 1);
     const mid = 1 - Math.abs(t - 0.5) * 2; // o'rtadagilar kattaroq va balandroq
-    return { x: 0.14 + t * 0.72 + (r() - 0.5) * 0.06, y: 0.68 - mid * 0.18 - r() * 0.06, rad: 0.17 + mid * 0.16 + r() * 0.05 };
+    return {
+      x: 0.14 + t * 0.72 + (r() - 0.5) * 0.06,
+      y: 0.68 - mid * 0.18 - r() * 0.06,
+      rad: 0.17 + mid * 0.16 + r() * 0.05,
+    };
   });
   const day = canvas(W, H);
   const warm = canvas(W, H);
@@ -310,8 +316,14 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
       dImg.data[i + 3] = alpha * 255;
 
       // Shom/tong: quyosh ufqda — bulut pastdan yoritiladi; tepasi binafsha-kulrang soyada
-      const under = clamp01(0.25 + 0.75 * smoothstep(0.25, 0.85, 1 - height) + fine + rim * 1.4 - core * 0.1);
-      const wc = mix(mix([92, 70, 116], [176, 104, 136], clamp01(under * 1.4)), [255, 196, 140], clamp01(under * under * 1.2));
+      const under = clamp01(
+        0.25 + 0.75 * smoothstep(0.25, 0.85, 1 - height) + fine + rim * 1.4 - core * 0.1,
+      );
+      const wc = mix(
+        mix([92, 70, 116], [176, 104, 136], clamp01(under * 1.4)),
+        [255, 196, 140],
+        clamp01(under * under * 1.2),
+      );
       wImg.data[i] = wc[0];
       wImg.data[i + 1] = wc[1];
       wImg.data[i + 2] = wc[2];
@@ -332,7 +344,11 @@ function moonSprite(): HTMLCanvasElement {
   const img = ctx.createImageData(S, S);
   const noise = makeNoise(91);
   const r = rng(91);
-  const craters = Array.from({ length: 14 }, () => ({ x: r() * 1.6 - 0.8, y: r() * 1.6 - 0.8, rad: 0.04 + r() * 0.1 }));
+  const craters = Array.from({ length: 14 }, () => ({
+    x: r() * 1.6 - 0.8,
+    y: r() * 1.6 - 0.8,
+    rad: 0.04 + r() * 0.1,
+  }));
   const R = S * 0.46;
   for (let py = 0; py < S; py++) {
     for (let px = 0; px < S; px++) {
@@ -466,7 +482,14 @@ export interface DrawOptions {
   dpr: number;
 }
 
-function drawHills(ctx: CanvasRenderingContext2D, w: number, hy: number, heights: number[], maxH: number, color: string) {
+function drawHills(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  hy: number,
+  heights: number[],
+  maxH: number,
+  color: string,
+) {
   const step = w / (heights.length - 1);
   ctx.fillStyle = color;
   ctx.beginPath();
@@ -549,7 +572,8 @@ function drawSky(
     ctx.fillStyle = halo;
     ctx.fillRect(mx - mr * 7, my - mr * 7, mr * 14, mr * 14);
     ctx.globalAlpha = s.night;
-    if (tx) ctx.drawImage(tx.moon, mx - mr / 0.92, my - mr / 0.92, (mr * 2) / 0.92, (mr * 2) / 0.92);
+    if (tx)
+      ctx.drawImage(tx.moon, mx - mr / 0.92, my - mr / 0.92, (mr * 2) / 0.92, (mr * 2) / 0.92);
     else {
       ctx.fillStyle = rgba(MOON);
       ctx.beginPath();
@@ -603,7 +627,14 @@ function drawSky(
   // Qirg'oq: uzoq qatlam havoda xiralashgan, yaqinrog'i to'qroq (havo perspektivasi)
   const far = mix(s.sky.horizon, s.sky.top, 0.35);
   drawHills(ctx, w, hy, a.farHills, h * 0.05, rgba(mix(far, [10, 14, 30], 0.35 + 0.25 * s.night)));
-  drawHills(ctx, w, hy, a.nearHills, h * 0.028, rgba(mix(s.sky.horizon, [6, 9, 20], 0.62 + 0.25 * s.night)));
+  drawHills(
+    ctx,
+    w,
+    hy,
+    a.nearHills,
+    h * 0.028,
+    rgba(mix(s.sky.horizon, [6, 9, 20], 0.62 + 0.25 * s.night)),
+  );
 }
 
 /**
@@ -669,8 +700,8 @@ export function drawScene(
   const ripple = mix([150, 170, 230], WHITE, day);
   for (let i = 0; i < 46; i++) {
     const seed = i * 12.9898;
-    const yy = hy + 3 + ((Math.sin(seed) * 43758.5453) % 1 + 1) % 1 * (waterH - 4);
-    const xx = ((((Math.cos(seed) * 24634.6345) % 1) + 1) % 1 + time * 0.006) % 1;
+    const yy = hy + 3 + ((((Math.sin(seed) * 43758.5453) % 1) + 1) % 1) * (waterH - 4);
+    const xx = (((((Math.cos(seed) * 24634.6345) % 1) + 1) % 1) + time * 0.006) % 1;
     const len = (0.03 + ((i * 7) % 11) / 90) * w * (0.4 + (yy - hy) / waterH);
     const al = (0.04 + 0.07 * day) * (0.5 + 0.5 * Math.sin(time * 1.1 + i));
     ctx.fillStyle = rgba(ripple, al);
@@ -687,7 +718,8 @@ export function drawScene(
       strength: sunVisible * lerp(1, 0.6, clamp01(s.sun)),
       width: h * 0.16,
     });
-  if (s.night > 0.01) paths.push({ x: w * 0.76, color: MOON, strength: s.night * 0.7, width: h * 0.12 });
+  if (s.night > 0.01)
+    paths.push({ x: w * 0.76, color: MOON, strength: s.night * 0.7, width: h * 0.12 });
   const tick = Math.floor(time * 12);
   for (const p of paths) {
     for (let i = 0; i < 70; i++) {
@@ -722,7 +754,14 @@ export function drawScene(
   }
 
   // 5) Vinyetka va donadorlik (kinematografik yakun, gradient chiziqlarisiz)
-  const vig = ctx.createRadialGradient(w / 2, h * 0.55, h * 0.3, w / 2, h * 0.55, Math.max(w, h) * 0.75);
+  const vig = ctx.createRadialGradient(
+    w / 2,
+    h * 0.55,
+    h * 0.3,
+    w / 2,
+    h * 0.55,
+    Math.max(w, h) * 0.75,
+  );
   vig.addColorStop(0, 'rgba(0,0,0,0)');
   vig.addColorStop(1, rgba([0, 0, 0], 0.32));
   ctx.fillStyle = vig;
