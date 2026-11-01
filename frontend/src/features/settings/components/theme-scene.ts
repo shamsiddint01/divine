@@ -488,7 +488,7 @@ function grainSprite(): HTMLCanvasElement {
     img.data[i * 4] = g;
     img.data[i * 4 + 1] = g;
     img.data[i * 4 + 2] = g;
-    img.data[i * 4 + 3] = r() * 22;
+    img.data[i * 4 + 3] = r() * 7;
   }
   ctx.putImageData(img, 0, 0);
   return c;
