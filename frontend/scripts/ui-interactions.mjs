@@ -394,14 +394,15 @@ await layerIsUzbek('mahsulot formasi (xatolar bilan)', async () => {
   await waitFor(textOnPage('Nomini kiriting'));
 });
 
-// 7. Tungi rejim va sidebar yig'ish
+// 7. Yagona qora mavzu va sidebar yig'ish
 await go('/');
-await clickText('Tungi rejimga o‘tish');
 check(
-  'Tungi rejim yoqiladi',
-  await waitFor(`document.documentElement.classList.contains('dark')`, 2000),
+  'Qora mavzu doim yoqiq (almashtirgich yo‘q)',
+  await waitFor(
+    `document.documentElement.classList.contains('dark') && getComputedStyle(document.body).backgroundColor === 'rgb(0, 0, 0)' && ![...document.querySelectorAll('button')].some((b) => /rejimga o‘tish/.test(b.getAttribute('aria-label') ?? ''))`,
+    2000,
+  ),
 );
-await clickText('Kunduzgi rejimga o‘tish');
 await clickText('Yon panelni yig‘ish');
 check(
   'Sidebar yig‘iladi (faqat ikonkalar)',
