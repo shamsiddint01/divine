@@ -31,4 +31,22 @@ describe('Sozlamalar (Phase 12, API §16, D-21)', () => {
     await waitFor(() => expect(db().settings.lowStockDefaultThreshold).toBe('7.5'), PAGE);
     expect(db().settings).toEqual({ ...before, lowStockDefaultThreshold: '7.5' });
   });
+
+  it('saqlash paneli faqat o‘zgarish bo‘lganda; "Bekor qilish" qiymatni qaytaradi', async () => {
+    renderApp('/settings');
+    const user = userEvent.setup();
+    const name = await screen.findByLabelText(
+      t.settings.fields.companyName,
+      { exact: false },
+      PAGE,
+    );
+    const before = (name as HTMLInputElement).value;
+    expect(screen.queryByRole('button', { name: t.common.saveChanges })).toBeNull();
+
+    await user.type(name, ' X');
+    expect(screen.getByRole('region', { name: t.settings.unsaved })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: t.common.cancel }));
+    expect(name).toHaveValue(before);
+    expect(screen.queryByRole('region', { name: t.settings.unsaved })).toBeNull();
+  });
 });
