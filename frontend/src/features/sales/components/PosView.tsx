@@ -1,6 +1,6 @@
 import { customerNameSchema, optionalPhoneSchema } from '@divine/shared';
 import { useQueryClient } from '@tanstack/react-query';
-import { Loader2, RotateCcw, ShoppingCart, Warehouse } from 'lucide-react';
+import { ChevronUp, Loader2, RotateCcw, ShoppingCart, Warehouse } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { lookupByBarcode } from '@/features/products/api/products';
@@ -8,7 +8,8 @@ import { useCurrentUser } from '@/features/session/api/session';
 import { useWarehouses } from '@/features/warehouses/api/warehouses';
 import { t } from '@/i18n/uz';
 import { ApiError } from '@/shared/lib/api-client';
-import { formatQuantity } from '@/shared/lib/format';
+import { BELOW_XL_QUERY, useMediaQuery } from '@/shared/hooks/use-media-query';
+import { formatMoney, formatQuantity } from '@/shared/lib/format';
 import { toastError } from '@/shared/lib/mutation';
 // Mijoz maydonlari shared sxemalar bilan shu yerda tekshiriladi — o'zbekcha xabarlar uchun.
 import '@/shared/forms/zod';
@@ -21,9 +22,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Label } from '@/shared/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
 import { Separator } from '@/shared/ui/separator';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/shared/ui/sheet';
 import type { ProductDto, SaleDto } from '@/shared/types/api';
 import { useCreateSale } from '../api/sales';
-import { type CartLine, addToCart, removeLine, setLineQuantity } from '../lib/cart';
+import {
+  type CartLine,
+  addToCart,
+  cartTotals,
+  removeLine,
+  setLineQuantity,
+} from '../lib/cart';
 import { CartPanel } from './CartPanel';
 import { type CustomerDraft, CustomerFields } from './CustomerFields';
 import { ProductPicker } from './ProductPicker';
@@ -80,6 +94,9 @@ export function PosView() {
   const [receipt, setReceipt] = useState<SaleDto | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
   const [pendingWarehouse, setPendingWarehouse] = useState<string | null>(null);
+  // xl dan kichik ekranda savat yon ustunda emas — pastki panel orqali ochiladigan oynada.
+  const compact = useMediaQuery(BELOW_XL_QUERY);
+  const [cartOpen, setCartOpen] = useState(false);
 
   const inCart = Object.fromEntries(lines.map((l) => [l.productId, l.quantity]));
 
@@ -138,6 +155,7 @@ export function PosView() {
           items: lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
         },
       });
+      setCartOpen(false);
       setReceipt(sale);
       toast.success(t.sales.success(sale.number));
       reset();
@@ -150,6 +168,54 @@ export function PosView() {
       }
     }
   };
+
+  const totals = cartTotals(lines);
+  const checkout = (
+    <>
+      <CartPanel
+        lines={lines}
+        onQuantity={(id, q) => setLines((prev) => setLineQuantity(prev, id, q))}
+        onRemove={(id) => setLines((prev) => removeLine(prev, id))}
+      />
+      <Separator />
+      <div className="space-y-1">
+        <p className="text-sm font-semibold">{t.sales.customer.title}</p>
+        <CustomerFields
+          value={customer}
+          onChange={(v) => {
+            setCustomer(v);
+            if (errors.name || errors.phone) setErrors({});
+          }}
+          errors={errors}
+        />
+      </div>
+      <div className="grid grid-cols-[auto_1fr] gap-2 pt-1">
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={() => setConfirmClear(true)}
+          disabled={createSale.isPending || (lines.length === 0 && !customer.name)}
+        >
+          <RotateCcw />
+          {t.sales.clear}
+        </Button>
+        <Button
+          size="lg"
+          onClick={submit}
+          disabled={lines.length === 0 || createSale.isPending || !warehouseId}
+        >
+          {createSale.isPending ? <Loader2 className="animate-spin" /> : null}
+          {createSale.isPending ? t.sales.processing : t.sales.confirm}
+          {/* Jami summa savat ostida yozilgan; tugmada — ko'z bilan tekshirish uchun takror (o'qilmaydi). */}
+          {lines.length > 0 && !createSale.isPending ? (
+            <span aria-hidden className="tabular-nums opacity-80">
+              · {formatMoney(totals.totalAmount)}
+            </span>
+          ) : null}
+        </Button>
+      </div>
+    </>
+  );
 
   return (
     <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
