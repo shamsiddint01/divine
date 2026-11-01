@@ -1,6 +1,6 @@
 import { BarChart3, LogIn, Plus, Send, ShoppingCart, Truck, Warehouse, X } from 'lucide-react';
 import { Dialog } from 'radix-ui';
-import { type CSSProperties, useEffect, useId, useRef, useState } from 'react';
+import { type CSSProperties, type RefObject, useEffect, useId, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { t } from '@/i18n/uz';
 import { useMediaQuery } from '@/shared/hooks/use-media-query';
@@ -153,7 +153,7 @@ const stagger = (i: number) => ({ '--i': i }) as CSSProperties;
  * 2-variant: sahifa pastga aylantirilganda `[data-reveal]` elementlar ekranga kirgan sari paydo bo'ladi.
  * JS ishlamasa yoki harakat o'chirilgan bo'lsa hech narsa yashirilmaydi (`data-reveal-ready` faqat shu yerda).
  */
-function useScrollReveal(root: React.RefObject<HTMLDivElement | null>, enabled: boolean) {
+function useScrollReveal(root: RefObject<HTMLDivElement | null>, enabled: boolean) {
   useEffect(() => {
     const el = root.current;
     if (!el || !enabled || !('IntersectionObserver' in window)) return;

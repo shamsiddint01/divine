@@ -755,3 +755,165 @@ html:has(.ld) {
     transition-duration: 0s !important;
   }
 }
+
+/* ======================================================================
+   2-variant (/welcome?v=2): scroll bilan paydo bo'lish, progress chizig'i, yakuniy CTA.
+   Elementlar faqat JS kuzatuvchi ulangach (`data-reveal-ready`) yashiriladi — JS ishlamasa hammasi ko'rinadi.
+   ====================================================================== */
+
+.ld-progress {
+  position: absolute;
+  inset-inline: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--ld-accent);
+  transform: scaleX(var(--ld-progress, 0));
+  transform-origin: left;
+  pointer-events: none;
+}
+
+.ld-final {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: calc(64 * var(--u)) calc(24 * var(--u));
+  border: 1px solid rgba(244, 118, 104, 0.35);
+  border-radius: calc(20 * var(--u));
+  background:
+    radial-gradient(ellipse 60% 90% at 50% 120%, rgba(240, 96, 90, 0.28), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent);
+  text-align: center;
+}
+.ld-final__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: calc(12 * var(--u));
+  margin-top: calc(28 * var(--u));
+}
+.ld-final__actions .ld-btn {
+  height: calc(52 * var(--u));
+  padding-inline: calc(26 * var(--u));
+  font-size: calc(15.5 * var(--u));
+}
+@media (max-width: 600px) {
+  .ld-final {
+    padding: calc(40 * var(--u)) calc(20 * var(--u));
+  }
+  .ld-final__actions {
+    flex-direction: column;
+    align-self: stretch;
+  }
+  .ld-final__actions .ld-btn {
+    width: 100%;
+    height: calc(46 * var(--u));
+    font-size: max(14px, calc(14.5 * var(--u)));
+  }
+}
+
+/* Dev-only variant almashtirgich */
+.ld-variants {
+  position: fixed;
+  left: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  z-index: 70;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(20, 20, 20, 0.85);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  font-size: 12px;
+  font-weight: 600;
+}
+.ld-variants a {
+  padding: 6px 12px;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.7);
+}
+.ld-variants a[aria-current='page'] {
+  background: var(--ld-accent);
+  color: #fff;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ld[data-reveal-ready] [data-reveal] {
+    transition:
+      opacity 0.7s var(--ld-ease),
+      transform 0.85s var(--ld-ease),
+      filter 0.7s ease;
+    transition-delay: calc(var(--i, 0) * 90ms);
+  }
+  .ld[data-reveal-ready] [data-reveal]:not([data-revealed]) {
+    opacity: 0;
+    transform: translateY(32px);
+    filter: blur(6px);
+  }
+  /* Tugmalar — kichrayib turib "sakrab" chiqadi */
+  .ld[data-reveal-ready] [data-reveal='pop'] {
+    display: inline-flex;
+    transition:
+      opacity 0.5s ease,
+      transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition-delay: calc(var(--i, 0) * 110ms + 0.15s);
+  }
+  .ld[data-reveal-ready] [data-reveal='pop']:not([data-revealed]) {
+    transform: translateY(14px) scale(0.85);
+    filter: none;
+  }
+
+  /* Bo'lim sarlavhasi ostida marjon chiziq chiziladi */
+  .ld[data-variant='2'] .ld-section__head .ld-section__title::after {
+    content: '';
+    display: block;
+    width: calc(56 * var(--u));
+    height: 2px;
+    margin: calc(14 * var(--u)) auto 0;
+    border-radius: 2px;
+    background: var(--ld-accent);
+    transform: scaleX(0);
+    transition: transform 0.9s 0.25s var(--ld-ease);
+  }
+  .ld[data-variant='2'] .ld-section__head[data-revealed] .ld-section__title::after,
+  .ld[data-variant='2']:not([data-reveal-ready]) .ld-section__title::after {
+    transform: scaleX(1);
+  }
+
+  /* Qadamlar: yuqori chiziq chapdan o'ngga chiziladi */
+  .ld[data-reveal-ready] .ld-step {
+    position: relative;
+    border-top-color: transparent;
+  }
+  .ld[data-reveal-ready] .ld-step::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    top: -1px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--ld-coral-1), var(--ld-line) 60%);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 1s calc(var(--i, 0) * 90ms + 0.1s) var(--ld-ease);
+  }
+  .ld[data-reveal-ready] .ld-step[data-revealed]::after {
+    transform: scaleX(1);
+  }
+
+  /* Imkoniyat ikonkasi paydo bo'lgach bir marta yorishadi */
+  .ld[data-reveal-ready] [data-revealed] .ld-card__icon {
+    animation: ld-glow 1.2s calc(var(--i, 0) * 90ms + 0.3s) ease both;
+  }
+}
+@keyframes ld-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 138, 115, 0);
+  }
+  40% {
+    box-shadow: 0 0 0 8px rgba(255, 138, 115, 0.18);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgba(255, 138, 115, 0);
+  }
+}
