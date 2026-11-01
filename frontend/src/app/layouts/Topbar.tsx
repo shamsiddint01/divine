@@ -1,13 +1,4 @@
-import {
-  Bell,
-  LogOut,
-  Menu,
-  Moon,
-  PackageX,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Sun,
-} from 'lucide-react';
+import { Bell, LogOut, Menu, PackageX, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 import { Permission } from '@divine/shared';
 import { useDashboardSummary } from '@/features/dashboard/api/dashboard';
@@ -125,11 +116,9 @@ function UserMenu() {
   );
 }
 
-/** Yuqori panel: menyu tugmasi, joriy bo'lim, server/demo holati, mavzu, bildirishnomalar, foydalanuvchi. */
+/** Yuqori panel: menyu tugmasi, joriy bo'lim, server/demo holati, bildirishnomalar, foydalanuvchi. */
 export function Topbar() {
   const openMobileSidebar = useUiStore((s) => s.openMobileSidebar);
-  const theme = useUiStore((s) => s.theme);
-  const toggleTheme = useUiStore((s) => s.toggleTheme);
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
   const { pathname } = useLocation();
@@ -167,14 +156,6 @@ export function Topbar() {
         <div className="hidden sm:block">
           <ApiStatusBadge />
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleTheme}
-          aria-label={theme === 'dark' ? t.topbar.themeToLight : t.topbar.themeToDark}
-        >
-          {theme === 'dark' ? <Sun /> : <Moon />}
-        </Button>
         {canSeeLowStock ? <NotificationsMenu /> : null}
         <UserMenu />
       </div>

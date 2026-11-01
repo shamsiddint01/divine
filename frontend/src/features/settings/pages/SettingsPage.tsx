@@ -94,8 +94,6 @@ function SettingsForm({ initial: raw }: { initial: SettingsDto }) {
   }));
   const [draft, setDraft] = useState(initial);
   const save = useSaveSettings();
-  const theme = useUiStore((s) => s.theme);
-  const setTheme = useUiStore((s) => s.setTheme);
   const set = <K extends keyof SettingsDto>(key: K, value: SettingsDto[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
   const threshold = normalizeNumberInput(draft.lowStockDefaultThreshold);
@@ -148,12 +146,6 @@ function SettingsForm({ initial: raw }: { initial: SettingsDto }) {
         <FormField id="s-tz" label={t.settings.fields.timezone}>
           <Input id="s-tz" value={t.settings.fields.timezoneValue} disabled />
         </FormField>
-        <ToggleRow
-          label={t.settings.fields.theme}
-          hint={t.settings.fields.themeHint}
-          checked={theme === 'dark'}
-          onChange={(on) => setTheme(on ? 'dark' : 'light')}
-        />
       </Section>
 
       <Section
