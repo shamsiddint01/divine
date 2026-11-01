@@ -69,7 +69,7 @@ function WarehouseCard({
         </div>
         <StatusBadge status={w.status} />
       </div>
-      <div className="grid grid-cols-3 divide-x border-y bg-muted/30">
+      <div className="grid grid-cols-3 divide-x border-y bg-muted/30 [&+div]:border-t-0">
         <div className="p-3 sm:p-4">
           <p className="text-xs text-muted-foreground">{t.warehouses.productCount}</p>
           <p className="mt-1 text-base font-semibold tabular-nums sm:text-lg">
@@ -91,17 +91,17 @@ function WarehouseCard({
           </p>
         </div>
       </div>
-      {/* Telefonda qiymat va tugmalar ikki qatorda — aks holda tugma karta chetidan chiqadi */}
-      <div className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-sm">
-          {w.stockValue !== undefined ? (
-            <>
-              <span className="text-muted-foreground">{t.warehouses.stockValue}: </span>
-              <span className="font-medium tabular-nums">{formatCompactMoney(w.stockValue)}</span>
-            </>
-          ) : null}
+      {w.stockValue !== undefined ? (
+        // Qiymat alohida qatorda — uzun yozuv tugmalar bilan bir qatorga siqilib, uch qatorga bo'linmaydi.
+        <div className="flex items-baseline justify-between gap-3 border-b px-4 py-3 text-sm sm:px-5">
+          <span className="min-w-0 truncate text-muted-foreground">{t.warehouses.stockValue}</span>
+          <span className="shrink-0 font-semibold tabular-nums">
+            {formatCompactMoney(w.stockValue)}
+          </span>
         </div>
-        <div className="flex items-center justify-end gap-1">
+      ) : null}
+      <div className="flex items-center justify-between gap-2 px-4 py-3 sm:px-5">
+        <div className="flex items-center gap-1">
           {canManage ? (
             <>
               <Tooltip>
@@ -136,7 +136,8 @@ function WarehouseCard({
               </Tooltip>
             </>
           ) : null}
-          <Button asChild size="sm" variant="secondary">
+        </div>
+        <Button asChild size="sm" variant="secondary">
             <Link to={`/warehouses/${w.id}`}>
               {t.warehouses.open}
               <ArrowRight />
