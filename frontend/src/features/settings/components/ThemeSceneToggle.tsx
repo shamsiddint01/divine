@@ -96,22 +96,9 @@ export function ThemeSceneToggle() {
     });
   }, []);
 
-  /** Sikl faqat kerak bo'lganda aylanadi: ko'rinib turibdi va (idle harakat yoki o'tish bor). */
-  const loop = useCallback(
-    (now: number) => {
-      render(now);
-      const needed =
-        visible.current &&
-        !document.hidden &&
-        (!live.current.reduceMotion || transition.current !== null);
-      frame.current = needed ? requestAnimationFrame(loop) : 0;
-      if (!needed) clock.current.last = 0;
-    },
-    [render],
-  );
-  const kick = useCallback(() => {
-    if (!frame.current) frame.current = requestAnimationFrame(loop);
-  }, [loop]);
+  /** Siklni (qayta) boshlash — sikl o'zi pastdagi effektda; bu yerda faqat unga havola. */
+  const kickRef = useRef<() => void>(() => {});
+  const kick = useCallback(() => kickRef.current(), []);
 
   // O'lcham: canvas piksellari = CSS o'lcham × devicePixelRatio (≤2); maket siljimaydi
   useEffect(() => {
@@ -132,8 +119,21 @@ export function ThemeSceneToggle() {
     return () => ro.disconnect();
   }, [render]);
 
-  // Ekrandan chiqsa yoki tab yashirilsa — pauza; qaytganda davom etadi
+  // Sikl faqat kerak bo'lganda aylanadi: ko'rinib turibdi va (idle harakat yoki o'tish bor).
+  // Ekrandan chiqsa yoki tab yashirilsa — pauza; qaytganda davom etadi.
   useEffect(() => {
+    const tick = (now: number) => {
+      render(now);
+      const needed =
+        visible.current &&
+        !document.hidden &&
+        (!live.current.reduceMotion || transition.current !== null);
+      frame.current = needed ? requestAnimationFrame(tick) : 0;
+      if (!needed) clock.current.last = 0;
+    };
+    kickRef.current = () => {
+      if (!frame.current) frame.current = requestAnimationFrame(tick);
+    };
     const canvas = canvasRef.current;
     let io: IntersectionObserver | undefined;
     if (canvas && 'IntersectionObserver' in window) {
@@ -153,8 +153,9 @@ export function ThemeSceneToggle() {
       document.removeEventListener('visibilitychange', onVisibility);
       cancelAnimationFrame(frame.current);
       frame.current = 0;
+      kickRef.current = () => {};
     };
-  }, [kick]);
+  }, [render, kick]);
 
   // Harakat sozlamasi o'zgarsa — sikl qayta baholanadi (idle harakat yoqiladi/o'chadi)
   useEffect(() => {
