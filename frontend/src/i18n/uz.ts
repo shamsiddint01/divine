@@ -29,6 +29,7 @@ export const uz = {
     collapse: 'Yon panelni yig‘ish',
     expand: 'Yon panelni yoyish',
     sectionMain: 'Asosiy',
+    sellShort: 'Sotuv',
     sectionCatalog: 'Katalog va ombor',
     sectionCatalogShort: 'Katalog',
     sectionOperations: 'Operatsiyalar',

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { NavLink, useLocation } from 'react-router';
 import { t } from '@/i18n/uz';
 import { cn } from '@/shared/lib/utils';
@@ -24,6 +24,11 @@ export function MobileNav() {
   const opened = sections.find((section) => section.key === sheet?.key);
   const close = () => setSheet((s) => (s ? { ...s, open: false } : s));
 
+  // Kassa — sotuvchining asosiy ishi: guruh ichida yashirinmasin, pastki panel o'rtasida alohida tugma.
+  const sell = sections.flatMap((section) => section.items).find((item) => item.key === 'sales');
+  const sellActive = current?.key === 'sales';
+  const sellAt = Math.floor(sections.length / 2);
+
   if (sections.length === 0) return null;
 
   return (
@@ -34,11 +39,13 @@ export function MobileNav() {
       >
         <ul
           className="grid h-16"
-          style={{ gridTemplateColumns: `repeat(${sections.length}, minmax(0, 1fr))` }}
+          style={{
+            gridTemplateColumns: `repeat(${sections.length + (sell ? 1 : 0)}, minmax(0, 1fr))`,
+          }}
         >
-          {sections.map((section) => {
+          {sections.map((section, index) => {
             const Icon = section.icon;
-            const active = current ? section.keys.includes(current.key) : false;
+            const active = current && !sellActive ? section.keys.includes(current.key) : false;
             const content = (
               <>
                 <span
@@ -54,28 +61,51 @@ export function MobileNav() {
             );
             const only = section.items.length === 1 ? section.items[0] : undefined;
             return (
-              <li key={section.key}>
-                {only ? (
-                  <NavLink
-                    to={only.path}
-                    end={only.path === '/'}
-                    className={cn(TAB_CLASS, active ? 'text-primary' : 'text-muted-foreground')}
-                  >
-                    {content}
-                  </NavLink>
-                ) : (
-                  <button
-                    type="button"
-                    aria-haspopup="dialog"
-                    aria-expanded={sheet?.key === section.key && sheet.open}
-                    aria-current={active ? 'page' : undefined}
-                    onClick={() => setSheet({ key: section.key, open: true })}
-                    className={cn(TAB_CLASS, active ? 'text-primary' : 'text-muted-foreground')}
-                  >
-                    {content}
-                  </button>
-                )}
-              </li>
+              <Fragment key={section.key}>
+                {sell && index === sellAt ? (
+                  <li>
+                    <NavLink
+                      to={sell.path}
+                      className={cn(
+                        TAB_CLASS,
+                        sellActive ? 'text-primary' : 'text-muted-foreground',
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md shadow-primary/30 transition-transform',
+                          sellActive && 'ring-4 ring-primary/15',
+                        )}
+                      >
+                        <sell.icon className="size-[18px]" aria-hidden />
+                      </span>
+                      <span className="max-w-full truncate px-1">{t.nav.sellShort}</span>
+                    </NavLink>
+                  </li>
+                ) : null}
+                <li>
+                  {only ? (
+                    <NavLink
+                      to={only.path}
+                      end={only.path === '/'}
+                      className={cn(TAB_CLASS, active ? 'text-primary' : 'text-muted-foreground')}
+                    >
+                      {content}
+                    </NavLink>
+                  ) : (
+                    <button
+                      type="button"
+                      aria-haspopup="dialog"
+                      aria-expanded={sheet?.key === section.key && sheet.open}
+                      aria-current={active ? 'page' : undefined}
+                      onClick={() => setSheet({ key: section.key, open: true })}
+                      className={cn(TAB_CLASS, active ? 'text-primary' : 'text-muted-foreground')}
+                    >
+                      {content}
+                    </button>
+                  )}
+                </li>
+              </Fragment>
             );
           })}
         </ul>
