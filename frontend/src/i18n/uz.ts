@@ -242,7 +242,8 @@ export const uz = {
       },
       {
         title: 'Natijani ko‘ring',
-        description: 'Bugungi savdo, foyda, xarajat va kam qolgan tovar — bosh sahifada va hisobotlarda.',
+        description:
+          'Bugungi savdo, foyda, xarajat va kam qolgan tovar — bosh sahifada va hisobotlarda.',
       },
     ],
     faqTitle: 'Ko‘p beriladigan savollar',
