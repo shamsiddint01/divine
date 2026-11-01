@@ -255,6 +255,7 @@ export interface SceneTextures {
   sky: HTMLCanvasElement;
   /** Osmonning kichraytirilgan nusxasi — suvdagi aks tabiiy xira (va arzon) bo'lishi uchun. */
   skySmall: HTMLCanvasElement;
+  grainPattern?: CanvasPattern | null;
 }
 
 function canvas(w: number, h: number) {
@@ -351,9 +352,9 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
       const o = i * 4;
       if (alpha > 0) {
         const edge = 1 - smoothstep(0.08, 0.3, d); // yupqa chet — nur o'tadi ("kumush chet")
-        const lobe = 0.7 + (lobes[i]! - 0.45) * 1.1; // bo'lak tepasi yorug', orasidagi chuqurlik soyada
+        const lobe = 0.86 + (lobes[i]! - 0.45) * 0.95; // bo'lak tepasi yorug', orasidagi chuqurlik soyada
         const lightDay = clamp01((Math.exp(-topAcc[py]! * 7) * 0.82 + 0.16) * lobe + edge * 0.3);
-        const dc = mix([138, 150, 176], [255, 255, 255], lightDay);
+        const dc = mix([148, 160, 186], [255, 255, 255], lightDay);
         dImg.data[o] = dc[0];
         dImg.data[o + 1] = dc[1];
         dImg.data[o + 2] = dc[2];
@@ -474,7 +475,7 @@ function mistSprite(): HTMLCanvasElement {
   return c;
 }
 
-/** Mayin donadorlik: gradientlardagi "zinapoya" chiziqlarini yashiradi (overlay rejimida). */
+/** Mayin donadorlik: gradientlardagi "zinapoya" chiziqlarini yashiradi (oq/qora, juda past shaffoflik). */
 function grainSprite(): HTMLCanvasElement {
   const S = 128;
   const c = canvas(S, S);
@@ -483,11 +484,11 @@ function grainSprite(): HTMLCanvasElement {
   const img = ctx.createImageData(S, S);
   const r = rng(3);
   for (let i = 0; i < S * S; i++) {
-    const g = 128 + (r() - 0.5) * 90;
+    const g = r() < 0.5 ? 0 : 255;
     img.data[i * 4] = g;
     img.data[i * 4 + 1] = g;
     img.data[i * 4 + 2] = g;
-    img.data[i * 4 + 3] = 255;
+    img.data[i * 4 + 3] = r() * 22;
   }
   ctx.putImageData(img, 0, 0);
   return c;
@@ -595,9 +596,15 @@ function drawSky(
         ctx.fillRect(x - st.r * 4, y - st.r * 4, st.r * 8, st.r * 8);
       }
       ctx.fillStyle = rgba(st.color, alpha);
-      ctx.beginPath();
-      ctx.arc(x, y, st.r * 0.75, 0, Math.PI * 2);
-      ctx.fill();
+      if (st.r > 0.8) {
+        ctx.beginPath();
+        ctx.arc(x, y, st.r * 0.75, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Mayda yulduz — kvadrat piksel yetarli (doira chizishdan ancha arzon)
+        const d = st.r * 1.3;
+        ctx.fillRect(x - d / 2, y - d / 2, d, d);
+      }
     }
   }
 
@@ -844,14 +851,10 @@ export function drawScene(
   ctx.fillStyle = vig;
   ctx.fillRect(0, 0, w, h);
   if (tx) {
-    ctx.globalCompositeOperation = 'overlay';
-    ctx.globalAlpha = 0.07;
-    const pattern = ctx.createPattern(tx.grain, 'repeat');
-    if (pattern) {
-      ctx.fillStyle = pattern;
+    tx.grainPattern ??= ctx.createPattern(tx.grain, 'repeat');
+    if (tx.grainPattern) {
+      ctx.fillStyle = tx.grainPattern;
       ctx.fillRect(0, 0, w, h);
     }
-    ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = 'source-over';
   }
 }
