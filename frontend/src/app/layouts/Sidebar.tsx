@@ -6,6 +6,7 @@ import { t } from '@/i18n/uz';
 import { initials } from '@/shared/lib/format';
 import { cn } from '@/shared/lib/utils';
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar';
+import { BrandLogo, BrandMark } from '@/shared/ui/brand-logo';
 import { Button } from '@/shared/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/shared/ui/sheet';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip';

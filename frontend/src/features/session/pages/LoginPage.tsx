@@ -26,6 +26,7 @@ import { PHONE_HREF, TELEGRAM_URL } from '@/shared/lib/contacts';
 import { authMode } from '@/shared/lib/api-mode';
 import { applyFieldErrors } from '@/shared/lib/mutation';
 import { cn } from '@/shared/lib/utils';
+import { BrandLogo } from '@/shared/ui/brand-logo';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { bootstrapSession, useLogin } from '../api/session';
@@ -133,10 +134,7 @@ export function LoginPage() {
           to="/welcome"
           className="relative flex w-fit items-center gap-3 rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-white/40"
         >
-          <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-lg font-bold text-primary-foreground shadow-[0_8px_24px_-6px] shadow-primary/60">
-            {t.app.name.charAt(0)}
-          </span>
-          <span className="text-lg font-semibold">{t.app.name}</span>
+          <BrandLogo variant="dark" className="h-9" />
         </Link>
 
         <div className="relative max-w-lg space-y-6">
@@ -204,9 +202,7 @@ export function LoginPage() {
         <div className="flex flex-1 items-center justify-center py-6 sm:py-10">
           <div className="w-full max-w-[400px]">
             <div className="mb-6 space-y-2 text-center sm:mb-8">
-              <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-primary text-xl font-bold text-primary-foreground shadow-[0_10px_30px_-8px] shadow-primary/60 lg:hidden">
-                {t.app.name.charAt(0)}
-              </div>
+              <BrandLogo className="mx-auto mb-5 h-10 lg:hidden" />
               <h1 className="text-2xl font-semibold tracking-tight sm:text-[28px]">
                 {t.auth.title}
               </h1>
