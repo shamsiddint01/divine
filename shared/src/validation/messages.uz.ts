@@ -43,10 +43,7 @@ export const VALIDATION_MESSAGES_UZ = {
   controlChars: 'Matnda ruxsat etilmagan boshqaruv belgilari bor',
   updateEmpty: 'O‘zgartirish uchun kamida bitta maydon yuboring',
   groupRequired: 'Guruhni tanlang',
-  incomingItemsRequired: 'Kirimda kamida bitta mahsulot bo‘lishi kerak',
-  incomingItemsTooMany: (max: number) =>
-    `Bitta kirimda ko‘pi bilan ${max} ta mahsulot bo‘lishi mumkin`,
-  duplicateProduct: 'Mahsulot takrorlangan',
+  initialStockInactive: 'Nofaol mahsulotga qoldiq qo‘shib bo‘lmaydi',
   notesForbidden: 'Izohni faqat administrator kiritadi',
   saleItemsRequired: 'Sotuvda kamida bitta mahsulot bo‘lishi kerak',
   saleCustomerExclusive: 'Mavjud mijoz tanlanganda ism va telefon yuborilmaydi',

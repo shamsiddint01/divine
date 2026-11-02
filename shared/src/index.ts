@@ -10,7 +10,6 @@ export * from './validation/catalog.js';
 export * from './validation/customers.js';
 export * from './validation/error-map.js';
 export * from './validation/expenses.js';
-export * from './validation/incoming.js';
 export * from './validation/messages.uz.js';
 export * from './validation/pagination.js';
 export * from './validation/primitives.js';
