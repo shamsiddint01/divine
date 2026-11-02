@@ -73,13 +73,15 @@ export class IncomingService {
     const inserted = await this.repository.insertItems(tx, id, items);
     const totals = await this.repository.markConfirmed(tx, id, ctx.userId, this.clock.now());
     if (!totals) throw new Error('Yangi kirim hujjati DRAFT holatida emas');
+    // Bitta hujjatda mahsulot bir marta (UNIQUE incoming_id+product_id) — qator mahsulot bo'yicha topiladi.
+    const byProduct = new Map(items.map((item) => [item.productId, item]));
     await this.inventory.increase(
       tx,
       inserted.map((row) => ({
         warehouseId: receipt.warehouseId,
         productId: row.productId,
-        quantity: items.find((item) => item.productId === row.productId)!.quantity,
-        unitCost: items.find((item) => item.productId === row.productId)!.costPrice,
+        quantity: byProduct.get(row.productId)?.quantity ?? '0',
+        unitCost: byProduct.get(row.productId)?.costPrice ?? '0',
         referenceType: 'INCOMING' as const,
         referenceId: id,
         referenceItemId: row.id,
