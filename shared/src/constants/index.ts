@@ -33,9 +33,6 @@ export const NOTE_MAX_LENGTH = 1000;
 /** `expense_categories.name` — VARCHAR(100). */
 export const EXPENSE_CATEGORY_NAME_MAX_LENGTH = 100;
 
-/** Bitta kirim hujjatidagi qatorlar soni chegarasi (API §9). */
-export const INCOMING_ITEMS_MAX = 500;
-
 /** Sotuv uchun idempotency header nomi (REQ-145). */
 export const IDEMPOTENCY_HEADER = 'Idempotency-Key';
 

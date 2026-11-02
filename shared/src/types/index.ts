@@ -4,7 +4,6 @@ import type { Paginated } from '../validation/pagination.js';
 import type {
   AuditAction,
   AuditEntityType,
-  IncomingStatus,
   ProductStatus,
   ProductUnit,
   RoleCode,
@@ -235,47 +234,6 @@ export interface ReconciliationResult {
   documentIssueCount: number;
   /** Mijoz yig'ma ustunlari (`reconcile_customer_aggregates`). */
   customerIssueCount: number;
-}
-
-/**
- * Kirim qatori (API §9). `productName`, `barcode` — hujjat saqlangan paytdagi snapshot (D-08);
- * `costPrice`, `lineTotal` — FAQAT `products.read_cost` (OWN-06), aks holda kalit yo'q.
- */
-export interface IncomingItemDto {
-  id: string;
-  productId: string;
-  productName: string;
-  /** Mahsulotning joriy guruhi (snapshot emas — faqat ko'rsatish uchun). */
-  groupName: string;
-  barcode: string | null;
-  unit: ProductUnit;
-  quantity: QuantityString;
-  costPrice?: MoneyString;
-  lineTotal?: MoneyString;
-}
-
-/** Kirim hujjati. Totallarni server hisoblaydi (REQ-065); `totalAmount` — FAQAT `products.read_cost`. */
-export interface IncomingDto {
-  id: string;
-  /** `K-000123` (A-25). */
-  number: string;
-  date: DateOnlyString;
-  warehouseId: string;
-  warehouseName: string;
-  notes: string | null;
-  status: IncomingStatus;
-  itemsCount: number;
-  totalQuantity: QuantityString;
-  totalAmount?: MoneyString;
-  /** Ro'yxatda yo'q, detalda bor. */
-  items?: IncomingItemDto[];
-  createdBy: UserRefDto;
-  confirmedBy: UserRefDto | null;
-  confirmedAt: IsoDateTimeString | null;
-  cancelledBy: UserRefDto | null;
-  cancelledAt: IsoDateTimeString | null;
-  createdAt: IsoDateTimeString;
-  updatedAt: IsoDateTimeString;
 }
 
 /**
