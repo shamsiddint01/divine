@@ -9,6 +9,16 @@
         "dev"
       ],
       "port": 3000
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@divine/frontend",
+        "dev"
+      ],
+      "port": 5180
     }
   ]
 }
