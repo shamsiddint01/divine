@@ -51,13 +51,12 @@ function SidebarContent({
           collapsed ? 'justify-center px-2' : 'px-5',
         )}
       >
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground shadow-sm">
-          {t.app.name.charAt(0)}
-        </div>
-        {collapsed ? null : (
+        {collapsed ? (
+          <BrandMark className="size-8" />
+        ) : (
           <div className="min-w-0 leading-tight">
-            <p className="truncate font-semibold">{t.app.name}</p>
-            <p className="truncate text-xs text-muted-foreground">{t.app.tagline}</p>
+            <BrandLogo className="h-7" />
+            <p className="mt-1 truncate text-xs text-muted-foreground">{t.app.tagline}</p>
           </div>
         )}
       </div>
