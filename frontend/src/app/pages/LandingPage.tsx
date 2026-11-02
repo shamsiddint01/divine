@@ -1,10 +1,11 @@
 import { BarChart3, LogIn, Plus, Send, ShoppingCart, Truck, Warehouse, X } from 'lucide-react';
 import { Dialog } from 'radix-ui';
-import { type CSSProperties, type RefObject, useEffect, useId, useRef, useState } from 'react';
+import { type CSSProperties, type RefObject, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { safeRedirect } from '@/features/session/lib/safe-redirect';
 import { t } from '@/i18n/uz';
 import { useMediaQuery } from '@/shared/hooks/use-media-query';
+import { BrandLogo } from '@/shared/ui/brand-logo';
 // "Bepul sinab ko'rish" / "Bepul boshlash" — o'z-o'zidan ro'yxatdan o'tish yo'q, Telegram kanal orqali.
 import { PHONE_HREF, TELEGRAM_URL } from '@/shared/lib/contacts';
 import './landing.css';
@@ -22,40 +23,10 @@ const FEATURES = [
   { icon: BarChart3, ...t.landing.features.reports },
 ];
 
-/** Belgi: do'kon peshtoqini eslatuvchi uchta qiya chiziq (marjon gradient). */
-function Logo() {
-  // Sahifada belgi bir necha marta — gradient id'lari to'qnashmasin (url(#…) uchun xavfsiz belgilar).
-  const id = `ld-logo-${useId().replace(/[^\w-]/g, '')}`;
-  return (
-    <svg viewBox="0 0 32 32" aria-hidden>
-      <defs>
-        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#FF8A73" />
-          <stop offset="1" stopColor="#F0605A" />
-        </linearGradient>
-      </defs>
-      <rect x="1" y="1" width="30" height="30" rx="8" fill={`url(#${id})`} opacity=".14" />
-      <g stroke={`url(#${id})`} strokeWidth="2.6" strokeLinecap="round">
-        <path d="M8 22.5 12.5 9.5" />
-        <path d="M14.2 22.5 18.7 9.5" />
-        <path d="M20.4 22.5 24.9 9.5" />
-      </g>
-      <path
-        d="M6.5 24.5h19"
-        stroke="#fff"
-        strokeOpacity=".55"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
 function Brand() {
   return (
     <Link to="/welcome" className="ld-brand" aria-label={t.landing.home}>
-      <Logo />
-      <span>{t.app.name}</span>
+      <BrandLogo variant="dark" />
     </Link>
   );
 }
@@ -113,8 +84,7 @@ function MobileMenu() {
           <div className="ld-menu__top">
             <Dialog.Title asChild>
               <span className="ld-brand">
-                <Logo />
-                <span>{t.app.name}</span>
+                <BrandLogo variant="dark" />
                 <span className="sr-only"> — {t.landing.menu}</span>
               </span>
             </Dialog.Title>

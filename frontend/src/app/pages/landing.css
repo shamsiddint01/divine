@@ -67,8 +67,8 @@ html:has(.ld) {
   letter-spacing: -0.02em;
 }
 .ld-brand svg {
-  width: calc(30 * var(--u));
-  height: calc(30 * var(--u));
+  width: auto;
+  height: calc(32 * var(--u));
   flex: none;
 }
 
@@ -590,8 +590,7 @@ html:has(.ld) {
     font-size: calc(17 * var(--u));
   }
   .ld-brand svg {
-    width: calc(26 * var(--u));
-    height: calc(26 * var(--u));
+    height: calc(28 * var(--u));
   }
   .ld-hero__title {
     font-size: calc(25 * var(--u));
