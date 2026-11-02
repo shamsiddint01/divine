@@ -70,7 +70,7 @@ function MarkShapes({
   return (
     <>
       {dark ? (
-        <path d={D} fill="#fff" fillOpacity=".1" stroke="#fff" strokeOpacity=".45" />
+        <path d={D} fill="#fff" fillOpacity=".2" stroke="#fff" strokeOpacity=".8" strokeWidth="1.6" />
       ) : (
         <>
           <path d={D} fill={`url(#${ids.d})`} />
