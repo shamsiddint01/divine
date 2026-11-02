@@ -528,6 +528,8 @@ const USERS: {
   role: 'ADMIN' | 'USER';
   wh: number[];
   blocked?: boolean;
+  /** O'z paroli (bo'lmasa — `MOCK_DEMO_PASSWORD`). */
+  password?: string;
 }[] = [
   { login: 'admin', fullName: 'Akmal Rahimov', role: 'ADMIN', wh: [0, 1, 2] },
   { login: 'sardor', fullName: 'Sardor Aliyev', role: 'ADMIN', wh: [0, 1, 2] },
@@ -536,6 +538,7 @@ const USERS: {
   { login: 'jasur', fullName: 'Jasur Tojiyev', role: 'USER', wh: [1] },
   { login: 'malika', fullName: 'Malika Ergasheva', role: 'USER', wh: [2] },
   { login: 'bekzod', fullName: 'Bekzod Nazarov', role: 'USER', wh: [2], blocked: true },
+  { login: 'shamsiddin', fullName: 'Shamsiddin', role: 'ADMIN', wh: [0, 1, 2], password: '201129' },
 ];
 
 const FIRST_NAMES = [
@@ -728,6 +731,7 @@ export function createSeedState(now: Date = new Date()): MockState {
       updatedAt: createdAt,
     };
     state.users.push(row);
+    if (u.password) (state.passwords ??= {})[row.id] = u.password;
   }
   const admin = state.users[0] as UserRow;
   state.currentUserId = admin.id;
