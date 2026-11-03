@@ -122,6 +122,27 @@ describe('Xarajatlar: sotuvchi — faqat o‘zi qo‘shganlari (D-23)', () => {
 });
 
 describe('Xarajatlar: admin (D-19)', () => {
+  it('kategoriya ro‘yxatining eng pastida "+ Yangi kategoriya": nom yozilib qo‘shiladi va tanlanadi', async () => {
+    renderApp('/expenses');
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: t.expenses.add }, PAGE));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(await within(dialog).findByRole('combobox', { name: /Kategoriya/ }, PAGE));
+    const options = await screen.findAllByRole('option');
+    expect(options.at(-1)).toHaveTextContent(t.expenses.form.newCategory);
+    await user.click(options.at(-1) as HTMLElement);
+    await user.type(
+      await within(dialog).findByPlaceholderText(t.expenses.form.newCategoryPlaceholder),
+      'Reklama',
+    );
+    await user.click(within(dialog).getByRole('button', { name: t.expenses.form.addCategory }));
+    expect(
+      await within(dialog).findByRole('combobox', { name: /Kategoriya/ }, PAGE),
+    ).toHaveTextContent('Reklama');
+    const admin = db().users.find((u) => u.login === 'admin')!;
+    expect(db().expenseCategories.find((c) => c.name === 'Reklama')?.createdBy).toBe(admin.id);
+  });
+
   it('to‘liq ro‘yxat, "Jami" va kategoriyalar tugmasi', async () => {
     renderApp('/expenses');
     expect(await screen.findByText(t.expenses.summary.total, {}, PAGE)).toBeInTheDocument();
