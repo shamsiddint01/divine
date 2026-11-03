@@ -1,6 +1,7 @@
 import {
   Eye,
   MoreHorizontal,
+  PackageCheck,
   PackagePlus,
   Pencil,
   Plus,
@@ -42,6 +43,7 @@ import type { ProductDto } from '@/shared/types/api';
 import { useProducts, useSetProductStatus } from '../api/products';
 import { ProductDetailSheet } from '../components/ProductDetailSheet';
 import { ProductFormDialog } from '../components/ProductFormDialog';
+import { StockReceiptDialog } from '../components/StockReceiptDialog';
 
 export function ProductsPage() {
   const list = useListParams({
@@ -55,11 +57,16 @@ export function ProductsPage() {
   // Faqat UX: backend kelgan narxini ruxsatsiz userga umuman bermaydi (OWN-06).
   const canReadCost = useHasAnyPermission([Permission.PRODUCTS_READ_COST]);
   const canManage = useHasAnyPermission([Permission.PRODUCTS_MANAGE]);
+  // Qoldiq qo'shish (sobiq "Kirim") — kirim bilan bir xil ruxsat.
+  const canManageIncoming = useHasAnyPermission([Permission.INCOMING_MANAGE]);
+  const canConfirmIncoming = useHasAnyPermission([Permission.INCOMING_CONFIRM]);
+  const canReceive = canManageIncoming && canConfirmIncoming;
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ProductDto | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [deactivating, setDeactivating] = useState<ProductDto | null>(null);
+  const [receiving, setReceiving] = useState<ProductDto | null>(null);
 
   const openCreate = () => {
     setEditing(null);
@@ -69,6 +76,10 @@ export function ProductsPage() {
     setDetailId(null);
     setEditing(p);
     setFormOpen(true);
+  };
+  const openReceive = (p: ProductDto) => {
+    setDetailId(null);
+    setReceiving(p);
   };
   const changeStatus = async (p: ProductDto, status: 'ACTIVE' | 'INACTIVE') => {
     try {
@@ -233,6 +244,12 @@ export function ProductsPage() {
                 <Eye />
                 {t.common.view}
               </DropdownMenuItem>
+              {canReceive && p.status === 'ACTIVE' ? (
+                <DropdownMenuItem onSelect={() => openReceive(p)}>
+                  <PackageCheck />
+                  {t.products.stock.add}
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuItem onSelect={() => openEdit(p)}>
                 <Pencil />
                 {t.common.edit}
@@ -381,6 +398,11 @@ export function ProductsPage() {
         productId={detailId}
         onOpenChange={(open) => !open && setDetailId(null)}
         onEdit={openEdit}
+        onAddStock={canReceive ? openReceive : undefined}
+      />
+      <StockReceiptDialog
+        product={receiving}
+        onOpenChange={(open) => !open && setReceiving(null)}
       />
       <ConfirmDialog
         open={Boolean(deactivating)}

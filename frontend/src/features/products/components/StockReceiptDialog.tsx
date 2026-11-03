@@ -37,23 +37,21 @@ const M = VALIDATION_MESSAGES_UZ;
 
 /** Butun/kasr siyosati mahsulotga bog'liq — sxema shu mahsulot uchun quriladi. */
 const schemaFor = (allowDecimal: boolean) =>
-  z
-    .object({ stock: z.object(stockShape), costPrice: moneyField() })
-    .superRefine((v, ctx) => {
-      const qty = normalizeNumberInput(v.stock.quantity.trim()) ?? '';
-      if (!quantitySchema.safeParse(qty).success) {
-        ctx.addIssue({ code: 'custom', path: ['stock', 'quantity'], message: M.quantityFormat });
-      } else if (!allowDecimal && !isWholeQuantity(qty)) {
-        ctx.addIssue({ code: 'custom', path: ['stock', 'quantity'], message: M.wholeQuantity });
-      }
-      if (!v.stock.warehouseId) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['stock', 'warehouseId'],
-          message: t.products.form.stockWarehouseRequired,
-        });
-      }
-    });
+  z.object({ stock: z.object(stockShape), costPrice: moneyField() }).superRefine((v, ctx) => {
+    const qty = normalizeNumberInput(v.stock.quantity.trim()) ?? '';
+    if (!quantitySchema.safeParse(qty).success) {
+      ctx.addIssue({ code: 'custom', path: ['stock', 'quantity'], message: M.quantityFormat });
+    } else if (!allowDecimal && !isWholeQuantity(qty)) {
+      ctx.addIssue({ code: 'custom', path: ['stock', 'quantity'], message: M.wholeQuantity });
+    }
+    if (!v.stock.warehouseId) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['stock', 'warehouseId'],
+        message: t.products.form.stockWarehouseRequired,
+      });
+    }
+  });
 
 type FormValues = z.infer<ReturnType<typeof schemaFor>>;
 

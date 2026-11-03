@@ -1,5 +1,5 @@
 import { Permission } from '@divine/shared';
-import { Barcode, Pencil } from 'lucide-react';
+import { Barcode, PackageCheck, Pencil } from 'lucide-react';
 import { Link } from 'react-router';
 import { useHasAnyPermission } from '@/features/session/hooks/use-permissions';
 import { t } from '@/i18n/uz';
@@ -28,6 +28,8 @@ interface ProductDetailSheetProps {
   productId: string | null;
   onOpenChange: (open: boolean) => void;
   onEdit: (product: ProductDto) => void;
+  /** Berilsa (kirim ruxsati bor) — "Qoldiq qo'shish" tugmasi (faqat faol mahsulot). */
+  onAddStock?: (product: ProductDto) => void;
 }
 
 function Metric({ label, children }: { label: string; children: React.ReactNode }) {
@@ -44,7 +46,12 @@ function Metric({ label, children }: { label: string; children: React.ReactNode 
  * Moliyaviy qism (kelgan narxi, foyda, tushum, sotuvlar) — faqat `products.read_cost` bilan
  * (`/summary`); boshqalar uchun oddiy `GET /products/:id` (backend kelgan narxini umuman bermaydi).
  */
-export function ProductDetailSheet({ productId, onOpenChange, onEdit }: ProductDetailSheetProps) {
+export function ProductDetailSheet({
+  productId,
+  onOpenChange,
+  onEdit,
+  onAddStock,
+}: ProductDetailSheetProps) {
   const canReadCost = useHasAnyPermission([Permission.PRODUCTS_READ_COST]);
   const canManage = useHasAnyPermission([Permission.PRODUCTS_MANAGE]);
   // To'liq sotuv tarixi — sotuvlar tarixi mahsulot filtri bilan (REQ-053, GET /sales?productId=).
@@ -242,12 +249,23 @@ export function ProductDetailSheet({ productId, onOpenChange, onEdit }: ProductD
             </>
           )}
         </div>
-        {p && canManage ? (
-          <SheetFooter>
-            <Button onClick={() => onEdit(p)}>
-              <Pencil />
-              {t.common.edit}
-            </Button>
+        {p && (canManage || onAddStock) ? (
+          <SheetFooter className="grid grid-cols-1 gap-2 border-t sm:grid-cols-2">
+            {onAddStock && p.status === 'ACTIVE' ? (
+              <Button onClick={() => onAddStock(p)}>
+                <PackageCheck />
+                {t.products.stock.add}
+              </Button>
+            ) : null}
+            {canManage ? (
+              <Button
+                variant={onAddStock && p.status === 'ACTIVE' ? 'outline' : 'default'}
+                onClick={() => onEdit(p)}
+              >
+                <Pencil />
+                {t.common.edit}
+              </Button>
+            ) : null}
           </SheetFooter>
         ) : null}
       </SheetContent>
