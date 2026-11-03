@@ -190,7 +190,7 @@ html:has(.ld) {
   width: calc(44 * var(--u));
   height: calc(44 * var(--u));
   margin-right: calc(-10 * var(--u));
-  color: #fff;
+  color: var(--ld-text);
 }
 .ld-burger span {
   display: block;
@@ -280,7 +280,7 @@ html:has(.ld) {
   margin-top: calc(14 * var(--v));
   font-size: calc(17 * var(--u));
   line-height: 1.55;
-  color: rgba(255, 255, 255, 0.78);
+  color: oklch(0.97 0.003 264 / 80%);
 }
 .ld-hero__text span {
   display: block;
@@ -476,7 +476,7 @@ html:has(.ld) {
   font-weight: 600;
 }
 .ld-link {
-  color: #fff;
+  color: var(--ld-text);
   background: linear-gradient(currentColor, currentColor) left 100% / 0 1px no-repeat;
   transition: background-size 0.3s var(--ld-ease);
 }
@@ -493,7 +493,7 @@ html:has(.ld) {
 }
 .ld-footer__bottom p {
   font-size: calc(13.5 * var(--u));
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--ld-muted);
 }
 
 /* ---------- Telefon menyusi (Radix Dialog, sahifa konteyneridan tashqarida) ---------- */
@@ -505,7 +505,7 @@ html:has(.ld) {
   flex-direction: column;
   padding: 0 16px calc(28px + env(safe-area-inset-bottom));
   background: #000;
-  color: #fff;
+  color: var(--ld-text);
   color-scheme: dark;
   -webkit-font-smoothing: antialiased;
 }
@@ -517,7 +517,7 @@ html:has(.ld) {
   align-items: center;
   justify-content: space-between;
   height: 64px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid var(--ld-line);
 }
 .ld-menu__close {
   display: grid;
@@ -532,7 +532,7 @@ html:has(.ld) {
 .ld-menu nav a {
   display: block;
   padding: 14px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--ld-soft-line);
   font-size: 21px;
   font-weight: 550;
   letter-spacing: -0.015em;
