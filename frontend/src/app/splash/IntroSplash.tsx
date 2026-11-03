@@ -14,6 +14,12 @@ const SEEN_KEY = 'divine.splash.seen';
 const PLAY_MS: Record<SplashVariant, number> = { 1: 2300, 2: 2500, 3: 2400 };
 const EXIT_MS = 600;
 const DEFAULT_VARIANT: SplashVariant = 1;
+/** Ko'rib chiqish rejimida (`?splash=N`) pastda ko'rinadigan nom — variant tanlangach olib tashlanadi. */
+const VARIANT_NAMES: Record<SplashVariant, string> = {
+  1: '1-variant · Yig‘ilish',
+  2: '2-variant · O‘sish grafigi',
+  3: '3-variant · Yulduz porlashi',
+};
 
 const { STAR, D, IVINE, UZ, STAR_X, WIDTH } = BRAND_SHAPES;
 
@@ -39,15 +45,15 @@ function forcedVariant(): SplashVariant | null {
   return value === '1' || value === '2' || value === '3' ? (Number(value) as SplashVariant) : null;
 }
 
-function shouldShow(): { show: boolean; variant: SplashVariant } {
+function shouldShow(): { show: boolean; variant: SplashVariant; preview: boolean } {
   const forced = forcedVariant();
-  if (forced) return { show: true, variant: forced };
+  if (forced) return { show: true, variant: forced, preview: true };
   const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-  return { show: !reduce && !readSeen(), variant: DEFAULT_VARIANT };
+  return { show: !reduce && !readSeen(), variant: DEFAULT_VARIANT, preview: false };
 }
 
 export function IntroSplash() {
-  const [{ show, variant }] = useState(shouldShow);
+  const [{ show, variant, preview }] = useState(shouldShow);
   const [phase, setPhase] = useState<'play' | 'exit' | 'done'>(show ? 'play' : 'done');
   const uid = useId().replace(/[^\w-]/g, '');
   const id = (name: string) => `splash-${uid}-${name}`;
@@ -77,13 +83,7 @@ export function IntroSplash() {
   if (phase === 'done') return null;
 
   return (
-    <div
-      className="splash"
-      data-variant={variant}
-      data-phase={phase}
-      aria-hidden
-      onClick={exit}
-    >
+    <div className="splash" data-variant={variant} data-phase={phase} aria-hidden onClick={exit}>
       <div className="splash-bg" />
       <div className="splash-rays" />
       <div className="splash-logo">
@@ -108,7 +108,14 @@ export function IntroSplash() {
               <stop offset=".5" stopColor="#fff" stopOpacity=".85" />
               <stop offset="1" stopColor="#fff" stopOpacity="0" />
             </linearGradient>
-            <mask id={id('mask')} maskUnits="userSpaceOnUse" x="-20" y="-10" width="250" height="70">
+            <mask
+              id={id('mask')}
+              maskUnits="userSpaceOnUse"
+              x="-20"
+              y="-10"
+              width="250"
+              height="70"
+            >
               <g fill="#fff">
                 <g transform="translate(-8.64 1.12) scale(.72)">
                   <path d={D} />
@@ -164,10 +171,18 @@ export function IntroSplash() {
 
           {/* Yaltirash — faqat logotip shakllari ichida */}
           <g mask={`url(#${id('mask')})`}>
-            <rect className="s-shine" x="-70" y="0" width="60" height="50" fill={`url(#${id('shine')})`} />
+            <rect
+              className="s-shine"
+              x="-70"
+              y="0"
+              width="60"
+              height="50"
+              fill={`url(#${id('shine')})`}
+            />
           </g>
         </svg>
       </div>
+      {preview ? <p className="splash-label">{VARIANT_NAMES[variant]}</p> : null}
     </div>
   );
 }

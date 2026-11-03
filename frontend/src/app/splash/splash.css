@@ -36,6 +36,21 @@
   overflow: visible;
 }
 
+.splash-label {
+  position: absolute;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 6px 14px;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.06);
+  color: rgb(255 255 255 / 0.75);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
 /* ── Yakuniy holat (qorong'i fon uchun "shisha" belgi) ─────────────────────── */
 .splash .s-d {
   fill: rgb(255 255 255 / 0.2);
@@ -394,7 +409,12 @@
   }
 }
 .splash[data-variant='3'] .splash-bg {
-  background: radial-gradient(circle at center, rgb(255 246 210 / 0.9), rgb(255 217 120 / 0.25) 30%, transparent 60%);
+  background: radial-gradient(
+    circle at center,
+    rgb(255 246 210 / 0.9),
+    rgb(255 217 120 / 0.25) 30%,
+    transparent 60%
+  );
   animation: v3-flash 700ms ease-out 850ms both;
 }
 @keyframes v3-flash {
