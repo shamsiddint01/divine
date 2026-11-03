@@ -308,11 +308,7 @@ export function ExpenseFormDialog({
           </FormField>
         </form>
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => close(false)}
-            disabled={formState.isSubmitting}
-          >
+          <Button variant="outline" onClick={() => close(false)} disabled={formState.isSubmitting}>
             {t.common.cancel}
           </Button>
           <Button type="submit" form="expense-form" disabled={formState.isSubmitting}>
