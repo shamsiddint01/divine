@@ -333,10 +333,10 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
   // Massa: asos qatori + ustma-ust qavatlar; ba'zan yon tomonda kichik "dum" bo'lak
   const puffs: { x: number; y: number; rad: number }[] = [];
   const rows = [
-    { n: 8 + Math.floor(r() * 4), y: 0.68, x0: 0.12, x1: 0.88, rad: 0.1 },
-    { n: 5 + Math.floor(r() * 3), y: 0.56, x0: 0.2, x1: 0.8, rad: 0.11 },
-    { n: 3 + Math.floor(r() * 3), y: 0.44, x0: 0.28, x1: 0.72, rad: 0.11 },
-    { n: 1 + Math.floor(r() * 2), y: 0.33, x0: 0.38, x1: 0.62, rad: 0.1 },
+    { n: 8 + Math.floor(r() * 4), y: 0.7, x0: 0.12, x1: 0.88, rad: 0.1 },
+    { n: 5 + Math.floor(r() * 3), y: 0.59, x0: 0.2, x1: 0.8, rad: 0.11 },
+    { n: 3 + Math.floor(r() * 3), y: 0.48, x0: 0.28, x1: 0.72, rad: 0.105 },
+    { n: 1 + Math.floor(r() * 2), y: 0.39, x0: 0.38, x1: 0.62, rad: 0.095 },
   ];
   for (const row of rows) {
     const shift = (r() - 0.5) * 0.12; // qavatlar bir tomonga og'adi — nosimmetrik shakl
@@ -352,7 +352,7 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
   }
   if (r() < 0.6) {
     const side = r() < 0.5 ? 0.1 : 0.9;
-    puffs.push({ x: side, y: 0.7, rad: 0.05 + r() * 0.03 });
+    puffs.push({ x: side, y: 0.72, rad: 0.05 + r() * 0.03 });
   }
 
   const dens = new Float32Array(W * H);
@@ -387,19 +387,39 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
       bumps /= 0.9375;
       const fluff = fbm(wisp, x * 26, wv * 26, 2);
       const mass = smoothstep(0.3, 1.5, field);
-      let d = mass * 1.05 + (bumps - 0.45) * 1.2 * (1 - mass * 0.5) + (fluff - 0.5) * 0.12 - 0.04;
+      let d = mass * 1.05 + (bumps - 0.38) * 1.2 * (1 - mass * 0.5) + (fluff - 0.5) * 0.12 - 0.04;
       // Tag: deyarli tekis, lekin chizg'ich bilan emas
-      const baseLine = 0.8 + (fbm(wisp, u * 7, 3.3, 2) - 0.5) * 0.05;
+      const baseLine = 0.82 + (fbm(wisp, u * 7, 3.3, 2) - 0.5) * 0.05;
       d *= smoothstep(baseLine + 0.05, baseLine - 0.07, v);
       d *=
         smoothstep(0, 0.06, u) *
         smoothstep(1, 0.94, u) *
-        smoothstep(0, 0.07, v) *
+        smoothstep(0, 0.12, v) *
         smoothstep(1, 0.93, v);
       dens[py * W + px] = clamp01(d);
       bumpMap[py * W + px] = bumps;
     }
   }
+  // Normal uchun silliqlangan zichlik (3×3): hujayra chegaralari "yoriq" chiziq bermasin
+  const soft = new Float32Array(W * H);
+  for (let py = 1; py < H - 1; py++) {
+    for (let px = 1; px < W - 1; px++) {
+      const i = py * W + px;
+      soft[i] =
+        (dens[i]! * 4 +
+          (dens[i - 1]! + dens[i + 1]! + dens[i - W]! + dens[i + W]!) * 2 +
+          dens[i - W - 1]! +
+          dens[i - W + 1]! +
+          dens[i + W - 1]! +
+          dens[i + W + 1]!) /
+        16;
+    }
+  }
+  const softAt = (x: number, y: number) => {
+    const xi = x < 0 ? 0 : x > W - 1 ? W - 1 : x | 0;
+    const yi = y < 0 ? 0 : y > H - 1 ? H - 1 : y | 0;
+    return soft[yi * W + xi]!;
+  };
   const at = (x: number, y: number) => {
     const xi = x < 0 ? 0 : x > W - 1 ? W - 1 : x | 0;
     const yi = y < 0 ? 0 : y > H - 1 ? H - 1 : y | 0;
@@ -434,10 +454,10 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
       const bump = bumpMap[i]!;
 
       // Sirt normali (zichlik maydonining qiyaligi): gumbazchaning quyoshga qaragan yuzi yorug'
-      const gx = at(px + 1, py) - at(px - 1, py);
-      const gy = at(px, py + 1) - at(px, py - 1);
-      const nx = -gx * 7;
-      const ny = -gy * 7;
+      const gx = softAt(px + 2, py) - softAt(px - 2, py);
+      const gy = softAt(px, py + 2) - softAt(px, py - 2);
+      const nx = -gx * 4.5;
+      const ny = -gy * 4.5;
       const nl = 1 / Math.hypot(nx, ny, 1);
 
       // Kunduz: quyosh yuqori-chapda va biroz oldinda; osmon nuri (ko'kimtir) soyani yumshatadi
