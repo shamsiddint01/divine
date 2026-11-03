@@ -454,8 +454,11 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
       const bump = bumpMap[i]!;
 
       // Sirt normali (zichlik maydonining qiyaligi): gumbazchaning quyoshga qaragan yuzi yorug'
-      const gx = softAt(px + 2, py) - softAt(px - 2, py);
-      const gy = softAt(px, py + 2) - softAt(px, py - 2);
+      // Yirik gumbaz (silliq) + mayda do'mboq (nozik) qiyaliklari
+      const gx =
+        (softAt(px + 2, py) - softAt(px - 2, py)) * 0.7 + (at(px + 1, py) - at(px - 1, py)) * 0.6;
+      const gy =
+        (softAt(px, py + 2) - softAt(px, py - 2)) * 0.7 + (at(px, py + 1) - at(px, py - 1)) * 0.6;
       const nx = -gx * 4.5;
       const ny = -gy * 4.5;
       const nl = 1 / Math.hypot(nx, ny, 1);
