@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { AuditAction } from '@divine/shared';
+import { AuditAction, WALK_IN_CUSTOMER_NAME } from '@divine/shared';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { InventoryRepository } from '../../src/modules/inventory/inventory.repository.js';
