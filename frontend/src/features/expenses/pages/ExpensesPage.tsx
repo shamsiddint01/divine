@@ -298,7 +298,9 @@ function ExpensesRegister() {
             <EmptyState
               icon={Wallet}
               title={t.expenses.emptyTitle}
-              description={canReadAll ? t.expenses.emptyDescription : t.expenses.own.emptyDescription}
+              description={
+                canReadAll ? t.expenses.emptyDescription : t.expenses.own.emptyDescription
+              }
               action={
                 <Button onClick={openCreate}>
                   <Plus />
