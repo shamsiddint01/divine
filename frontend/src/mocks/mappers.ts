@@ -4,7 +4,6 @@ import type {
   CustomerDto,
   ExpenseCategoryDto,
   ExpenseDto,
-  IncomingDto,
   MovementDto,
   ProductDto,
   SaleDto,
@@ -218,49 +217,6 @@ export function toSaleDto(state: MockState, s: SaleRow, withItems = false): Sale
     });
   }
   return dto;
-}
-
-/** Backend `toIncomingDto` aksi: nom/shtrix-kod snapshot (D-08), narxlar — faqat `products.read_cost`. */
-export function toIncomingDto(state: MockState, doc: IncomingRow, withItems = false): IncomingDto {
-  const canReadCost = currentCan(state, 'products.read_cost');
-  const rows = doc.items.map((i) => {
-    const p = state.products.find((x) => x.id === i.productId);
-    return {
-      id: i.id,
-      productId: i.productId,
-      productName: i.productName ?? p?.name ?? '—',
-      groupName: state.groups.find((g) => g.id === p?.groupId)?.name ?? '—',
-      barcode: i.barcode !== undefined ? i.barcode : (p?.barcode ?? null),
-      unit: p?.unit ?? 'DONA',
-      quantity: i.quantity,
-      costPrice: i.costPrice,
-      lineTotal: lineTotal(i.quantity, i.costPrice),
-    };
-  });
-  const items = rows.map(({ costPrice, lineTotal: total, ...rest }) =>
-    canReadCost ? { ...rest, costPrice, lineTotal: total } : rest,
-  );
-  return {
-    id: doc.id,
-    number: formatDocNumber('K', doc.number),
-    date: doc.date,
-    warehouseId: doc.warehouseId,
-    warehouseName: state.warehouses.find((w) => w.id === doc.warehouseId)?.name ?? '—',
-    notes: doc.notes,
-    status: doc.status,
-    itemsCount: doc.items.length,
-    // Totallar har doim serverda (bu yerda — mock serverda) qayta hisoblanadi (REQ-065).
-    totalQuantity: sumQty(rows.map((i) => i.quantity)),
-    ...(canReadCost ? { totalAmount: sumMoney(rows.map((i) => i.lineTotal)) } : {}),
-    ...(withItems ? { items } : {}),
-    createdBy: userRef(state, doc.createdBy),
-    confirmedBy: doc.confirmedBy ? userRef(state, doc.confirmedBy) : null,
-    confirmedAt: doc.confirmedAt,
-    cancelledBy: doc.cancelledBy ? userRef(state, doc.cancelledBy) : null,
-    cancelledAt: doc.cancelledAt ?? null,
-    createdAt: doc.createdAt,
-    updatedAt: doc.updatedAt,
-  };
 }
 
 export function toMovementDto(state: MockState, m: MovementRow): MovementDto {

@@ -5,6 +5,7 @@ import {
   productGroupUpdateSchema,
   productStatusSchema,
   productUpdateSchema,
+  stockReceiptSchema,
 } from '@divine/shared';
 import { compareQty, lineTotal, subMoney, sumMoney } from '@/shared/lib/decimal';
 import type { ProductGroupDto, ProductSummaryDto } from '@/shared/types/api';
