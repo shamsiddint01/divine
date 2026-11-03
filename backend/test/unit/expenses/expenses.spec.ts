@@ -12,6 +12,9 @@ const category: ExpenseCategoryRow = {
   name: 'Ijara',
   isActive: false,
   expenseCount: 4,
+  createdById: 'a',
+  createdByLogin: 'admin',
+  createdByFullName: null,
   createdAt: new Date('2026-10-01T10:00:00.000Z'),
   updatedAt: new Date('2026-10-02T10:00:00.000Z'),
 };
