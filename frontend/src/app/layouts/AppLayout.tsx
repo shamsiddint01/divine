@@ -44,15 +44,13 @@ function SectionGate() {
 export function AppLayout() {
   // Ichki saytga kirganda logotip animatsiyasi — sessiyada bir marta (logindan keyin esa har safar).
   useEffect(() => playSplashOnce(), []);
-  // Bo'lim almashganda sahifa animatsiya bilan kiradi (`key` — faqat yo'l; filtr/tab `?…` emas).
-  const { pathname } = useLocation();
   return (
     <div className="flex min-h-svh [--mobile-nav-h:calc(4rem+env(safe-area-inset-bottom))] md:[--mobile-nav-h:0px]">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
         <main className="flex-1 p-4 pb-[calc(var(--mobile-nav-h)+1rem)] sm:p-6 sm:pb-[calc(var(--mobile-nav-h)+1.5rem)]">
-          <div key={pathname} className="page-enter mx-auto w-full max-w-[1440px] space-y-6">
+          <div className="mx-auto w-full max-w-[1440px] space-y-6">
             <Suspense fallback={<PageFallback />}>
               <SectionGate />
             </Suspense>
