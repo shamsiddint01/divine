@@ -290,10 +290,10 @@ export interface SceneTextures {
   /** Bulut teksturasi tayyor bo'lgan payt (`performance.now()`): paydo bo'lganda ohista ko'rinadi. */
   cloudsReadyAt: number[];
   /** Baland patsimon (cirrus) bulutlar: kunduzgi oq va shom pushti-oltin varianti. */
-  cirrusDay: HTMLCanvasElement;
-  cirrusWarm: HTMLCanvasElement;
+  cirrusDay: HTMLCanvasElement | null;
+  cirrusWarm: HTMLCanvasElement | null;
   /** Suv yuzasidagi cho'zinchoq to'lqinlar (kulrang, `overlay` bilan aksni yoritadi/soya qiladi). */
-  ripple: HTMLCanvasElement;
+  ripple: HTMLCanvasElement | null;
   ripplePattern?: CanvasPattern | null;
   moon: HTMLCanvasElement;
   milkyWay: HTMLCanvasElement;
@@ -691,21 +691,20 @@ function grainSprite(): HTMLCanvasElement {
 export const CLOUD_SPRITES = 6;
 
 /**
- * Brauzerda teksturalarni yaratadi (bir marta). Kumulus bulutlar bu yerda YO'Q — ular og'ir
- * (har biri o'nlab ms), shuning uchun `buildNextCloud` bilan birma-bir, sahna ko'ringandan keyin
- * tayyorlanadi. Canvas bo'lmasa (jsdom) — null.
+ * Brauzerda teksturalarni yaratadi (bir marta). To'lqin, patsimon va kumulus bulutlar bu yerda YO'Q —
+ * ular og'ir (har biri o'nlab ms), shuning uchun `buildNextTexture` bilan birma-bir, sahna
+ * ko'ringandan keyin tayyorlanadi. Canvas bo'lmasa (jsdom) — null.
  */
 export function createSceneTextures(): SceneTextures | null {
   const probe = document.createElement('canvas').getContext('2d');
   if (!probe) return null;
-  const [cirrusDay, cirrusWarm] = cirrusSprites();
   return {
     cloudsDay: [],
     cloudsWarm: [],
     cloudsReadyAt: [],
-    cirrusDay,
-    cirrusWarm,
-    ripple: rippleSprite(),
+    cirrusDay: null,
+    cirrusWarm: null,
+    ripple: null,
     moon: moonSprite(),
     milkyWay: milkyWaySprite(),
     mist: mistSprite(),
@@ -715,8 +714,16 @@ export function createSceneTextures(): SceneTextures | null {
   };
 }
 
-/** Navbatdagi bulut teksturasini yaratadi; hammasi tayyor bo'lsa `false`. */
-export function buildNextCloud(tx: SceneTextures): boolean {
+/** Navbatdagi og'ir teksturani yaratadi (to'lqin → patsimon → kumuluslar); yana bor bo'lsa `true`. */
+export function buildNextTexture(tx: SceneTextures): boolean {
+  if (!tx.ripple) {
+    tx.ripple = rippleSprite();
+    return true;
+  }
+  if (!tx.cirrusDay) {
+    [tx.cirrusDay, tx.cirrusWarm] = cirrusSprites();
+    return true;
+  }
   const i = tx.cloudsDay.length;
   if (i >= CLOUD_SPRITES) return false;
   const [day, warm] = cloudSprites(101 + i * 13);
@@ -925,7 +932,7 @@ function drawSky(
 
   // Baland patsimon bulutlar: juda sekin suzadi; shomda pushti-oltin
   const cloudAlpha = clamp01(day * 1.2 - 0.05);
-  if (tx && cloudAlpha > 0.01) {
+  if (tx?.cirrusDay && tx.cirrusWarm && cloudAlpha > 0.01) {
     const cw = w * 1.4;
     const ch = hy * 0.42;
     const off = -((time * 0.0016 * w) % cw);
@@ -1046,7 +1053,7 @@ export function drawScene(
     }
   }
   // To'lqinlar: perspektivada — ufqda mayda va zich, kameraga yaqin yirik; sekin suzadi
-  if (tx) {
+  if (tx?.ripple) {
     tx.ripplePattern ??= ctx.createPattern(tx.ripple, 'repeat');
     const pattern = tx.ripplePattern;
     if (pattern) {

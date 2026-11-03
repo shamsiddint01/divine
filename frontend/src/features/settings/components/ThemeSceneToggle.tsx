@@ -8,7 +8,7 @@ import {
   type Direction,
   type SceneState,
   type SceneTextures,
-  buildNextCloud,
+  buildNextTexture,
   createSceneAssets,
   createSceneTextures,
   drawScene,
@@ -148,7 +148,7 @@ export function ThemeSceneToggle() {
     let cloudTimer = 0;
     const nextCloud = () => {
       if (!tx) return;
-      const more = buildNextCloud(tx);
+      const more = buildNextTexture(tx);
       // Harakat kamaytirilgan: sikl aylanmaydi — paydo bo'lish animatsiyasisiz, darhol to'liq
       if (live.current.reduceMotion) tx.cloudsReadyAt[tx.cloudsReadyAt.length - 1]! -= 1000;
       kick();
