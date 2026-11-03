@@ -1,11 +1,13 @@
 import { type CSSProperties, useEffect, useRef, useState } from 'react';
 import { t } from '@/i18n/uz';
+import { SPLASH_EVENT } from '@/shared/lib/splash';
 import { D, HIGHLIGHT, IVINE, STAR, STAR_X, UZ, WIDTH } from '@/shared/ui/brand-paths';
 import { useUiStore } from '@/stores/ui.store';
 import './splash.css';
 
 /**
- * Saytga kirishdagi logotip animatsiyasi: brauzer oynasida (sessiyada) bir marta, ~4.5 s.
+ * Saytga kirishdagi logotip animatsiyasi: brauzer oynasida (sessiyada) bir marta, ~4.5 s; logindan keyin
+ * yana (`playSplash`).
  * Oxirida logotip sahifadagi o'z joyiga (`[data-brand-logo]`) uchib boradi; joy topilmasa — so'nadi.
  * Bosish yoki tugma — o'tkazib yuborish. Harakat o'chirilgan (reduced motion) va avtomatik
  * testlar (`navigator.webdriver`) uchun umuman ko'rsatilmaydi.
@@ -32,9 +34,13 @@ const DUST = Array.from({ length: 16 }, (_, i) => ({
   delay: `${(0.3 + ((i * 0.23) % 1.6)).toFixed(2)}s`,
 }));
 
-function shouldShow(): boolean {
+function motionAllowed(): boolean {
   if (typeof window === 'undefined' || navigator.webdriver) return false;
-  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return false;
+  return !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+}
+
+function shouldShow(): boolean {
+  if (!motionAllowed()) return false;
   try {
     return sessionStorage.getItem(SEEN_KEY) !== '1';
   } catch {
@@ -59,9 +65,22 @@ export function SplashScreen() {
   const theme = useUiStore((s) => s.theme);
   const logoRef = useRef<SVGSVGElement>(null);
   // Landing doim qora — u yerda och mavzuda ham qorong'i splash (o'tish sakramasin).
-  const [variant] = useState(() =>
+  const [variant, setVariant] = useState(() =>
     window.location.pathname.startsWith('/welcome') ? 'dark' : theme,
   );
+  // Har qayta ijro — yangi `key`: CSS animatsiyalari boshidan boshlanadi.
+  const [run, setRun] = useState(0);
+
+  useEffect(() => {
+    const replay = () => {
+      if (!motionAllowed()) return;
+      setVariant(useUiStore.getState().theme);
+      setRun((n) => n + 1);
+      setPhase('intro');
+    };
+    window.addEventListener(SPLASH_EVENT, replay);
+    return () => window.removeEventListener(SPLASH_EVENT, replay);
+  }, []);
 
   useEffect(() => {
     if (phase !== 'intro') return;
@@ -77,7 +96,7 @@ export function SplashScreen() {
       window.clearTimeout(timer);
       window.removeEventListener('keydown', skip);
     };
-  }, [phase]);
+  }, [phase, run]);
 
   useEffect(() => {
     if (phase === 'skip') {
@@ -122,6 +141,7 @@ export function SplashScreen() {
 
   return (
     <div
+      key={run}
       aria-hidden
       data-testid="splash"
       className={`splash splash--${variant} ${phase === 'exit' ? 'is-exiting' : ''} ${phase === 'skip' ? 'is-skipped' : ''}`}
