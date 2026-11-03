@@ -727,7 +727,12 @@ export const uz = {
       note: 'Izoh',
       notePlaceholder: 'Masalan: oktabr oyi ijarasi',
       category: 'Kategoriya',
-      noCategories: 'Faol kategoriya yo‘q. Avval “Kategoriyalar” oynasida kategoriya qo‘shing.',
+      newCategory: 'Yangi kategoriya',
+      newCategoryPlaceholder: 'Yangi kategoriya nomi',
+      newCategoryHint: 'Nomini yozing — kategoriya qo‘shiladi va shu xarajatga tanlanadi.',
+      addCategory: 'Kategoriyani qo‘shish',
+      cancelNewCategory: 'Ro‘yxatdan tanlash',
+      categoryCreated: (name: string) => `«${name}» kategoriyasi qo‘shildi va tanlandi.`,
       created: 'Xarajat muvaffaqiyatli qo‘shildi.',
       updated: 'Xarajat ma’lumotlari yangilandi.',
     },
@@ -736,13 +741,11 @@ export const uz = {
     deleted: 'Xarajat o‘chirildi.',
     emptyTitle: 'Xarajatlar mavjud emas',
     emptyDescription: 'Ijara, maosh, kommunal to‘lovlar kabi xarajatlarni shu yerda yuriting.',
-    createOnly: {
-      description: 'Kassadan qilingan xarajatni kiritish',
-      title: 'Xarajat qo‘shing',
-      hint: 'Kassadan pul chiqsa (masalan, tushlik yoki yetkazib berish), shu yerdan kiriting. Xarajatlar ro‘yxatini administrator ko‘radi.',
-      noCategoriesTitle: 'Xarajat kategoriyalari hali yo‘q',
-      noCategoriesHint:
-        'Xarajat kategoriyasiz kiritilmaydi. Administrator kategoriya qo‘shgach, shu yerdan xarajat kiritasiz.',
+    /** Sotuvchi (D-23): faqat o'zi qo'shgan xarajatlar va kategoriyalar. */
+    own: {
+      description: 'Siz kiritgan xarajatlar. Boshqa userlarning xarajatlari ko‘rinmaydi.',
+      emptyDescription:
+        'Kassadan pul chiqsa (masalan, tushlik yoki yetkazib berish), shu yerdan kiriting.',
     },
     categories: {
       open: 'Kategoriyalar',
