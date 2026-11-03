@@ -258,9 +258,9 @@ describe('sotuv yaratish (AC-11, BR-09, BR-15, D-16)', () => {
     expect(old.lastPurchaseAt).toBeNull();
   });
 
-  it('AC-15/16: ismsiz mijoz → 400 (`customer.name`); telefonsiz → 201', async () => {
+  it('AC-15/16 (2026-11-03 dan ism ixtiyoriy): noto‘g‘ri ism → 400 (`customer.name`); telefonsiz → 201', async () => {
     const p = await product('3');
-    for (const customer of [{}, { name: '  ' }, { phone: '+998901234567' }]) {
+    for (const customer of [{ name: 'A'.repeat(151) }, { name: 5 }]) {
       const res = await sell(saleBody(p, '1', { customer })).expect(400);
       expect(res.body.error.details).toEqual(
         expect.arrayContaining([expect.objectContaining({ field: 'customer.name' })]),
