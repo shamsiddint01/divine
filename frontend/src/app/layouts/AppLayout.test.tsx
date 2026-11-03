@@ -46,7 +46,7 @@ describe('ilova karkasi (layout)', () => {
     await userEvent.click(within(nav).getByRole('link', { name: 'Ombor' }));
     expect(router.state.location.pathname).toBe('/warehouses');
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Omborlar' }, PAGE),
+      await screen.findByRole('heading', { level: 1, name: 'Ombor' }, PAGE),
     ).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Ombor' })).toHaveAttribute(
       'aria-current',
