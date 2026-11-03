@@ -6,13 +6,11 @@ import { useUiStore } from '@/stores/ui.store';
 import './splash.css';
 
 /**
- * Saytga kirishdagi logotip animatsiyasi: brauzer oynasida (sessiyada) bir marta, ~4.5 s; logindan keyin
- * yana (`playSplash`).
- * Oxirida logotip sahifadagi o'z joyiga (`[data-brand-logo]`) uchib boradi; joy topilmasa — so'nadi.
- * Bosish yoki tugma — o'tkazib yuborish. Harakat o'chirilgan (reduced motion) va avtomatik
- * testlar (`navigator.webdriver`) uchun umuman ko'rsatilmaydi.
+ * Ichki saytga kirishdagi logotip animatsiyasi (~4.5 s): logindan keyin va ichki saytga kirganda sessiyada
+ * bir marta (`@/shared/lib/splash`). Oxirida logotip sahifadagi o'z joyiga (`[data-brand-logo]`) uchib
+ * boradi; joy topilmasa — so'nadi. Bosish yoki tugma — o'tkazib yuborish. Harakat o'chirilgan
+ * (reduced motion) va avtomatik testlar (`navigator.webdriver`) uchun ko'rsatilmaydi.
  */
-const SEEN_KEY = 'divine.splash-seen';
 /** Logotip to'liq yig'ilib, joyiga uchishni boshlaydigan payt (splash.css vaqtlari bilan mos). */
 const INTRO_MS = 3700;
 const EXIT_MS = 800;
