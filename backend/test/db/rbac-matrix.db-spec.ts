@@ -30,6 +30,8 @@ const USER_ALLOWED = [
   'GET /customers',
   'GET /dashboard/my-summary',
   'GET /expense-categories',
+  'GET /expenses',
+  'GET /expenses/:id',
   'GET /product-groups',
   'GET /products',
   'GET /products/:id',
@@ -38,6 +40,7 @@ const USER_ALLOWED = [
   'GET /sales/:id',
   'GET /warehouses',
   'POST /customers',
+  'POST /expense-categories',
   'POST /expenses',
   'POST /sales',
 ].sort();

@@ -137,6 +137,8 @@ export interface ExpenseCategoryRow {
   id: string;
   name: string;
   isActive: boolean;
+  /** Kim qo'shgan (D-23). Eski demo yozuvlarida yo'q — birinchi ADMIN qo'shgan hisoblanadi. */
+  createdBy?: string;
   createdAt: string;
   updatedAt: string;
 }

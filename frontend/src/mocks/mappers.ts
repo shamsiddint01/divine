@@ -254,6 +254,11 @@ export function toExpenseDto(state: MockState, e: ExpenseRow): ExpenseDto {
   };
 }
 
+/** Kategoriya egasi (D-23): eski demo yozuvlari — birinchi ADMIN'niki. */
+export function categoryOwner(state: MockState, c: ExpenseCategoryRow): string {
+  return c.createdBy ?? state.users.find((u) => u.role === 'ADMIN')?.id ?? '';
+}
+
 /** Backend `toExpenseCategoryDto` aksi: sotuvchiga (faqat `expenses.create`) — `id, name`. */
 export function toExpenseCategoryDto(
   state: MockState,
@@ -266,6 +271,7 @@ export function toExpenseCategoryDto(
     name: c.name,
     isActive: c.isActive,
     expenseCount: state.expenses.filter((e) => e.categoryId === c.id).length,
+    createdBy: userRef(state, categoryOwner(state, c)),
     createdAt: c.createdAt,
     updatedAt: c.updatedAt,
   };

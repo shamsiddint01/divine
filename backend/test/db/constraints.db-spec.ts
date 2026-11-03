@@ -189,7 +189,8 @@ describe('nomlar unique (case-insensitive)', () => {
   it.each([
     ['product_groups', 'product_groups_name_lower_key'],
     ['warehouses', 'warehouses_name_lower_key'],
-    ['expense_categories', 'expense_categories_name_lower_key'],
+    // Har bir user ichida (D-23): bir xil egasi uchun takror rad etiladi.
+    ['expense_categories', 'expense_categories_owner_name_lower_key'],
   ])('%s: "Nom" va "NOM" — bitta nom', async (table, constraint) => {
     await withRollback(async (db) => {
       const admin = await createUser(db);

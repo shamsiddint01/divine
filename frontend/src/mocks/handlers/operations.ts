@@ -13,7 +13,7 @@ import { db } from '../db';
 import { fail, includesText, notFound, num, paginate, route, sortBy, validate } from '../lib/http';
 import { mockUuid } from '../lib/random';
 import { dateOnlyInRange } from '../lib/time';
-import { currentCan, toExpenseCategoryDto, toExpenseDto } from '../mappers';
+import { categoryOwner, currentCan, toExpenseCategoryDto, toExpenseDto } from '../mappers';
 import { mockToday, nowIso } from '../lib/clock';
 
 const now = nowIso;
@@ -24,7 +24,8 @@ function requireCan(permission: Parameters<typeof currentCan>[1]) {
 
 // ─── Xarajatlar ─────────────────────────────────────────────────────────────
 
-// Backend shartnomasi (API §12; D-11, D-12, D-19): sxemalar shared'dan; kategoriya majburiy va faol;
+// Backend shartnomasi (API §12; D-11, D-12, D-19, D-23): sxemalar shared'dan; kategoriya majburiy va faol;
+// sotuvchi faqat o'zi qo'shgan kategoriya va xarajatlarni ko'radi;
 // sana Toshkent bo'yicha bugundan keyin emas; holat yo'q; o'chirish — soft delete.
 
 const EXPENSE_SORTS = new Set(['date', 'amount']);
@@ -41,9 +42,17 @@ function assertExpenseDate(date: string) {
   }
 }
 
+/** Barcha xarajatlar — `expenses.read`; barcha kategoriyalar — ko'ruvchi yoki boshqaruvchi (D-23). */
+const canReadAllExpenses = () => currentCan(db(), 'expenses.read');
+const canSeeAllCategories = () =>
+  currentCan(db(), 'expenses.read') || currentCan(db(), 'expenses.manage');
+
 function assertCategoryUsable(categoryId: string) {
-  const c = db().expenseCategories.find((x) => x.id === categoryId);
-  if (!c) fail(404, 'NOT_FOUND', [{ field: 'categoryId', message: 'Ma’lumot topilmadi' }]);
+  const s = db();
+  const c = s.expenseCategories.find((x) => x.id === categoryId);
+  if (!c || (!canSeeAllCategories() && categoryOwner(s, c) !== s.currentUserId)) {
+    fail(404, 'NOT_FOUND', [{ field: 'categoryId', message: 'Ma’lumot topilmadi' }]);
+  }
   if (!c.isActive) {
     fail(422, 'EXPENSE_CATEGORY_INACTIVE', [
       { field: 'categoryId', message: 'Xarajat kategoriyasi faol emas' },
@@ -51,10 +60,15 @@ function assertCategoryUsable(categoryId: string) {
   }
 }
 
-function categoryNameTaken(name: string, exceptId?: string) {
+/** Nom bitta egasi ichida noyob (D-23). */
+function categoryNameTaken(name: string, ownerId: string, exceptId?: string) {
+  const s = db();
   const lower = name.toLocaleLowerCase('uz');
-  return db().expenseCategories.some(
-    (c) => c.id !== exceptId && c.name.toLocaleLowerCase('uz') === lower,
+  return s.expenseCategories.some(
+    (c) =>
+      c.id !== exceptId &&
+      categoryOwner(s, c) === ownerId &&
+      c.name.toLocaleLowerCase('uz') === lower,
   );
 }
 
@@ -70,7 +84,7 @@ route('GET', '/expense-categories', ({ query }) => {
   ) {
     fail(403, 'FORBIDDEN');
   }
-  const full = currentCan(s, 'expenses.read') || currentCan(s, 'expenses.manage');
+  const full = canSeeAllCategories();
   const isActive = full
     ? query.isActive === 'true'
       ? true
@@ -79,18 +93,28 @@ route('GET', '/expense-categories', ({ query }) => {
         : undefined
     : true;
   return s.expenseCategories
+    .filter((c) => full || categoryOwner(s, c) === s.currentUserId)
     .filter((c) => isActive === undefined || c.isActive === isActive)
     .sort((a, b) => a.name.localeCompare(b.name, 'uz'))
     .map((c) => toExpenseCategoryDto(s, c, full));
 });
 
 route('POST', '/expense-categories', ({ body }) => {
-  requireCan('expenses.manage');
-  const input = validate(expenseCategoryCreateSchema, body);
-  if (categoryNameTaken(input.name)) nameTakenFail();
   const s = db();
+  if (!currentCan(s, 'expenses.manage') && !currentCan(s, 'expenses.create')) {
+    fail(403, 'FORBIDDEN');
+  }
+  const input = validate(expenseCategoryCreateSchema, body);
+  if (categoryNameTaken(input.name, s.currentUserId)) nameTakenFail();
   const at = now();
-  const row = { id: mockUuid(), name: input.name, isActive: true, createdAt: at, updatedAt: at };
+  const row = {
+    id: mockUuid(),
+    name: input.name,
+    isActive: true,
+    createdBy: s.currentUserId,
+    createdAt: at,
+    updatedAt: at,
+  };
   s.expenseCategories.push(row);
   recordAudit({
     action: 'EXPENSE_CATEGORY_CREATED',
@@ -98,7 +122,7 @@ route('POST', '/expense-categories', ({ body }) => {
     entityId: row.id,
     metadata: { name: row.name },
   });
-  return toExpenseCategoryDto(s, row, true);
+  return toExpenseCategoryDto(s, row, canSeeAllCategories());
 });
 
 route('PATCH', '/expense-categories/:id', ({ params, body }) => {
@@ -106,7 +130,11 @@ route('PATCH', '/expense-categories/:id', ({ params, body }) => {
   const input = validate(expenseCategoryUpdateSchema, body);
   const s = db();
   const c = s.expenseCategories.find((x) => x.id === params.id) ?? notFound();
-  if (input.name !== undefined && input.name !== c.name && categoryNameTaken(input.name, c.id)) {
+  if (
+    input.name !== undefined &&
+    input.name !== c.name &&
+    categoryNameTaken(input.name, categoryOwner(s, c), c.id)
+  ) {
     nameTakenFail();
   }
   const changed =
@@ -146,7 +174,12 @@ route('DELETE', '/expense-categories/:id', ({ params }) => {
 });
 
 route('GET', '/expenses', ({ query }): ExpensesListResponse => {
-  requireCan('expenses.read');
+  const s0 = db();
+  if (!currentCan(s0, 'expenses.read') && !currentCan(s0, 'expenses.create')) {
+    fail(403, 'FORBIDDEN');
+  }
+  // Sotuvchi — faqat o'ziniki (filtr qanday bo'lmasin, D-23).
+  const createdBy = canReadAllExpenses() ? query.createdBy : s0.currentUserId;
   const [sortField = ''] = (query.sort ?? '').split(':');
   if (query.sort && !EXPENSE_SORTS.has(sortField)) {
     fail(400, 'VALIDATION_ERROR', [{ field: 'sort', message: VALIDATION_MESSAGES_UZ.invalidSort }]);
@@ -155,7 +188,7 @@ route('GET', '/expenses', ({ query }): ExpensesListResponse => {
   const list = s.expenses
     .filter((e) => !e.deletedAt)
     .filter((e) => !query.categoryId || e.categoryId === query.categoryId)
-    .filter((e) => !query.createdBy || e.createdBy === query.createdBy)
+    .filter((e) => !createdBy || e.createdBy === createdBy)
     .filter((e) => dateOnlyInRange(e.date, query.dateFrom, query.dateTo))
     .filter((e) => includesText([e.note], query.search));
   const sorted = sortBy(
@@ -179,8 +212,13 @@ route('GET', '/expenses', ({ query }): ExpensesListResponse => {
 });
 
 route('GET', '/expenses/:id', ({ params }) => {
-  requireCan('expenses.read');
-  return toExpenseDto(db(), expenseOrFail(params.id));
+  const s = db();
+  if (!currentCan(s, 'expenses.read') && !currentCan(s, 'expenses.create')) {
+    fail(403, 'FORBIDDEN');
+  }
+  const row = expenseOrFail(params.id);
+  if (!canReadAllExpenses() && row.createdBy !== s.currentUserId) notFound();
+  return toExpenseDto(s, row);
 });
 
 route('POST', '/expenses', ({ body }) => {

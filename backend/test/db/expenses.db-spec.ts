@@ -142,7 +142,7 @@ describe('xarajat qo‘shish va validatsiya (REQ-100, BR-32, D-11, D-19)', () =>
   });
 });
 
-describe('ruxsatlar (RBAC §5, D-12, D-19)', () => {
+describe('ruxsatlar (RBAC §5, D-12, D-19, D-23)', () => {
   it('anonim → 401 barcha endpointlarda', async () => {
     const id = '01990000-0000-7000-8000-000000000000';
     for (const [method, path] of [
@@ -160,43 +160,88 @@ describe('ruxsatlar (RBAC §5, D-12, D-19)', () => {
     }
   });
 
-  it('sotuvchi: faqat faol kategoriyalar (`id, name`), xarajat qo‘shadi (201, o‘z nomidan); qolgani 403', async () => {
-    const active = await category();
-    const inactive = await category();
-    await api('patch', `/expense-categories/${inactive}`, adminToken)
-      .send({ isActive: false })
-      .expect(200);
+  it('sotuvchi (D-23): admin kategoriyalari ko‘rinmaydi va tanlab bo‘lmaydi; o‘z kategoriyasini qo‘shadi (`id, name`)', async () => {
+    const adminCategory = await category();
+    const list = await api('get', '/expense-categories', sellerToken).expect(200);
+    expect(list.body.map((c: { id: string }) => c.id)).not.toContain(adminCategory);
+    // Begona (admin) kategoriyasi bilan xarajat — 404, mavjudligi oshkor qilinmaydi.
+    const foreign = await createExpense(
+      { date: TODAY, amount: '1000', categoryId: adminCategory },
+      sellerToken,
+    ).expect(404);
+    expect(foreign.body.error.details).toEqual([
+      { field: 'categoryId', message: expect.any(String) },
+    ]);
 
-    const list = await api('get', '/expense-categories?isActive=false', sellerToken).expect(200);
-    const ids = list.body.map((c: { id: string }) => c.id);
-    expect(ids).toContain(active);
-    expect(ids).not.toContain(inactive);
-    for (const c of list.body) expect(Object.keys(c).sort()).toEqual(['id', 'name']);
+    // Admin bilan bir xil nom — sotuvchiga ruxsat (nom user ichida noyob); o'zida takror → 409.
+    const adminName = (
+      await t.prisma.expenseCategory.findUniqueOrThrow({ where: { id: adminCategory } })
+    ).name;
+    const own = await api('post', '/expense-categories', sellerToken)
+      .send({ name: adminName })
+      .expect(201);
+    expect(Object.keys(own.body).sort()).toEqual(['id', 'name']);
+    await api('post', '/expense-categories', sellerToken)
+      .send({ name: adminName.toUpperCase() })
+      .expect(409);
+    const mine = await api('get', '/expense-categories', sellerToken).expect(200);
+    expect(mine.body.map((c: { id: string }) => c.id)).toContain(own.body.id);
+    for (const c of mine.body) expect(Object.keys(c).sort()).toEqual(['id', 'name']);
+    // Admin hammasini ko'radi — kim qo'shgani bilan.
+    const all = await api('get', '/expense-categories', adminToken).expect(200);
+    expect(all.body.find((c: { id: string }) => c.id === own.body.id)).toMatchObject({
+      createdBy: { login: expect.any(String) },
+    });
+  });
 
+  it('sotuvchi (D-23): faqat o‘z xarajatlari ro‘yxatda va detalda; adminniki — ro‘yxatda yo‘q, detal 404; tahrirlash/o‘chirish 403', async () => {
+    const adminCategory = await category();
+    const adminExpense = await createExpense({
+      date: TODAY,
+      amount: '999000',
+      categoryId: adminCategory,
+    }).expect(201);
+    const sellerCategory = await category(uniqueLogin('Sot'), sellerToken);
     const created = await createExpense(
-      { date: TODAY, amount: '45000', categoryId: active, note: 'Tushlik' },
+      { date: TODAY, amount: '45000', categoryId: sellerCategory, note: 'Tushlik' },
       sellerToken,
     ).expect(201);
-    const row = await t.prisma.expense.findUniqueOrThrow({ where: { id: created.body.id } });
+    const id = created.body.id as string;
     const seller = await t.prisma.user.findFirstOrThrow({
       where: { login: created.body.createdBy.login },
     });
-    expect(row.createdById).toBe(seller.id);
-    expect(seller.id).toBe(created.body.createdBy.id);
+    expect((await t.prisma.expense.findUniqueOrThrow({ where: { id } })).createdById).toBe(
+      seller.id,
+    );
 
-    const id = created.body.id as string;
-    await api('get', '/expenses', sellerToken).expect(403);
-    await api('get', `/expenses/${id}`, sellerToken).expect(403);
+    // `createdBy` filtrini boshqa userga qo'ysa ham — baribir faqat o'ziniki.
+    const list = await api(
+      'get',
+      `/expenses?pageSize=100&createdBy=${adminExpense.body.createdBy.id}`,
+      sellerToken,
+    ).expect(200);
+    const ids = list.body.data.map((e: { id: string }) => e.id);
+    expect(ids).toContain(id);
+    expect(ids).not.toContain(adminExpense.body.id);
+    expect(
+      list.body.data.every((e: { createdBy: { id: string } }) => e.createdBy.id === seller.id),
+    ).toBe(true);
+    expect(list.body.summary.count).toBe(list.body.meta.total);
+    await api('get', `/expenses/${id}`, sellerToken).expect(200);
+    await api('get', `/expenses/${adminExpense.body.id}`, sellerToken).expect(404);
+
     await api('patch', `/expenses/${id}`, sellerToken).send({ amount: '1' }).expect(403);
     await api('delete', `/expenses/${id}`, sellerToken).expect(403);
-    await api('post', '/expense-categories', sellerToken).send({ name: 'Yangi' }).expect(403);
-    await api('patch', `/expense-categories/${active}`, sellerToken)
+    await api('patch', `/expense-categories/${sellerCategory}`, sellerToken)
       .send({ isActive: false })
       .expect(403);
-    await api('delete', `/expense-categories/${active}`, sellerToken).expect(403);
+    await api('delete', `/expense-categories/${sellerCategory}`, sellerToken).expect(403);
     const after = await t.prisma.expense.findUniqueOrThrow({ where: { id } });
     expect(after.amount.toFixed(2)).toBe('45000.00');
     expect(after.deletedAt).toBeNull();
+    // Admin sotuvchining xarajatini ham ko'radi.
+    const adminList = await api('get', '/expenses?pageSize=100', adminToken).expect(200);
+    expect(adminList.body.data.map((e: { id: string }) => e.id)).toContain(id);
   });
 
   it('ADMIN: kategoriyalar to‘liq (holat, xarajatlar soni), `isActive` filtri bilan', async () => {
