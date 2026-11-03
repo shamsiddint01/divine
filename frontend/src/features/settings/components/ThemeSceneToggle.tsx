@@ -130,7 +130,7 @@ export function ThemeSceneToggle() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    // Oy, tuman, to'lqin teksturalari — bir marta; og'ir kumulus bulutlar — quyida, birma-bir
+    // Oy, tuman, Somon yo'li teksturalari — bir marta; og'irroq to'lqin va bulutlar — quyida, navbat bilan
     sharedTextures ??= createSceneTextures();
     assets.current.textures = sharedTextures;
     const resize = () => {
@@ -143,7 +143,7 @@ export function ThemeSceneToggle() {
     };
     resizeRef.current = resize;
     resize();
-    // Bulutlar: har biri alohida vazifada — sahifa qotmaydi; tayyor bo'lgani ohista paydo bo'ladi
+    // To'lqin va bulut teksturalari — alohida vazifalarda: sahifa qotmaydi; bulutlar ohista paydo bo'ladi
     const tx = sharedTextures;
     let cloudTimer = 0;
     const nextCloud = () => {
