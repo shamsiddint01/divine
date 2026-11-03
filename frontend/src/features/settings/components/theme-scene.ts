@@ -390,7 +390,10 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
       const baseLine = 0.8 + (fbm(wisp, u * 7, 3.3, 2) - 0.5) * 0.05;
       d *= smoothstep(baseLine + 0.05, baseLine - 0.07, v);
       d *=
-        smoothstep(0, 0.06, u) * smoothstep(1, 0.94, u) * smoothstep(0, 0.07, v) * smoothstep(1, 0.93, v);
+        smoothstep(0, 0.06, u) *
+        smoothstep(1, 0.94, u) *
+        smoothstep(0, 0.07, v) *
+        smoothstep(1, 0.93, v);
       dens[py * W + px] = clamp01(d);
       bumpMap[py * W + px] = bumps;
     }
@@ -403,7 +406,8 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
   /** Yorug'lik tomonga yig'ilgan qalinlik: 12 mayda qadam (har gumbazcha o'zini soya qiladi). */
   const optical = (x: number, y: number, lx: number, ly: number) => {
     let tau = 0;
-    for (let k = 1; k <= 12; k++) tau += at(x + lx * k * 2.2, y + ly * k * 2.2) * (k < 5 ? 1.3 : 0.8);
+    for (let k = 1; k <= 12; k++)
+      tau += at(x + lx * k * 2.2, y + ly * k * 2.2) * (k < 5 ? 1.3 : 0.8);
     return tau / 12;
   };
 
@@ -883,7 +887,7 @@ function drawSky(
   if (tx && cloudAlpha > 0.01) {
     for (const c of a.clouds) {
       const cw = c.width * h;
-      const ch = cw * 0.5;
+      const ch = cw * (200 / 384);
       const span = w + cw * 1.2;
       const x = ((((c.x * span + time * c.speed * w) % span) + span) % span) - cw * 0.6;
       const y = c.y * hy - ch * 0.62;
