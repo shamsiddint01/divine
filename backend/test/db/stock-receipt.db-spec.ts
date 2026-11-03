@@ -1,4 +1,9 @@
-import { ALL_PERMISSIONS, AuditAction, type Permission } from '@divine/shared';
+import {
+  ALL_PERMISSIONS,
+  AuditAction,
+  type Permission,
+  type ProductCreateInput,
+} from '@divine/shared';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { AccessContext } from '../../src/common/auth/access-context.js';
@@ -9,7 +14,6 @@ import {
   createUser,
   login,
   uniqueIp,
-  uniqueLogin,
 } from './support/auth-app.js';
 import { closePool, withCommit } from './support/db.js';
 import {
@@ -29,7 +33,6 @@ let adminId: string;
 let adminToken: string;
 let sellerToken: string;
 let warehouseA: string;
-let warehouseB: string;
 let groupId: string;
 
 const bearer = (token: string) => ({ Authorization: `Bearer ${token}` });
@@ -68,7 +71,7 @@ const receipt = (quantity: string, extra: Record<string, unknown> = {}) => ({
 const addStock = (productId: string, body: object, token = adminToken) =>
   api('post', `/products/${productId}/stock`, token).send(body);
 
-function newProduct(extra: Record<string, unknown> = {}) {
+function newProduct(extra: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     name: `Qoldiqli mahsulot ${Math.random().toString(36).slice(2, 8)}`,
     groupId,
@@ -98,20 +101,12 @@ async function stockOf(warehouseId: string, productId: string): Promise<string> 
 const movementsOf = (referenceId: string) =>
   t.prisma.inventoryMovement.findMany({ where: { referenceId }, orderBy: { id: 'asc' } });
 
-/** Ruxsatlari cheklangan ADMIN (rol permissionlari DB'da): kirim ruxsatlarisiz mahsulot boshqaruvchi. */
-async function limitedAdminToken(without: Permission[]) {
-  const user = await createUser(t, { password: PASSWORD, role: 'ADMIN' });
-  const keep = ALL_PERMISSIONS.filter((p) => !without.includes(p));
-  return { user, keep };
-}
-
 beforeAll(async () => {
   t = await createAuthApp();
   const admin = await createUser(t, { password: PASSWORD, role: 'ADMIN' });
   adminId = admin.id;
   adminToken = await signIn(admin.login);
-  [warehouseA, warehouseB, groupId] = await withCommit(async (db) => [
-    await createWarehouse(db, adminId),
+  [warehouseA, groupId] = await withCommit(async (db) => [
     await createWarehouse(db, adminId),
     await createGroup(db, adminId),
   ]);
@@ -152,8 +147,7 @@ describe('ruxsatlar (RBAC §5)', () => {
   });
 
   it('`incoming.confirm`siz: boshlang‘ich qoldiq bilan yaratish → 403 va mahsulot ham yaratilmaydi', async () => {
-    const receiveOnly = await limitedAdminToken(['incoming.confirm' as Permission]);
-    expect(receiveOnly.keep).not.toContain('incoming.confirm');
+    const keep = ALL_PERMISSIONS.filter((p: Permission) => p !== 'incoming.confirm');
     // ProductsService ruxsatni tranzaksiyadan oldin tekshiradi — service darajasida sinaymiz.
     const { ProductsService } = await import('../../src/modules/products/products.service.js');
     const service = t.app.get(ProductsService, { strict: false });
@@ -161,7 +155,7 @@ describe('ruxsatlar (RBAC §5)', () => {
       userId: adminId,
       login: 'test',
       role: 'ADMIN',
-      permissions: new Set(receiveOnly.keep),
+      permissions: new Set(keep),
       warehouseIds: new Set(),
       issuedAt: 0,
     };
@@ -170,10 +164,10 @@ describe('ruxsatlar (RBAC §5)', () => {
       service.create(
         ctx,
         {
-          ...(newProduct({ name }) as never),
+          ...newProduct({ name }),
           status: 'ACTIVE',
           initialStock: { warehouseId: warehouseA, quantity: '3', date: '2026-10-06' },
-        },
+        } as ProductCreateInput,
         meta,
       ),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' });
