@@ -3,6 +3,7 @@ import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tansta
 import { ApiError, apiRequest, refreshSession } from '@/shared/lib/api-client';
 import { authMode } from '@/shared/lib/api-mode';
 import { authSession } from '@/shared/lib/auth-session';
+import { playSplash } from '@/shared/lib/splash';
 import type { CurrentUserDto } from '@/shared/types/api';
 import { useAuthStore } from '../auth-store';
 
@@ -56,7 +57,12 @@ export function useLogin() {
   return useMutation({
     mutationFn: (input: LoginRequest) =>
       apiRequest<LoginResponse>('/auth/login', { method: 'POST', body: input }),
-    onSuccess: (session) => applySession(queryClient, session),
+    onSuccess: (session) => {
+      // Kirgandan keyin logotip animatsiyasi (2026-11-03). Hook darajasida: sessiya qo'llangach LoginPage
+      // darhol yopiladi va `mutate(…, { onSuccess })` chaqiruvi endi ishga tushmaydi (haqiqiy backend'da).
+      playSplash();
+      return applySession(queryClient, session);
+    },
   });
 }
 

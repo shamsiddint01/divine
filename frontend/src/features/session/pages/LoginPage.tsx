@@ -25,7 +25,6 @@ import { ApiError } from '@/shared/lib/api-client';
 import { PHONE_HREF, TELEGRAM_URL } from '@/shared/lib/contacts';
 import { authMode } from '@/shared/lib/api-mode';
 import { applyFieldErrors } from '@/shared/lib/mutation';
-import { playSplash } from '@/shared/lib/splash';
 import { cn } from '@/shared/lib/utils';
 import { BrandLogo } from '@/shared/ui/brand-logo';
 import { Button } from '@/shared/ui/button';
@@ -102,8 +101,6 @@ export function LoginPage() {
 
   const onSubmit = handleSubmit((values) =>
     login.mutate(values, {
-      // Kirgandan keyin ham logotip animatsiyasi (egasining talabi, 2026-11-03).
-      onSuccess: () => playSplash(),
       onError: (error) => {
         if (applyFieldErrors(error, setError)) return;
         if (error instanceof ApiError && error.code === 'INVALID_CREDENTIALS') {

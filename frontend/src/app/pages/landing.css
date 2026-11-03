@@ -214,7 +214,7 @@ html:has(.ld) {
   padding: calc(48 * var(--v)) calc(40 * var(--u));
   overflow: hidden;
   border-radius: calc(20 * var(--u));
-  background: #000 url('/landing/smoke.webp') right bottom / cover no-repeat;
+  background: #000 url('/landing/smoke-blue.webp') right bottom / cover no-repeat;
 }
 .ld-hero__video {
   position: absolute;

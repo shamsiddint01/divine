@@ -218,7 +218,7 @@ export function LandingPage() {
             {reduceMotion ? null : (
               <video
                 className="ld-hero__video"
-                src="/landing/smoke.mp4"
+                src="/landing/smoke-blue.mp4"
                 muted
                 autoPlay
                 loop
