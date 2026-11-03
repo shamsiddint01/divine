@@ -110,15 +110,14 @@ export interface CreateSaleInput {
   items: { productId: string; quantity: Quantity }[];
 }
 
-// ─── Kirim ──────────────────────────────────────────────────────────────────
+// ─── Qoldiq qo'shish (sobiq Kirim) ──────────────────────────────────────────
 
-export type { IncomingDto, IncomingItemDto } from '@divine/shared';
-
-export interface IncomingInput {
-  date: DateOnly;
+export interface StockReceiptInput {
   warehouseId: string;
+  quantity: Quantity;
+  costPrice: Money;
+  date: DateOnly;
   notes?: string | null;
-  items: { productId: string; quantity: Quantity; costPrice: Money }[];
 }
 
 // ─── Xarajatlar ─────────────────────────────────────────────────────────────
