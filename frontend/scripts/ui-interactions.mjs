@@ -517,7 +517,7 @@ check(
   ),
 );
 check(
-  'Auth: USER menyusida faqat 4 ta bo‘lim (Xarajatlar — faqat qo‘shish, D-12)',
+  'Auth: USER menyusida faqat 4 ta bo‘lim (Xarajatlar — o‘zinikilar, D-23)',
   await waitFor(`document.querySelectorAll('aside nav a').length === 4`),
 );
 await evaluate(

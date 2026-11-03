@@ -59,7 +59,7 @@ users ──*:*── warehouses                      (user_warehouses — owner
 | `customers.manage` | Mijozni tahrirlash | ✅ | ❌ |
 | `customers.read_history` | Mijoz xarid tarixi va yig‘ma ma’lumotlari | ✅ | ❌ |
 | `expenses.read` | Xarajatlarni ko‘rish | ✅ | ❌ |
-| `expenses.create` | Yangi xarajat qo‘shish (ro‘yxatsiz, D-12); faol kategoriyalarni (`id, name`) o‘qish — D-19 | ✅ | ✅ |
+| `expenses.create` | Xarajat qo‘shish; **o‘zi qo‘shgan** xarajatlarni ko‘rish va o‘ziga kategoriya qo‘shish/o‘qish (`id, name`) — D-23 | ✅ | ✅ |
 | `expenses.manage` | Xarajat va kategoriyalarni boshqarish | ✅ | ❌ |
 | `reports.read` | Barcha hisobotlar | ✅ | ❌ |
 | `dashboard.admin` | Admin dashboard KPI'lari | ✅ | ❌ |

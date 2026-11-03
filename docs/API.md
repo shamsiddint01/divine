@@ -601,7 +601,7 @@ Modul: `backend/src/modules/sales`. Sxema — `@divine/shared` (`saleCreateSchem
 
 ## 12. Expenses — Xarajatlar (Phase 11) ✅
 
-Modul: `backend/src/modules/expenses`. Sxemalar — `@divine/shared` (`expenseCreateSchema`, `expenseUpdateSchema`, `expenseCategoryCreateSchema`, `expenseCategoryUpdateSchema`); body `strictObject` — noma’lum maydon (masalan, bekor qilingan `status` — D-11) → `400`. Qarorlar: D-01, D-11 (holat yo‘q), D-12 (sotuvchi faqat qo‘shadi), **D-19** (kategoriya majburiy, sotuvchi faqat faol kategoriyani tanlaydi, kategoriyalarni ADMIN boshqaradi, boshlang‘ich ro‘yxat bo‘sh, sana Toshkent bo‘yicha bugundan keyin emas).
+Modul: `backend/src/modules/expenses`. Sxemalar — `@divine/shared` (`expenseCreateSchema`, `expenseUpdateSchema`, `expenseCategoryCreateSchema`, `expenseCategoryUpdateSchema`); body `strictObject` — noma’lum maydon (masalan, bekor qilingan `status` — D-11) → `400`. Qarorlar: D-01, D-11 (holat yo‘q), D-12 (sotuvchi faqat qo‘shadi — **D-23 bilan almashtirilgan**: sotuvchi o‘z xarajatlari va kategoriyalarini ko‘radi, kategoriya qo‘shadi), **D-19** (kategoriya majburiy, sotuvchi faqat faol kategoriyani tanlaydi, kategoriyalarni ADMIN boshqaradi, boshlang‘ich ro‘yxat bo‘sh, sana Toshkent bo‘yicha bugundan keyin emas).
 
 ### Kategoriyalar
 
@@ -618,8 +618,8 @@ Nofaol kategoriya yangi xarajatga ham, tahrirlashda ko‘chirishga ham tanlanmay
 
 | Endpoint | Ruxsat | Request | Javob | Xatolar |
 |---|---|---|---|---|
-| `GET /expenses` | `expenses.read` | `page`, `pageSize`, `dateFrom`, `dateTo` (xarajat sanasi, ikkalasi ham kiradi), `categoryId`, `createdBy`, `search` (izoh, registrsiz; `%`/`_` oddiy belgi), `sort` ∈ {`date`, `amount`} (standart `date:desc`) — barchasi birgalikda | `ExpensesListResponse` = `Paginated<ExpenseDto>` + `summary: { count, totalAmount }` (butun filtr bo‘yicha, soft-delete qilinganlarsiz) | `400` (noto‘g‘ri sort/sana/UUID, `dateFrom > dateTo`) |
-| `GET /expenses/:id` | `expenses.read` | — | `ExpenseDto` | `404` (o‘chirilgan ham) |
+| `GET /expenses` | `expenses.read` (hammasi) yoki `expenses.create` (**faqat o‘zi qo‘shganlari**, `createdBy` majburan o‘zi — D-23) | `page`, `pageSize`, `dateFrom`, `dateTo` (xarajat sanasi, ikkalasi ham kiradi), `categoryId`, `createdBy`, `search` (izoh, registrsiz; `%`/`_` oddiy belgi), `sort` ∈ {`date`, `amount`} (standart `date:desc`) — barchasi birgalikda | `ExpensesListResponse` = `Paginated<ExpenseDto>` + `summary: { count, totalAmount }` (butun filtr bo‘yicha, soft-delete qilinganlarsiz) | `400` (noto‘g‘ri sort/sana/UUID, `dateFrom > dateTo`) |
+| `GET /expenses/:id` | `expenses.read` yoki `expenses.create` (faqat o‘ziniki, D-23) | — | `ExpenseDto` | `404` (o‘chirilgan yoki begona) |
 | `POST /expenses` | `expenses.create` yoki `expenses.manage` (D-12) | `{ date, amount, categoryId, note? }` | `201 ExpenseDto` — kiritgan user nomidan | `400` (summa ≤ 0 yoki > 2 kasr — BR-32; kategoriyasiz — `Kategoriyani tanlang`; kelajak sana — `field = date`; `status`), `404` (`field = categoryId`), `422 EXPENSE_CATEGORY_INACTIVE` |
 | `PATCH /expenses/:id` | `expenses.manage` | **qisman:** `{ date?, amount?, categoryId?, note? }` (kamida bittasi; `note: null` — tozalash) | `200 ExpenseDto` — faqat yuborilgan va haqiqatan o‘zgargan maydonlar yoziladi (`"1500"` = `"1500.00"`); o‘zgarishsiz — audit yo‘q | `400`, `404`, `422 EXPENSE_CATEGORY_INACTIVE` (yangi kategoriya nofaol bo‘lsa; joriy nofaol kategoriya qolishi mumkin) |
 | `DELETE /expenses/:id` | `expenses.manage` | — (UI'da tasdiqlash, BR-33) | `204` — **soft delete** (`deleted_at`, `deleted_by`): qator va summa bazada qoladi, ro‘yxat/detal/yig‘ma/hisobotlardan chiqadi; qayta o‘chirish va tahrirlash → `404` | `404` |
