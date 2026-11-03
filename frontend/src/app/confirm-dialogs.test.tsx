@@ -2,8 +2,8 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { t } from '@/i18n/uz';
-import { db, resetEphemeralDb } from '@/mocks/db';
-import { PAGE, TEST_NOW, renderApp } from '@/test/render-app';
+import { db } from '@/mocks/db';
+import { PAGE, renderApp } from '@/test/render-app';
 
 type User = ReturnType<typeof userEvent.setup>;
 

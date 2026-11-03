@@ -186,7 +186,7 @@ describe('qoldiq qo‘shish (sobiq kirim)', () => {
   it('mavjud mahsulotga qoldiq qo‘shish: ombor qoldig‘i oshadi, kartadagi kelgan narxi o‘zgarmaydi (D-16)', async () => {
     const w = await activeWarehouse();
     const product = state.products.find((p) => p.status === 'ACTIVE' && !p.allowDecimal)!;
-    const key = `${w.id}:${product.id}`;
+    const key = stockKey(w.id, product.id);
     const before = state.stock[key] ?? '0';
     const res = await post<ProductDto>(`/products/${product.id}/stock`, {
       warehouseId: w.id,
