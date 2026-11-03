@@ -714,7 +714,8 @@ function drawSky(
     ];
     for (const l of layers) {
       const tileW = w * l.scale;
-      const off = -((time * l.speed * w + l.y * 3) % tileW);
+      const shift = time * l.speed * w + l.y * 3;
+      const off = -(((shift % tileW) + tileW) % tileW); // har doim (−tileW, 0] — chapda bo'sh joy qolmaydi
       const a1 = cloudAlpha * l.alpha * appear;
       for (let x = off; x < w; x += tileW) {
         // +2px ustma-ust: masshtablashda chetdagi yarim shaffof ustun chok bo'lib ko'rinmasin
