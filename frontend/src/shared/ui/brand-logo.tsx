@@ -21,6 +21,9 @@ const UZ =
 const STAR_X = 143.59;
 const WIDTH = 204.75;
 
+/** Logotip shakllari — kirish animatsiyasi (IntroSplash) qismlarni alohida harakatlantiradi. */
+export const BRAND_SHAPES = { STAR, D, IVINE, UZ, STAR_X, WIDTH } as const;
+
 /** `auto` — joriy mavzu: och mavzuda to'q belgi, qorong'ida "shisha" belgi. */
 function useResolvedVariant(variant: Variant): 'light' | 'dark' {
   const theme = useUiStore((s) => s.theme);
