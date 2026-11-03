@@ -108,13 +108,19 @@ describe('sotuv (POST /sales)', () => {
     expect(state.movements.length).toBe(movementsBefore);
   });
 
-  it('mijoz ismisiz sotuvni rad etadi, telefon esa ixtiyoriy (BR-05, BR-06)', async () => {
+  it('ismsiz sotuv — bitta umumiy "Noma’lum mijoz" (2026-11-03); noto‘g‘ri ism — 400', async () => {
     const { w, p } = await stockedProduct();
-    const error = await post(
-      '/sales',
-      { warehouseId: w.id, customer: { name: '   ' }, items: [{ productId: p.id, quantity: '1' }] },
-      { 'Idempotency-Key': crypto.randomUUID() },
-    ).catch((e: unknown) => e);
+    const sell = (customer: Record<string, unknown>) =>
+      post<SaleDto>(
+        '/sales',
+        { warehouseId: w.id, customer, items: [{ productId: p.id, quantity: '1' }] },
+        { 'Idempotency-Key': crypto.randomUUID() },
+      );
+    const a = await sell({ name: '   ' });
+    const b = await sell({});
+    expect(a.customer.name).toBe(WALK_IN_CUSTOMER_NAME);
+    expect(b.customer.id).toBe(a.customer.id);
+    const error = await sell({ name: 'A'.repeat(151) }).catch((e: unknown) => e);
     expect(error).toMatchObject({ status: 400, code: 'VALIDATION_ERROR' });
   });
 
