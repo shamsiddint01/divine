@@ -271,7 +271,8 @@ function canvas(w: number, h: number) {
 function cloudSprites(): [HTMLCanvasElement, HTMLCanvasElement] {
   const W = 768;
   const H = 192;
-  const period = 4;
+  // Davr butun son bo'lishi shart — aks holda tekstura takrorlanganda tik chok ko'rinadi
+  const period = 5;
   const noise = makeNoise(57);
   const detail = makeNoise(58);
   const field = new Float32Array(W * H);
@@ -279,8 +280,8 @@ function cloudSprites(): [HTMLCanvasElement, HTMLCanvasElement] {
     for (let px = 0; px < W; px++) {
       const u = (px / W) * period;
       const v = py / H;
-      const n = fbm(noise, u * 1.3, v * 2, 5, period * 1.3);
-      const fine = fbm(detail, u * 5, v * 7, 3, period * 5);
+      const n = fbm(noise, u, v * 2, 5, period);
+      const fine = fbm(detail, u * 4, v * 7, 3, period * 4);
       field[py * W + px] = n * 0.82 + fine * 0.18;
     }
   }
