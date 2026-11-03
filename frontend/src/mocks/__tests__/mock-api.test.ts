@@ -20,7 +20,7 @@ import type {
 import { resetEphemeralDb } from '../db';
 import { mockRequest, setMockLatency } from '../index';
 import { tashkentDate } from '../lib/time';
-import type { MockState } from '../state';
+import { type MockState, stockKey } from '../state';
 
 const NOW = new Date('2026-10-06T10:30:00.000Z'); // Toshkent: 15:30
 let state: MockState;
