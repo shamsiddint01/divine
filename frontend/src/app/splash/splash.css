@@ -1,0 +1,320 @@
+/* Saytga kirishdagi logotip animatsiyasi ("Grafik chizilishi"). Vaqtlar SplashScreen.tsx dagi INTRO_MS bilan mos. */
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  cursor: pointer;
+  overflow: hidden;
+}
+.splash__bg {
+  position: absolute;
+  inset: 0;
+}
+.splash--light .splash__bg {
+  background: radial-gradient(ellipse at 50% 42%, #ffffff, #ebeefa);
+}
+.splash--dark .splash__bg {
+  background: radial-gradient(ellipse at 50% 42%, #1a2060, #05060a 75%);
+}
+.splash__center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding-bottom: 4vh;
+}
+.splash__logo {
+  width: min(360px, 72vw);
+  height: auto;
+  overflow: visible;
+  transform-origin: 0 0;
+}
+.splash__logo * {
+  transform-box: fill-box;
+}
+.splash__logo .sp-star,
+.splash__logo .sp-dot,
+.splash__logo .sp-pt,
+.splash__logo .sp-glow {
+  transform-origin: center;
+}
+.splash__logo .sp-bar {
+  transform-origin: 50% 100%;
+}
+.splash__tagline {
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  opacity: 0;
+  animation: sp-rise 0.5s 2.35s both;
+}
+.splash--light .splash__tagline {
+  color: #6b7190;
+}
+.splash--dark .splash__tagline {
+  color: #a3acd6;
+}
+.splash__progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 0;
+  animation: sp-progress 3.6s linear both;
+}
+.splash--light .splash__progress {
+  background: #3d4edb;
+}
+.splash--dark .splash__progress {
+  background: #f1ac2c;
+}
+
+/* Ko'tariluvchi oltin yulduzchalar (oq fonda ham ko'rinishi uchun to'q oltin gradient). */
+.splash__dust {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.splash__dust span {
+  position: absolute;
+  bottom: -12px;
+  opacity: 0;
+  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+  animation: sp-dust var(--d) var(--t) ease-out infinite;
+}
+.splash--light .splash__dust span {
+  background: linear-gradient(135deg, #ffd978, #c7841a);
+}
+.splash--dark .splash__dust span {
+  background: linear-gradient(135deg, #fff3c4, #f1ac2c);
+}
+
+/* Logotip bo'laklari */
+.sp-d {
+  stroke-dasharray: 100;
+  animation: sp-draw 0.8s ease-out both;
+}
+.splash--light .sp-d {
+  animation:
+    sp-draw 0.8s ease-out both,
+    sp-fill-light 0.45s 0.6s both;
+}
+.splash--dark .sp-d {
+  animation:
+    sp-draw 0.8s ease-out both,
+    sp-fill-dark 0.45s 0.6s both;
+}
+.sp-hl {
+  animation: sp-fade-in 0.4s 1s both;
+}
+.sp-b1 {
+  animation: sp-grow 0.45s 0.9s both;
+}
+.sp-b2 {
+  animation: sp-grow 0.45s 1.05s both;
+}
+.sp-b3 {
+  animation: sp-grow 0.45s 1.2s both;
+}
+.sp-trend {
+  stroke-dasharray: 100;
+  animation: sp-draw 0.5s 1.35s ease-in-out both;
+}
+.sp-glow {
+  opacity: 0;
+  animation:
+    sp-glow 0.7s 1.8s both,
+    sp-glow-pulse 2.4s 2.5s ease-in-out infinite;
+}
+.sp-star {
+  animation:
+    sp-pop 0.6s 1.8s both,
+    sp-twinkle 2.2s 2.6s infinite;
+}
+.sp-pt {
+  opacity: 0;
+  animation: sp-burst 0.7s 1.95s ease-out both;
+}
+.sp-text {
+  animation: sp-wipe 0.6s 1.6s both;
+}
+.sp-dot {
+  animation: sp-pop 0.5s 2.1s both;
+}
+.sp-uz {
+  animation: sp-rise 0.45s 2.2s both;
+}
+.sp-shine {
+  opacity: 0;
+  animation: sp-shine 0.9s 2.6s ease-in-out both;
+}
+
+/* Chiqish: fon, yulduzchalar, shior va chiziq so'nadi; logotipni JS sahifadagi o'z joyiga uchiradi. */
+.splash.is-exiting {
+  pointer-events: none;
+}
+.splash.is-exiting .splash__bg,
+.splash.is-exiting .splash__dust {
+  animation: sp-fade-out 0.6s 0.2s both;
+}
+.splash.is-exiting .splash__tagline,
+.splash.is-exiting .splash__progress {
+  animation: sp-fade-out 0.3s both;
+}
+.splash.is-skipped {
+  pointer-events: none;
+  animation: sp-fade-out 0.3s both;
+}
+
+@keyframes sp-draw {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes sp-fill-light {
+  from {
+    fill-opacity: 0;
+  }
+  to {
+    fill-opacity: 1;
+  }
+}
+@keyframes sp-fill-dark {
+  from {
+    fill-opacity: 0;
+  }
+  to {
+    fill-opacity: 0.2;
+  }
+}
+@keyframes sp-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes sp-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes sp-grow {
+  0% {
+    transform: scaleY(0);
+  }
+  70% {
+    transform: scaleY(1.18);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+@keyframes sp-pop {
+  0% {
+    transform: scale(0) rotate(-120deg);
+  }
+  70% {
+    transform: scale(1.35) rotate(10deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes sp-twinkle {
+  0%,
+  82%,
+  100% {
+    transform: none;
+  }
+  90% {
+    transform: scale(1.3) rotate(45deg);
+  }
+}
+@keyframes sp-burst {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--x), var(--y)) scale(0.2);
+    opacity: 0;
+  }
+}
+@keyframes sp-glow {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  40% {
+    opacity: 0.9;
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+}
+@keyframes sp-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+}
+@keyframes sp-wipe {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes sp-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes sp-shine {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(250px);
+  }
+}
+@keyframes sp-progress {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+@keyframes sp-dust {
+  0% {
+    opacity: 0;
+    transform: translateY(0) rotate(0) scale(0.6);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-40vh) rotate(180deg) scale(1);
+  }
+}
