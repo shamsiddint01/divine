@@ -184,31 +184,6 @@ function fbm(noise: Noise2, x: number, y: number, octaves: number, period = 0): 
   return sum / norm;
 }
 
-/**
- * Hujayra (Worley) shovqini: eng yaqin tasodifiy nuqtagacha masofa (F1). `1 − F1` — yumaloq do'mboqlar;
- * bir necha masshtabda qo'shilsa kumulusning "gulkaram" yuzasi chiqadi.
- */
-function makeWorley(seed: number): Noise2 {
-  const r = rng(seed);
-  const pts = Float32Array.from({ length: 512 }, () => r());
-  const hash = (i: number, j: number) => (((i & 1023) * 73856093) ^ ((j & 1023) * 19349663)) & 255;
-  return (x, y) => {
-    const xi = Math.floor(x);
-    const yi = Math.floor(y);
-    let best = 9;
-    for (let dj = -1; dj <= 1; dj++) {
-      for (let di = -1; di <= 1; di++) {
-        const h = hash(xi + di, yi + dj) * 2;
-        const dx = xi + di + pts[h]! - x;
-        const dy = yi + dj + pts[h + 1]! - y;
-        const d = dx * dx + dy * dy;
-        if (d < best) best = d;
-      }
-    }
-    return Math.sqrt(best);
-  };
-}
-
 // --- Sahna "aktivlari": tasodifiy, lekin har safar bir xil (o'lchamga nisbiy) -----------------------
 interface Star {
   x: number;
@@ -218,19 +193,8 @@ interface Star {
   speed: number;
   color: Rgb;
 }
-interface CloudSlot {
-  x: number;
-  y: number;
-  /** Banner balandligiga nisbatan bulut kengligi. */
-  width: number;
-  speed: number;
-  sprite: number;
-  /** 0 — yaqin (tepada, katta), 1 — ufq yonida (kichik, havo pardasi ortida xira). */
-  depth: number;
-}
 export interface SceneAssets {
   stars: Star[];
-  clouds: CloudSlot[];
   /** Uzoq va yaqinroq qirg'oq tepaliklari (0..1 balandliklar). */
   farHills: number[];
   nearHills: number[];
@@ -256,16 +220,6 @@ export function createSceneAssets(seed = 7): SceneAssets {
     speed: 0.5 + r() * 2,
     color: STAR_COLORS[Math.floor(r() * STAR_COLORS.length)]!,
   }));
-  // Perspektiva: tepadagi bulutlar yaqin va katta, ufqqa yaqinlashgan sari kichrayadi va sekinlashadi
-  const clouds: CloudSlot[] = [
-    { x: 0.04, y: 0.2, width: 1.25, speed: 0.0042, sprite: 0, depth: 0.1 },
-    { x: 0.52, y: 0.13, width: 1.4, speed: 0.0036, sprite: 1, depth: 0.05 },
-    { x: 0.3, y: 0.46, width: 0.78, speed: 0.0031, sprite: 2, depth: 0.45 },
-    { x: 0.78, y: 0.5, width: 0.66, speed: 0.0028, sprite: 3, depth: 0.55 },
-    { x: 0.12, y: 0.7, width: 0.44, speed: 0.0021, sprite: 4, depth: 0.82 },
-    { x: 0.6, y: 0.76, width: 0.36, speed: 0.0019, sprite: 5, depth: 0.9 },
-    { x: 0.9, y: 0.8, width: 0.3, speed: 0.0017, sprite: 2, depth: 0.95 },
-  ];
   const hills = (n: number, f1: number, f2: number) =>
     Array.from({ length: n }, (_, i) => {
       const t = i / (n - 1);
@@ -275,7 +229,6 @@ export function createSceneAssets(seed = 7): SceneAssets {
     });
   return {
     stars,
-    clouds,
     farHills: hills(48, 9.3, 2.1),
     nearHills: hills(40, 5.2, 1.4),
     textures: null,
@@ -284,14 +237,11 @@ export function createSceneAssets(seed = 7): SceneAssets {
 
 // --- Teksturalar (bir marta, offscreen canvas'da) ---------------------------------------------------
 export interface SceneTextures {
-  /** Kunduzgi (quyosh tomondan yoritilgan, tagi ko'kimtir soyada) va shom (ufqdan iliq) bulutlar. */
-  cloudsDay: HTMLCanvasElement[];
-  cloudsWarm: HTMLCanvasElement[];
-  /** Bulut teksturasi tayyor bo'lgan payt (`performance.now()`): paydo bo'lganda ohista ko'rinadi. */
-  cloudsReadyAt: number[];
-  /** Baland patsimon (cirrus) bulutlar: kunduzgi oq va shom pushti-oltin varianti. */
-  cirrusDay: HTMLCanvasElement | null;
-  cirrusWarm: HTMLCanvasElement | null;
+  /** Yumshoq cho'zinchoq bulutlar (tungi osmondagi kabi): kunduzgi oq va shom pushti-oltin varianti. */
+  cloudsDay: HTMLCanvasElement | null;
+  cloudsWarm: HTMLCanvasElement | null;
+  /** Bulutlar tayyor bo'lgan payt (`performance.now()`): paydo bo'lganda ohista ko'rinadi. */
+  cloudsReadyAt: number;
   /** Suv yuzasidagi cho'zinchoq to'lqinlar (kulrang, `overlay` bilan aksni yoritadi/soya qiladi). */
   ripple: HTMLCanvasElement | null;
   ripplePattern?: CanvasPattern | null;
@@ -314,127 +264,26 @@ function canvas(w: number, h: number) {
 }
 
 /**
- * Kumulus bulut (haqiqiy suratlarga qarab), ikki yoritish varianti:
- *  1) massa — bir-biriga kirishgan, har xil kattalikdagi bo'laklar (metaball), tagi deyarli tekis;
- *  2) yuza — 4 masshtabli Worley do'mboqlari ("gulkaram"): chetni mayda gumbazchalarga bo'ladi, ichida
- *     esa har bir gumbazchaga o'z soyasini beradi; ozgina fbm — momiq, yarim shaffof chet;
- *  3) yoritish — har nuqtadan yorug'lik tomonga 12 mayda qadam (Beer qonuni): gumbazchalarning quyosh
- *     tushgan tepasi oppoq, ostki tomoni va bulut tagi kulrang-ko'kimtir; osmondan kelgan tarqoq nur
- *     soyani butunlay qoraytirmaydi.
+ * Yumshoq, cho'zinchoq bulutlar — tungi osmondagi tumansimon bulutlar uslubida: x bo'yicha davriy fbm
+ * parchalari, shamolda gorizontal cho'zilgan, chetlari asta so'nadi. Tepasi yorug', tagi soyada
+ * (zichlik pastga qarab ortgan joy — yuqoridan yoritilgan yuza).
  */
-function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
-  const W = 384;
-  const H = 200;
-  const r = rng(seed);
-  const cells = makeWorley(seed * 29 + 1);
-  const wisp = makeNoise(seed * 17 + 11);
-  const warpX = makeNoise(seed * 7 + 3);
-  const warpY = makeNoise(seed * 13 + 9);
-  const aspect = W / H;
-
-  // Massa: asos qatori + ustma-ust qavatlar; ba'zan yon tomonda kichik "dum" bo'lak
-  const puffs: { x: number; y: number; rad: number }[] = [];
-  const rows = [
-    { n: 8 + Math.floor(r() * 4), y: 0.7, x0: 0.12, x1: 0.88, rad: 0.1 },
-    { n: 5 + Math.floor(r() * 3), y: 0.59, x0: 0.2, x1: 0.8, rad: 0.11 },
-    { n: 3 + Math.floor(r() * 3), y: 0.48, x0: 0.28, x1: 0.72, rad: 0.105 },
-    { n: 1 + Math.floor(r() * 2), y: 0.39, x0: 0.38, x1: 0.62, rad: 0.095 },
-  ];
-  for (const row of rows) {
-    const shift = (r() - 0.5) * 0.12; // qavatlar bir tomonga og'adi — nosimmetrik shakl
-    for (let i = 0; i < row.n; i++) {
-      const t = row.n === 1 ? 0.5 : i / (row.n - 1);
-      const dome = Math.sin(t * Math.PI);
-      puffs.push({
-        x: lerp(row.x0, row.x1, t) + shift + (r() - 0.5) * 0.06,
-        y: row.y - dome * 0.03 + (r() - 0.5) * 0.06,
-        rad: row.rad * (0.65 + dome * 0.5 + r() * 0.35),
-      });
-    }
-  }
-  if (r() < 0.6) {
-    const side = r() < 0.5 ? 0.1 : 0.9;
-    puffs.push({ x: side, y: 0.72, rad: 0.05 + r() * 0.03 });
-  }
-
-  const dens = new Float32Array(W * H);
-  const bumpMap = new Float32Array(W * H);
+function cloudSprites(): [HTMLCanvasElement, HTMLCanvasElement] {
+  const W = 768;
+  const H = 192;
+  const period = 4;
+  const noise = makeNoise(57);
+  const detail = makeNoise(58);
+  const field = new Float32Array(W * H);
   for (let py = 0; py < H; py++) {
-    const v = py / H;
     for (let px = 0; px < W; px++) {
-      const u = px / W;
-      const wu = u + (fbm(warpX, u * 4, v * 4, 2) - 0.5) * 0.07;
-      const wv = v + (fbm(warpY, u * 4, v * 4, 2) - 0.5) * 0.07;
-      let field = 0;
-      for (const p of puffs) {
-        const dy = (wv - p.y) / p.rad;
-        if (dy > 2.4 || dy < -2.4) continue;
-        const dx = ((wu - p.x) * aspect) / p.rad;
-        if (dx > 2.4 || dx < -2.4) continue;
-        field += Math.exp(-(dx * dx + dy * dy) * 1.3);
-      }
-      if (field < 0.1) continue;
-      // Gulkaram: har masshtabda yumaloq do'mboqlar (katta → mayda)
-      const x = wu * aspect;
-      let bumps = 0;
-      let amp = 0.5;
-      let f = 5;
-      for (let o = 0; o < 4; o++) {
-        // Har hujayra — yarim shar (yumaloq gumbazcha), keskin "igna" emas
-        const q = cells(x * f + o * 17, wv * f + o * 31) / 0.78;
-        bumps += amp * Math.sqrt(Math.max(0, 1 - q * q));
-        amp *= 0.5;
-        f *= 2.1;
-      }
-      bumps /= 0.9375;
-      const fluff = fbm(wisp, x * 26, wv * 26, 2);
-      const mass = smoothstep(0.3, 1.5, field);
-      let d = mass * 1.05 + (bumps - 0.38) * 1.2 * (1 - mass * 0.5) + (fluff - 0.5) * 0.12 - 0.04;
-      // Tag: deyarli tekis, lekin chizg'ich bilan emas
-      const baseLine = 0.82 + (fbm(wisp, u * 7, 3.3, 2) - 0.5) * 0.05;
-      d *= smoothstep(baseLine + 0.05, baseLine - 0.07, v);
-      d *=
-        smoothstep(0, 0.06, u) *
-        smoothstep(1, 0.94, u) *
-        smoothstep(0, 0.12, v) *
-        smoothstep(1, 0.93, v);
-      dens[py * W + px] = clamp01(d);
-      bumpMap[py * W + px] = bumps;
+      const u = (px / W) * period;
+      const v = py / H;
+      const n = fbm(noise, u, v * 3.2, 5, period);
+      const fine = fbm(detail, u * 4, v * 12, 3, period * 4);
+      field[py * W + px] = n * 0.85 + fine * 0.15;
     }
   }
-  // Normal uchun silliqlangan zichlik (3×3): hujayra chegaralari "yoriq" chiziq bermasin
-  const soft = new Float32Array(W * H);
-  for (let py = 1; py < H - 1; py++) {
-    for (let px = 1; px < W - 1; px++) {
-      const i = py * W + px;
-      soft[i] =
-        (dens[i]! * 4 +
-          (dens[i - 1]! + dens[i + 1]! + dens[i - W]! + dens[i + W]!) * 2 +
-          dens[i - W - 1]! +
-          dens[i - W + 1]! +
-          dens[i + W - 1]! +
-          dens[i + W + 1]!) /
-        16;
-    }
-  }
-  const softAt = (x: number, y: number) => {
-    const xi = x < 0 ? 0 : x > W - 1 ? W - 1 : x | 0;
-    const yi = y < 0 ? 0 : y > H - 1 ? H - 1 : y | 0;
-    return soft[yi * W + xi]!;
-  };
-  const at = (x: number, y: number) => {
-    const xi = x < 0 ? 0 : x > W - 1 ? W - 1 : x | 0;
-    const yi = y < 0 ? 0 : y > H - 1 ? H - 1 : y | 0;
-    return dens[yi * W + xi]!;
-  };
-  /** Yorug'lik tomonga yig'ilgan qalinlik: 12 mayda qadam (har gumbazcha o'zini soya qiladi). */
-  const optical = (x: number, y: number, lx: number, ly: number) => {
-    let tau = 0;
-    for (let k = 1; k <= 12; k++)
-      tau += at(x + lx * k * 2.2, y + ly * k * 2.2) * (k < 5 ? 1.3 : 0.8);
-    return tau / 12;
-  };
-
   const day = canvas(W, H);
   const warm = canvas(W, H);
   const dCtx = day.getContext('2d');
@@ -442,95 +291,28 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
   if (!dCtx || !wCtx) return [day, warm];
   const dImg = dCtx.createImageData(W, H);
   const wImg = wCtx.createImageData(W, H);
+  const lift = Math.round(H * 0.035);
   for (let py = 0; py < H; py++) {
     const v = py / H;
+    const profile = smoothstep(0, 0.18, v) * smoothstep(1, 0.72, v);
     for (let px = 0; px < W; px++) {
       const i = py * W + px;
-      const d = dens[i]!;
-      // Chet: zich joyda aniq, yupqa joyda momiq yarim shaffof
-      const alpha = smoothstep(0.03, 0.34, d);
-      if (alpha <= 0) continue;
+      const n = field[i]!;
+      const dens = smoothstep(0.5, 0.78, n) * profile;
+      if (dens <= 0) continue;
+      const up = field[Math.max(0, py - lift) * W + px]!;
+      const light = clamp01(0.55 + (n - up) * 6 - dens * 0.15);
       const o = i * 4;
-      const thin = 1 - smoothstep(0.03, 0.4, d);
-      const under = smoothstep(0.5, 0.82, v); // bulut tagi — soyada
-      const bump = bumpMap[i]!;
-
-      // Sirt normali (zichlik maydonining qiyaligi): gumbazchaning quyoshga qaragan yuzi yorug'
-      // Yirik gumbaz (silliq) + mayda do'mboq (nozik) qiyaliklari
-      const gx =
-        (softAt(px + 2, py) - softAt(px - 2, py)) * 0.7 + (at(px + 1, py) - at(px - 1, py)) * 0.6;
-      const gy =
-        (softAt(px, py + 2) - softAt(px, py - 2)) * 0.7 + (at(px, py + 1) - at(px, py - 1)) * 0.6;
-      const nx = -gx * 4.5;
-      const ny = -gy * 4.5;
-      const nl = 1 / Math.hypot(nx, ny, 1);
-
-      // Kunduz: quyosh yuqori-chapda va biroz oldinda; osmon nuri (ko'kimtir) soyani yumshatadi
-      const lit = Math.exp(-optical(px, py, -0.45, -0.89) * 5);
-      const ndl = (nx * -0.5 + ny * -0.68 + 0.54) * nl;
-      const diffuse = 0.5 + 0.5 * ndl; // "o'ralgan" yoritish — soya tomoni ham qora emas
-      const light = clamp01(
-        lit * 0.5 + diffuse * 0.62 + thin * 0.16 + (bump - 0.4) * 0.12 - under * 0.2,
-      );
-      let dc = mix([146, 156, 178], [214, 219, 230], smoothstep(0.15, 0.6, light));
-      dc = mix(dc, WHITE, smoothstep(0.55, 0.9, light));
+      const dc = mix([166, 176, 198], [255, 255, 255], light);
       dImg.data[o] = dc[0];
       dImg.data[o + 1] = dc[1];
       dImg.data[o + 2] = dc[2];
-      dImg.data[o + 3] = alpha * 255;
-
-      // Shom/tong: yorug'lik ufqdan — pastdan, chapdan
-      const litW = Math.exp(-optical(px, py, -0.9, 0.42) * 5);
-      const ndlW = (nx * -0.75 + ny * 0.35 + 0.56) * nl;
-      const lightW = clamp01(
-        litW * 0.6 + (0.5 + 0.5 * ndlW) * 0.45 + thin * 0.3 + under * 0.1 - 0.12,
-      );
-      const shade = mix([58, 46, 88], [132, 84, 128], smoothstep(0, 0.5, lightW));
-      const wc = mix(shade, [255, 184, 122], smoothstep(0.35, 0.95, lightW));
+      dImg.data[o + 3] = dens * 235;
+      const wc = mix([92, 68, 116], [255, 186, 138], light ** 1.2);
       wImg.data[o] = wc[0];
       wImg.data[o + 1] = wc[1];
       wImg.data[o + 2] = wc[2];
-      wImg.data[o + 3] = alpha * 255;
-    }
-  }
-  dCtx.putImageData(dImg, 0, 0);
-  wCtx.putImageData(wImg, 0, 0);
-  return [day, warm];
-}
-
-/** Patsimon (cirrus) bulutlar: shamolda cho'zilgan ingichka tolalar, x bo'yicha davriy. */
-function cirrusSprites(): [HTMLCanvasElement, HTMLCanvasElement] {
-  const W = 512;
-  const H = 96;
-  const noise = makeNoise(77);
-  const warp = makeNoise(78);
-  const period = 3;
-  const day = canvas(W, H);
-  const warm = canvas(W, H);
-  const dCtx = day.getContext('2d');
-  const wCtx = warm.getContext('2d');
-  if (!dCtx || !wCtx) return [day, warm];
-  const dImg = dCtx.createImageData(W, H);
-  const wImg = wCtx.createImageData(W, H);
-  for (let py = 0; py < H; py++) {
-    const v = py / H;
-    for (let px = 0; px < W; px++) {
-      const u = (px / W) * period;
-      const bend = (fbm(warp, u * 1.5, v * 2, 3, period * 1.5) - 0.5) * 0.5;
-      // x bo'yicha kuchli cho'zilgan shovqin — tolalar
-      const streak = fbm(noise, u * 2.2, (v + bend) * 7, 4, period * 2.2);
-      const body = fbm(noise, u * 0.9 + 11, v * 2.2, 3, period * 0.9);
-      const a =
-        clamp01((streak - 0.42) * 1.8) * smoothstep(0.5, 0.72, body) * Math.sin(v * Math.PI) ** 1.5;
-      const o = (py * W + px) * 4;
-      dImg.data[o] = 248;
-      dImg.data[o + 1] = 250;
-      dImg.data[o + 2] = 255;
-      dImg.data[o + 3] = a * 200;
-      wImg.data[o] = 255;
-      wImg.data[o + 1] = 170 + streak * 40;
-      wImg.data[o + 2] = 150;
-      wImg.data[o + 3] = a * 220;
+      wImg.data[o + 3] = dens * 235;
     }
   }
   dCtx.putImageData(dImg, 0, 0);
@@ -688,22 +470,18 @@ function grainSprite(): HTMLCanvasElement {
   return c;
 }
 
-export const CLOUD_SPRITES = 6;
-
 /**
- * Brauzerda teksturalarni yaratadi (bir marta). To'lqin, patsimon va kumulus bulutlar bu yerda YO'Q —
- * ular og'ir (har biri o'nlab ms), shuning uchun `buildNextTexture` bilan birma-bir, sahna
- * ko'ringandan keyin tayyorlanadi. Canvas bo'lmasa (jsdom) — null.
+ * Brauzerda teksturalarni yaratadi (bir marta). To'lqin va bulutlar bu yerda YO'Q — ular og'ir
+ * (o'nlab ms), shuning uchun `buildNextTexture` bilan birma-bir, sahna ko'ringandan keyin
+ * tayyorlanadi. Canvas bo'lmasa (jsdom) — null.
  */
 export function createSceneTextures(): SceneTextures | null {
   const probe = document.createElement('canvas').getContext('2d');
   if (!probe) return null;
   return {
-    cloudsDay: [],
-    cloudsWarm: [],
-    cloudsReadyAt: [],
-    cirrusDay: null,
-    cirrusWarm: null,
+    cloudsDay: null,
+    cloudsWarm: null,
+    cloudsReadyAt: 0,
     ripple: null,
     moon: moonSprite(),
     milkyWay: milkyWaySprite(),
@@ -714,23 +492,17 @@ export function createSceneTextures(): SceneTextures | null {
   };
 }
 
-/** Navbatdagi og'ir teksturani yaratadi (to'lqin → patsimon → kumuluslar); yana bor bo'lsa `true`. */
+/** Navbatdagi og'ir teksturani yaratadi (to'lqin → bulutlar); yana bor bo'lsa `true`. */
 export function buildNextTexture(tx: SceneTextures): boolean {
   if (!tx.ripple) {
     tx.ripple = rippleSprite();
     return true;
   }
-  if (!tx.cirrusDay) {
-    [tx.cirrusDay, tx.cirrusWarm] = cirrusSprites();
-    return true;
+  if (!tx.cloudsDay) {
+    [tx.cloudsDay, tx.cloudsWarm] = cloudSprites();
+    tx.cloudsReadyAt = performance.now();
   }
-  const i = tx.cloudsDay.length;
-  if (i >= CLOUD_SPRITES) return false;
-  const [day, warm] = cloudSprites(101 + i * 13);
-  tx.cloudsDay.push(day);
-  tx.cloudsWarm.push(warm);
-  tx.cloudsReadyAt.push(performance.now());
-  return i + 1 < CLOUD_SPRITES;
+  return false;
 }
 
 // --- Chizish ------------------------------------------------------------------------------------------
@@ -744,12 +516,12 @@ export interface DrawOptions {
   dpr: number;
 }
 
-/** Quyosh diski: chiqish/botishda ufq bo'ylab biroz siljiydi; ufqda kattaroq, qizg'ish. */
+/** Quyosh diski: joyidan siljimaydi — faqat tik chiqadi/botadi; ufqda biroz kattaroq, qizg'ish. */
 function sunGeom(w: number, h: number, hy: number, s: SceneParams) {
   const alt = clamp01(s.sun);
-  const r = Math.max(8, h * 0.055) * lerp(1.18, 1, smoothstep(0, 0.35, alt));
+  const r = Math.max(8, h * 0.06) * lerp(1.12, 1, smoothstep(0, 0.35, alt));
   return {
-    x: w * lerp(0.24, 0.3, smoothstep(-0.1, 0.6, s.sun)),
+    x: w * 0.3,
     y: lerp(hy + r * 0.6, h * 0.2, s.sun),
     r,
     alt,
@@ -758,14 +530,14 @@ function sunGeom(w: number, h: number, hy: number, s: SceneParams) {
 }
 
 /**
- * Oy: sharqdan (o'ngdan) qiya yo'l bilan ko'tariladi / shu yo'l bilan botadi. Ufq yonida kattaroq
- * ko'rinadi va havo qatlami orqali sarg'ish-to'q sariq tusga kiradi.
+ * Oy: o'z joyida (o'ngda) tik ko'tariladi / botadi, yon tomonga siljimaydi. Ufq yonida biroz
+ * kattaroq ko'rinadi va havo qatlami orqali sarg'ish tusga kiradi.
  */
 function moonGeom(w: number, h: number, hy: number, s: SceneParams) {
   const alt = clamp01(s.moon);
-  const r = Math.max(9, h * 0.07) * lerp(1.2, 1, smoothstep(0, 0.4, alt));
+  const r = Math.max(9, h * 0.075) * lerp(1.12, 1, smoothstep(0, 0.4, alt));
   return {
-    x: w * lerp(0.86, 0.76, smoothstep(-0.2, 1, s.moon)),
+    x: w * 0.76,
     y: lerp(hy + r * 1.05, h * 0.25, s.moon),
     r,
     alt,
@@ -930,42 +702,26 @@ function drawSky(
     ctx.restore();
   }
 
-  // Baland patsimon bulutlar: juda sekin suzadi; shomda pushti-oltin
+  // Bulutlar (tungi osmondagi kabi yumshoq, cho'zinchoq): ikki qatlam — tepada yaqin va yirik,
+  // ufqqa yaqin uzoq va mayda (parallaks); shom/tongda pushti-oltin
   const cloudAlpha = clamp01(day * 1.2 - 0.05);
-  if (tx?.cirrusDay && tx.cirrusWarm && cloudAlpha > 0.01) {
-    const cw = w * 1.4;
-    const ch = hy * 0.42;
-    const off = -((time * 0.0016 * w) % cw);
-    for (const k of [0, 1]) {
-      const x = off + k * cw;
-      ctx.globalAlpha = cloudAlpha * 0.55 * (1 - s.warmth);
-      ctx.drawImage(tx.cirrusDay, x, hy * 0.02, cw, ch);
-      if (s.warmth > 0.01) {
-        ctx.globalAlpha = cloudAlpha * 0.75 * s.warmth;
-        ctx.drawImage(tx.cirrusWarm, x, hy * 0.02, cw, ch);
-      }
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  // Kumulus bulutlar: yaqinlari tepada va katta; uzoqlari ufq yonida, havo pardasi ortida xira
-  if (tx && cloudAlpha > 0.01) {
-    for (const c of a.clouds) {
-      const cw = c.width * h;
-      const ch = cw * (200 / 384);
-      const span = w + cw * 1.2;
-      const x = ((((c.x * span + time * c.speed * w) % span) + span) % span) - cw * 0.6;
-      const y = c.y * hy - ch * 0.62;
-      const day = tx.cloudsDay[c.sprite];
-      const warm = tx.cloudsWarm[c.sprite];
-      if (!day || !warm) continue; // hali tayyorlanmoqda
-      const appear = clamp01((performance.now() - tx.cloudsReadyAt[c.sprite]!) / 700);
-      const fade = cloudAlpha * (1 - c.depth * 0.3) * appear;
-      ctx.globalAlpha = fade * (1 - s.warmth);
-      ctx.drawImage(day, x, y, cw, ch);
-      if (s.warmth > 0.01) {
-        ctx.globalAlpha = fade * s.warmth;
-        ctx.drawImage(warm, x, y, cw, ch);
+  if (tx?.cloudsDay && tx.cloudsWarm && cloudAlpha > 0.01) {
+    const appear = clamp01((performance.now() - tx.cloudsReadyAt) / 700);
+    const layers = [
+      { y: -hy * 0.04, hgt: hy * 0.62, scale: 1.7, speed: 0.0032, alpha: 0.95 },
+      { y: hy * 0.36, hgt: hy * 0.44, scale: 0.95, speed: 0.0018, alpha: 0.7 },
+    ];
+    for (const l of layers) {
+      const tileW = w * l.scale;
+      const off = -((time * l.speed * w + l.y * 3) % tileW);
+      const a1 = cloudAlpha * l.alpha * appear;
+      for (let x = off; x < w; x += tileW) {
+        ctx.globalAlpha = a1 * (1 - s.warmth);
+        ctx.drawImage(tx.cloudsDay, x, l.y, tileW, l.hgt);
+        if (s.warmth > 0.01) {
+          ctx.globalAlpha = a1 * s.warmth;
+          ctx.drawImage(tx.cloudsWarm, x, l.y, tileW, l.hgt);
+        }
       }
     }
     ctx.globalAlpha = 1;

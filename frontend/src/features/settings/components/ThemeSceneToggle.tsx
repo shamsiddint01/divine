@@ -150,7 +150,7 @@ export function ThemeSceneToggle() {
       if (!tx) return;
       const more = buildNextTexture(tx);
       // Harakat kamaytirilgan: sikl aylanmaydi — paydo bo'lish animatsiyasisiz, darhol to'liq
-      if (live.current.reduceMotion) tx.cloudsReadyAt[tx.cloudsReadyAt.length - 1]! -= 1000;
+      if (live.current.reduceMotion) tx.cloudsReadyAt -= 1000;
       kick();
       if (more) cloudTimer = window.setTimeout(nextCloud, 16);
     };
