@@ -295,11 +295,7 @@ route('POST', '/sales', ({ body, headers }) => {
     s.customers.push(customer);
     newCustomer = true;
   }
-  const {
-    id: customerId,
-    name: customerName,
-    phone: customerPhone,
-  } = customer ?? notFound();
+  const { id: customerId, name: customerName, phone: customerPhone } = customer ?? notFound();
 
   // "Tranzaksiya": barcha tekshiruvlar o'tdi — endi sale + items + stock ↓ + movements birga yoziladi.
   s.counters.sale += 1;

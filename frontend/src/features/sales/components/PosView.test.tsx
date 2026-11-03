@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { WALK_IN_CUSTOMER_NAME } from '@divine/shared';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { t } from '@/i18n/uz';
 import { setMockLatency } from '@/mocks';
@@ -13,30 +14,47 @@ afterEach(() => {
 });
 
 describe('POS — sotuv oqimi', () => {
-  it('mijoz ismisiz sotuv rad etiladi (BR-05); ism kiritilsa sotuv yakunlanadi va qoldiq kamayadi', async () => {
+  it('mijoz ismisiz sotuv "Noma’lum mijoz"ga yoziladi; ism kiritilsa — shu mijozga', async () => {
     const { state } = renderApp('/sales');
     const user = userEvent.setup();
+    const addFirstProduct = async () => {
+      const cards = await screen.findAllByRole('button', { name: /so‘m/ }, PAGE);
+      const card = cards.find((c) => !c.hasAttribute('disabled'));
+      if (!card) throw new Error('mahsulot topilmadi');
+      await user.click(card);
+      expect(await screen.findByLabelText(new RegExp(t.sales.cart.quantity))).toBeInTheDocument();
+    };
+    const closeReceipt = async () => {
+      await user.keyboard('{Escape}');
+      await waitFor(() => expect(screen.queryByText(t.sales.receipt.title)).toBeNull());
+    };
 
-    // Birinchi mavjud mahsulot kartochkasini savatga qo'shish
+    const salesBefore = state.sales.length;
+    await addFirstProduct();
+    await user.click(screen.getByRole('button', { name: t.sales.confirm }));
+    let dialog = await screen.findByRole('dialog', {}, PAGE);
+    expect(within(dialog).getByText(t.sales.receipt.title)).toBeInTheDocument();
+    expect(within(dialog).getByText(WALK_IN_CUSTOMER_NAME)).toBeInTheDocument();
+    await waitFor(() => expect(state.sales.length).toBe(salesBefore + 1));
+    await closeReceipt();
+
+    await addFirstProduct();
+    await user.type(screen.getByLabelText(new RegExp(t.sales.customer.name)), 'Test Mijoz');
+    await user.click(screen.getByRole('button', { name: t.sales.confirm }));
+    dialog = await screen.findByRole('dialog', {}, PAGE);
+    expect(within(dialog).getByText('Test Mijoz')).toBeInTheDocument();
+    await waitFor(() => expect(state.sales.length).toBe(salesBefore + 2));
+  });
+
+  it('savat ostida jami mahsulot soni ko‘rsatiladi', async () => {
+    renderApp('/sales');
+    const user = userEvent.setup();
     const cards = await screen.findAllByRole('button', { name: /so‘m/ }, PAGE);
     const card = cards.find((c) => !c.hasAttribute('disabled'));
     if (!card) throw new Error('mahsulot topilmadi');
     await user.click(card);
-    expect(await screen.findByLabelText(new RegExp(t.sales.cart.quantity))).toBeInTheDocument();
-
-    const confirm = screen.getByRole('button', { name: t.sales.confirm });
-    await user.click(confirm);
-    expect(await screen.findByText(t.sales.customer.title)).toBeInTheDocument();
-    expect(screen.getByRole('alert')).toHaveTextContent('Mijoz ismi majburiy');
-
-    const salesBefore = state.sales.length;
-    await user.type(screen.getByLabelText(new RegExp(t.sales.customer.name)), 'Test Mijoz');
-    await user.click(confirm);
-
-    const dialog = await screen.findByRole('dialog', {}, PAGE);
-    expect(within(dialog).getByText(t.sales.receipt.title)).toBeInTheDocument();
-    expect(within(dialog).getByText('Test Mijoz')).toBeInTheDocument();
-    await waitFor(() => expect(state.sales.length).toBe(salesBefore + 1));
+    await user.click(card);
+    expect(await screen.findByText(t.sales.cart.totalQuantity('2'))).toBeInTheDocument();
   });
 
   it('omborlar yuklanmasa xato holati ("ombor biriktirilmagan" emas), qayta urinishda tiklanadi', async () => {
