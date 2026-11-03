@@ -108,7 +108,8 @@ export type { SalesListResponse, SalesSummary } from '@divine/shared';
 
 export interface CreateSaleInput {
   warehouseId: string;
-  customer: { id: string } | { name: string; phone?: string | null };
+  /** Ism ixtiyoriy: bo'sh yoki `null` — server umumiy "Noma’lum mijoz"ga yozadi. */
+  customer: { id: string } | { name?: string | null; phone?: string | null };
   items: { productId: string; quantity: Quantity }[];
 }
 
