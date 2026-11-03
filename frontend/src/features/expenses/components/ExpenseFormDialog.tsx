@@ -91,10 +91,6 @@ export function ExpenseFormDialog({
 
   useEffect(() => {
     if (!open) return;
-    setCreating(false);
-    setNewName('');
-    setNewError(null);
-    setJustCreated(null);
     reset(
       expense
         ? {
@@ -106,6 +102,17 @@ export function ExpenseFormDialog({
         : { date: todayInTashkent(), amount: '', categoryId: '', note: '' },
     );
   }, [open, expense, reset]);
+
+  /** Oyna yopilganda "yangi kategoriya" holati tozalanadi — keyingi ochilishda ro'yxatdan boshlanadi. */
+  const close = (next: boolean) => {
+    if (!next) {
+      setCreating(false);
+      setNewName('');
+      setNewError(null);
+      setJustCreated(null);
+    }
+    onOpenChange(next);
+  };
 
   /** Yangi kategoriyani qo'shib, formada tanlaydi; xato bo'lsa — nom maydoni ostida. */
   const addCategory = async (): Promise<string | null> => {
@@ -149,7 +156,7 @@ export function ExpenseFormDialog({
         },
       });
       toast.success(expense ? t.expenses.form.updated : t.expenses.form.created);
-      onOpenChange(false);
+      close(false);
     } catch (error) {
       if (!applyFieldErrors(error, setError)) toastError(error);
     }
@@ -164,7 +171,7 @@ export function ExpenseFormDialog({
 
   const e = formState.errors;
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={close}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
@@ -303,7 +310,7 @@ export function ExpenseFormDialog({
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={() => onOpenChange(false)}
+            onClick={() => close(false)}
             disabled={formState.isSubmitting}
           >
             {t.common.cancel}
