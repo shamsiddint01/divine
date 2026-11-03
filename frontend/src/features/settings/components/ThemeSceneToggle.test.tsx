@@ -78,4 +78,20 @@ describe('sahna kalit kadrlari', () => {
     expect(sunset[2]).toBeLessThan(100);
     expect(sceneParams({ dir: 'toNight', p: 1, direct: false }).night).toBe(1);
   });
+
+  it('oy: kunduz → tun — ufq ostidan ko‘tariladi; tun → kunduz — ufq ortiga botadi', () => {
+    const moonAt = (dir: 'toDay' | 'toNight', p: number) =>
+      sceneParams({ dir, p, direct: false }).moon;
+    // Shom: quyosh botguncha oy ufq ostida, keyin bir tekis ko'tariladi
+    expect(moonAt('toNight', 0)).toBeLessThan(0);
+    expect(moonAt('toNight', 0.45)).toBeLessThan(0);
+    expect(moonAt('toNight', 0.7)).toBeGreaterThan(0);
+    expect(moonAt('toNight', 0.85)).toBeGreaterThan(moonAt('toNight', 0.7));
+    expect(moonAt('toNight', 1)).toBe(1);
+    // Tong: oy pasayib, quyosh chiqishidan oldin ufq ortiga o'tadi
+    expect(moonAt('toDay', 0)).toBe(1);
+    expect(moonAt('toDay', 0.3)).toBeLessThan(moonAt('toDay', 0.1));
+    expect(moonAt('toDay', 0.6)).toBeLessThan(0);
+    expect(moonAt('toDay', 1)).toBeLessThan(0);
+  });
 });
