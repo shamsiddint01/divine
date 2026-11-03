@@ -140,7 +140,9 @@ describe('Xarajatlar: admin (D-19)', () => {
       await within(dialog).findByRole('combobox', { name: /Kategoriya/ }, PAGE),
     ).toHaveTextContent('Bank xizmatlari');
     const admin = db().users.find((u) => u.login === 'admin')!;
-    expect(db().expenseCategories.find((c) => c.name === 'Bank xizmatlari')?.createdBy).toBe(admin.id);
+    expect(db().expenseCategories.find((c) => c.name === 'Bank xizmatlari')?.createdBy).toBe(
+      admin.id,
+    );
   });
 
   it('to‘liq ro‘yxat, "Jami" va kategoriyalar tugmasi', async () => {
