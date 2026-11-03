@@ -42,6 +42,9 @@ export interface ExpenseCategoryRow {
   id: string;
   name: string;
   isActive: boolean;
+  createdById: string;
+  createdByLogin: string;
+  createdByFullName: string | null;
   expenseCount: number;
   createdAt: Date;
   updatedAt: Date;
@@ -67,7 +70,9 @@ const SORT_COLUMNS: Readonly<Record<ExpenseSortField, Prisma.Sql>> = {
 const CATEGORY_COLUMNS = Prisma.sql`
   c.id, c.name, c.is_active AS "isActive",
   (SELECT count(*)::int FROM expenses e WHERE e.category_id = c.id) AS "expenseCount",
+  c.created_by AS "createdById", cu.login AS "createdByLogin", cu.full_name AS "createdByFullName",
   c.created_at AS "createdAt", c.updated_at AS "updatedAt"`;
+const CATEGORY_FROM = Prisma.sql`expense_categories c JOIN users cu ON cu.id = c.created_by`;
 
 /**
  * Xarajatlar va kategoriyalar — data access (DATABASE §4.15–4.16). Soft-delete qilingan xarajat
@@ -165,13 +170,18 @@ export class ExpensesRepository {
 
   // ─── Kategoriyalar ────────────────────────────────────────────────────────
 
-  async listCategories(filter: { isActive?: boolean }): Promise<ExpenseCategoryRow[]> {
-    const where =
-      filter.isActive === undefined
-        ? Prisma.empty
-        : Prisma.sql`WHERE c.is_active = ${filter.isActive}`;
+  /** `ownerId` — faqat shu user qo'shgan kategoriyalar (sotuvchi doirasi). */
+  async listCategories(filter: {
+    isActive?: boolean;
+    ownerId?: string;
+  }): Promise<ExpenseCategoryRow[]> {
+    const conditions: Prisma.Sql[] = [Prisma.sql`TRUE`];
+    if (filter.isActive !== undefined) conditions.push(Prisma.sql`c.is_active = ${filter.isActive}`);
+    if (filter.ownerId) conditions.push(Prisma.sql`c.created_by = ${filter.ownerId}::uuid`);
     return this.prisma.$queryRaw<ExpenseCategoryRow[]>`
-      SELECT ${CATEGORY_COLUMNS} FROM expense_categories c ${where} ORDER BY lower(c.name), c.id`;
+      SELECT ${CATEGORY_COLUMNS} FROM ${CATEGORY_FROM}
+       WHERE ${Prisma.join(conditions, ' AND ')}
+       ORDER BY lower(c.name), c.id`;
   }
 
   async findCategory(
@@ -179,7 +189,7 @@ export class ExpensesRepository {
     client: Tx | PrismaService = this.prisma,
   ): Promise<ExpenseCategoryRow | null> {
     const rows = await client.$queryRaw<ExpenseCategoryRow[]>`
-      SELECT ${CATEGORY_COLUMNS} FROM expense_categories c WHERE c.id = ${id}::uuid`;
+      SELECT ${CATEGORY_COLUMNS} FROM ${CATEGORY_FROM} WHERE c.id = ${id}::uuid`;
     return rows[0] ?? null;
   }
 
@@ -187,26 +197,38 @@ export class ExpensesRepository {
    * Xarajatga biriktirishdan oldin: `FOR SHARE` — parallel nofaol qilish yoki o'chirish tranzaksiya
    * tugaguncha kutadi, shuning uchun nofaol kategoriyaga xarajat yozilib qolmaydi.
    */
-  async shareCategory(tx: Tx, id: string): Promise<{ id: string; isActive: boolean } | null> {
-    const rows = await tx.$queryRaw<{ id: string; isActive: boolean }[]>`
-      SELECT id, is_active AS "isActive" FROM expense_categories WHERE id = ${id}::uuid FOR SHARE`;
+  async shareCategory(
+    tx: Tx,
+    id: string,
+  ): Promise<{ id: string; isActive: boolean; createdById: string } | null> {
+    const rows = await tx.$queryRaw<{ id: string; isActive: boolean; createdById: string }[]>`
+      SELECT id, is_active AS "isActive", created_by AS "createdById"
+        FROM expense_categories WHERE id = ${id}::uuid FOR SHARE`;
     return rows[0] ?? null;
   }
 
   async lockCategory(
     tx: Tx,
     id: string,
-  ): Promise<{ id: string; name: string; isActive: boolean } | null> {
-    const rows = await tx.$queryRaw<{ id: string; name: string; isActive: boolean }[]>`
-      SELECT id, name, is_active AS "isActive" FROM expense_categories
+  ): Promise<{ id: string; name: string; isActive: boolean; createdById: string } | null> {
+    const rows = await tx.$queryRaw<
+      { id: string; name: string; isActive: boolean; createdById: string }[]
+    >`
+      SELECT id, name, is_active AS "isActive", created_by AS "createdById" FROM expense_categories
        WHERE id = ${id}::uuid FOR UPDATE`;
     return rows[0] ?? null;
   }
 
-  async categoryNameTaken(tx: Tx, name: string, exceptId?: string): Promise<boolean> {
+  /** Nom bitta egasi (kategoriyani qo'shgan user) ichida noyob — turli userlarda takrorlanishi mumkin. */
+  async categoryNameTaken(
+    tx: Tx,
+    name: string,
+    ownerId: string,
+    exceptId?: string,
+  ): Promise<boolean> {
     const rows = await tx.$queryRaw<{ id: string }[]>`
       SELECT id FROM expense_categories
-       WHERE lower(name) = lower(${name})
+       WHERE created_by = ${ownerId}::uuid AND lower(name) = lower(${name})
          AND (${exceptId ?? null}::uuid IS NULL OR id <> ${exceptId ?? null}::uuid)`;
     return rows.length > 0;
   }

@@ -497,7 +497,8 @@ model SaleItem {
 
 // ─── Finance ───────────────────────────────────────────────────────────────────────────────────
 
-/// `name` uchun case-insensitive unique: `expense_categories_name_lower_key` (migratsiyada).
+/// Har bir user ichida `name` case-insensitive unique: `expense_categories_owner_name_lower_key`
+/// ON (created_by, lower(name)) (migratsiyada). Sotuvchi faqat o'z kategoriyalarini ko'radi.
 model ExpenseCategory {
   id          String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
   name        String   @db.VarChar(100)

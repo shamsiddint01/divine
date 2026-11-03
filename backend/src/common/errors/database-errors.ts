@@ -106,7 +106,7 @@ const UNIQUE_CONSTRAINTS: Readonly<Record<string, { code: ErrorCode; field: stri
   products_barcode_key: { code: ErrorCode.BARCODE_TAKEN, field: 'barcode' },
   product_groups_name_lower_key: { code: ErrorCode.NAME_TAKEN, field: 'name' },
   warehouses_name_lower_key: { code: ErrorCode.NAME_TAKEN, field: 'name' },
-  expense_categories_name_lower_key: { code: ErrorCode.NAME_TAKEN, field: 'name' },
+  expense_categories_owner_name_lower_key: { code: ErrorCode.NAME_TAKEN, field: 'name' },
 };
 
 /** CHECK constraint → biznes kodi (qolganlari — VALIDATION_ERROR). */
