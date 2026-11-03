@@ -184,6 +184,31 @@ function fbm(noise: Noise2, x: number, y: number, octaves: number, period = 0): 
   return sum / norm;
 }
 
+/**
+ * Hujayra (Worley) shovqini: eng yaqin tasodifiy nuqtagacha masofa (F1). `1 − F1` — yumaloq do'mboqlar;
+ * bir necha masshtabda qo'shilsa kumulusning "gulkaram" yuzasi chiqadi.
+ */
+function makeWorley(seed: number): Noise2 {
+  const r = rng(seed);
+  const pts = Float32Array.from({ length: 512 }, () => r());
+  const hash = (i: number, j: number) => (((i & 1023) * 73856093) ^ ((j & 1023) * 19349663)) & 255;
+  return (x, y) => {
+    const xi = Math.floor(x);
+    const yi = Math.floor(y);
+    let best = 9;
+    for (let dj = -1; dj <= 1; dj++) {
+      for (let di = -1; di <= 1; di++) {
+        const h = hash(xi + di, yi + dj) * 2;
+        const dx = xi + di + pts[h]! - x;
+        const dy = yi + dj + pts[h + 1]! - y;
+        const d = dx * dx + dy * dy;
+        if (d < best) best = d;
+      }
+    }
+    return Math.sqrt(best);
+  };
+}
+
 // --- Sahna "aktivlari": tasodifiy, lekin har safar bir xil (o'lchamga nisbiy) -----------------------
 interface Star {
   x: number;
@@ -287,87 +312,99 @@ function canvas(w: number, h: number) {
 }
 
 /**
- * Kumulus bulut, ikki yoritish varianti. Uch bosqich:
- *  1) shakl — "egiltirilgan" (domain warp) koordinatalarda gumbazlar (metaball), tagi tekis, yuzasi
- *     "gulkaram" bo'laklari bilan;
- *  2) zichlik — chetlari fbm bilan yemiriladi, tekstura chegarasida yumshoq so'nadi;
- *  3) yoritish — har nuqtadan yorug'lik tomonga qadamlab bulut qalinligi yig'iladi (Beer qonuni):
- *     kunduzi yorug'lik yuqori-chapdan (quyosh tomoni), shomda — ufqdan, pastdan. Yupqa chetlar
- *     nurni o'tkazib "kumush chet" beradi, tagi osmon rangidagi ko'kimtir soyada qoladi.
+ * Kumulus bulut (haqiqiy suratlarga qarab), ikki yoritish varianti:
+ *  1) massa — bir-biriga kirishgan, har xil kattalikdagi bo'laklar (metaball), tagi deyarli tekis;
+ *  2) yuza — 4 masshtabli Worley do'mboqlari ("gulkaram"): chetni mayda gumbazchalarga bo'ladi, ichida
+ *     esa har bir gumbazchaga o'z soyasini beradi; ozgina fbm — momiq, yarim shaffof chet;
+ *  3) yoritish — har nuqtadan yorug'lik tomonga 12 mayda qadam (Beer qonuni): gumbazchalarning quyosh
+ *     tushgan tepasi oppoq, ostki tomoni va bulut tagi kulrang-ko'kimtir; osmondan kelgan tarqoq nur
+ *     soyani butunlay qoraytirmaydi.
  */
 function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
-  const W = 320;
-  const H = 160;
+  const W = 384;
+  const H = 200;
   const r = rng(seed);
-  const shape = makeNoise(seed * 31 + 5);
-  const erode = makeNoise(seed * 17 + 11);
+  const cells = makeWorley(seed * 29 + 1);
+  const wisp = makeNoise(seed * 17 + 11);
   const warpX = makeNoise(seed * 7 + 3);
   const warpY = makeNoise(seed * 13 + 9);
   const aspect = W / H;
-  const lobeMap = new Float32Array(W * H);
 
-  // Bir-biriga kirishgan bo'laklar: keng asos qatori, ustida ikkinchi va uchinchi qavat (yaxlit massa)
+  // Massa: asos qatori + ustma-ust qavatlar; ba'zan yon tomonda kichik "dum" bo'lak
   const puffs: { x: number; y: number; rad: number }[] = [];
   const rows = [
-    { n: 9 + Math.floor(r() * 3), y: 0.68, x0: 0.13, x1: 0.87, rad: 0.11 },
-    { n: 5 + Math.floor(r() * 3), y: 0.55, x0: 0.24, x1: 0.76, rad: 0.115 },
-    { n: 2 + Math.floor(r() * 3), y: 0.42, x0: 0.34, x1: 0.66, rad: 0.11 },
+    { n: 8 + Math.floor(r() * 4), y: 0.68, x0: 0.12, x1: 0.88, rad: 0.1 },
+    { n: 5 + Math.floor(r() * 3), y: 0.56, x0: 0.2, x1: 0.8, rad: 0.11 },
+    { n: 3 + Math.floor(r() * 3), y: 0.44, x0: 0.28, x1: 0.72, rad: 0.11 },
+    { n: 1 + Math.floor(r() * 2), y: 0.33, x0: 0.38, x1: 0.62, rad: 0.1 },
   ];
   for (const row of rows) {
+    const shift = (r() - 0.5) * 0.12; // qavatlar bir tomonga og'adi — nosimmetrik shakl
     for (let i = 0; i < row.n; i++) {
       const t = row.n === 1 ? 0.5 : i / (row.n - 1);
       const dome = Math.sin(t * Math.PI);
       puffs.push({
-        x: lerp(row.x0, row.x1, t) + (r() - 0.5) * 0.05,
-        y: row.y - dome * 0.04 + (r() - 0.5) * 0.05,
-        rad: row.rad * (0.7 + dome * 0.45 + r() * 0.3),
+        x: lerp(row.x0, row.x1, t) + shift + (r() - 0.5) * 0.06,
+        y: row.y - dome * 0.03 + (r() - 0.5) * 0.06,
+        rad: row.rad * (0.65 + dome * 0.5 + r() * 0.35),
       });
     }
   }
+  if (r() < 0.6) {
+    const side = r() < 0.5 ? 0.1 : 0.9;
+    puffs.push({ x: side, y: 0.7, rad: 0.05 + r() * 0.03 });
+  }
 
   const dens = new Float32Array(W * H);
+  const bumpMap = new Float32Array(W * H);
   for (let py = 0; py < H; py++) {
     const v = py / H;
     for (let px = 0; px < W; px++) {
       const u = px / W;
-      const wu = u + (fbm(warpX, u * 4, v * 4, 2) - 0.5) * 0.08;
-      const wv = v + (fbm(warpY, u * 4, v * 4, 2) - 0.5) * 0.08;
+      const wu = u + (fbm(warpX, u * 4, v * 4, 2) - 0.5) * 0.07;
+      const wv = v + (fbm(warpY, u * 4, v * 4, 2) - 0.5) * 0.07;
       let field = 0;
       for (const p of puffs) {
-        // exp(−1.4·d²) d > 2.3 da ~0 — uzoq bo'laklar hisoblanmaydi (generatsiya ~3× tez)
         const dy = (wv - p.y) / p.rad;
-        if (dy > 2.3 || dy < -2.3) continue;
+        if (dy > 2.4 || dy < -2.4) continue;
         const dx = ((wu - p.x) * aspect) / p.rad;
-        if (dx > 2.3 || dx < -2.3) continue;
-        field += Math.exp(-(dx * dx + dy * dy) * 1.4);
+        if (dx > 2.4 || dx < -2.4) continue;
+        field += Math.exp(-(dx * dx + dy * dy) * 1.3);
       }
-      // "Gulkaram": billowy shovqin (|2n−1|) chetni mayda gumbazchalarga bo'ladi
-      // Bulutdan uzoq bo'sh joy — shovqin hisoblanmaydi
-      if (field < 0.12) continue;
-      const billow = 1 - Math.abs(fbm(shape, u * 9 * aspect, v * 9, 4) * 2 - 1);
-      const fine = fbm(erode, u * 22 * aspect, v * 22, 2);
-      const mass = smoothstep(0.35, 1.6, field);
-      let d = mass * 1.15 - (1 - billow) * 0.55 * (1 - mass * 0.7) - (1 - fine) * 0.12 + 0.06;
-      d *= smoothstep(0.86, 0.75, v); // tekis tag (kondensatsiya sathi)
+      if (field < 0.1) continue;
+      // Gulkaram: har masshtabda yumaloq do'mboqlar (katta → mayda)
+      const x = wu * aspect;
+      let bumps = 0;
+      let amp = 0.5;
+      let f = 5;
+      for (let o = 0; o < 4; o++) {
+        bumps += amp * (1 - Math.min(1, cells(x * f + o * 17, wv * f + o * 31) * 1.15)) ** 2;
+        amp *= 0.5;
+        f *= 2.1;
+      }
+      bumps /= 0.9375;
+      const fluff = fbm(wisp, x * 26, wv * 26, 2);
+      const mass = smoothstep(0.3, 1.5, field);
+      let d = mass * 1.05 + (bumps - 0.32) * 1.1 * (1 - mass * 0.55) + (fluff - 0.5) * 0.14 - 0.05;
+      // Tag: deyarli tekis, lekin chizg'ich bilan emas
+      const baseLine = 0.8 + (fbm(wisp, u * 7, 3.3, 2) - 0.5) * 0.05;
+      d *= smoothstep(baseLine + 0.05, baseLine - 0.07, v);
       d *=
-        smoothstep(0, 0.07, u) *
-        smoothstep(1, 0.93, u) *
-        smoothstep(0, 0.08, v) *
-        smoothstep(1, 0.9, v);
+        smoothstep(0, 0.06, u) * smoothstep(1, 0.94, u) * smoothstep(0, 0.07, v) * smoothstep(1, 0.93, v);
       dens[py * W + px] = clamp01(d);
-      lobeMap[py * W + px] = billow;
+      bumpMap[py * W + px] = bumps;
     }
   }
   const at = (x: number, y: number) => {
-    const xi = Math.min(W - 1, Math.max(0, Math.round(x)));
-    const yi = Math.min(H - 1, Math.max(0, Math.round(y)));
+    const xi = x < 0 ? 0 : x > W - 1 ? W - 1 : x | 0;
+    const yi = y < 0 ? 0 : y > H - 1 ? H - 1 : y | 0;
     return dens[yi * W + xi]!;
   };
-  /** Nuqtadan yorug'lik yo'nalishi bo'yicha qalinlik (8 qadam). */
+  /** Yorug'lik tomonga yig'ilgan qalinlik: 12 mayda qadam (har gumbazcha o'zini soya qiladi). */
   const optical = (x: number, y: number, lx: number, ly: number) => {
     let tau = 0;
-    for (let k = 1; k <= 8; k++) tau += at(x + lx * k * 4, y + ly * k * 4);
-    return tau / 8;
+    for (let k = 1; k <= 12; k++) tau += at(x + lx * k * 2.2, y + ly * k * 2.2) * (k < 5 ? 1.3 : 0.8);
+    return tau / 12;
   };
 
   const day = canvas(W, H);
@@ -382,28 +419,29 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
     for (let px = 0; px < W; px++) {
       const i = py * W + px;
       const d = dens[i]!;
-      const alpha = smoothstep(0.05, 0.32, d);
+      // Chet: zich joyda aniq, yupqa joyda momiq yarim shaffof
+      const alpha = smoothstep(0.03, 0.34, d);
       if (alpha <= 0) continue;
       const o = i * 4;
-      const edge = 1 - smoothstep(0.05, 0.4, d); // yupqa chet — nur o'tadi
-      const baseShade = smoothstep(0.45, 0.82, v); // tagi — soyada
+      const thin = 1 - smoothstep(0.03, 0.4, d);
+      const under = smoothstep(0.5, 0.82, v); // bulut tagi — soyada
+      const bump = bumpMap[i]!;
 
-      // Kunduz: yorug'lik yuqori-chapdan
-      const lit = Math.exp(-optical(px, py, -0.5, -0.86) * 4.2);
-      const lobe = 0.82 + (lobeMap[i]! - 0.5) * 0.5; // bo'lak tepasi yorug', orasi soyada
-      const lightDay = clamp01((lit * 0.9 + 0.12) * lobe + edge * 0.35 - baseShade * 0.22);
-      let dc = mix([132, 148, 178], [244, 247, 252], lightDay);
-      dc = mix(dc, WHITE, clamp01((lightDay - 0.78) * 3) * 0.9); // quyosh tushgan cho'qqilar oppoq
+      // Kunduz: quyosh yuqori-chapda; osmon nuri (ko'kimtir) soyani yumshatadi
+      const lit = Math.exp(-optical(px, py, -0.45, -0.89) * 5.5);
+      const light = clamp01(lit * 0.78 + 0.2 + thin * 0.25 + (bump - 0.3) * 0.25 - under * 0.2);
+      let dc = mix([132, 142, 165], [206, 211, 222], smoothstep(0.05, 0.55, light));
+      dc = mix(dc, WHITE, smoothstep(0.5, 0.92, light));
       dImg.data[o] = dc[0];
       dImg.data[o + 1] = dc[1];
       dImg.data[o + 2] = dc[2];
       dImg.data[o + 3] = alpha * 255;
 
       // Shom/tong: yorug'lik ufqdan — pastdan, chapdan
-      const litW = Math.exp(-optical(px, py, -0.9, 0.42) * 4);
-      const lightWarm = clamp01(litW * 0.95 * lobe + edge * 0.4 + baseShade * 0.15);
-      const shade = mix([62, 50, 92], [138, 88, 132], clamp01(lightWarm * 1.5));
-      const wc = mix(shade, [255, 186, 124], clamp01(lightWarm ** 1.3 * 1.15));
+      const litW = Math.exp(-optical(px, py, -0.9, 0.42) * 5);
+      const lightW = clamp01(litW * 0.9 + thin * 0.35 + (bump - 0.3) * 0.2 + under * 0.12);
+      const shade = mix([58, 46, 88], [132, 84, 128], smoothstep(0, 0.5, lightW));
+      const wc = mix(shade, [255, 184, 122], smoothstep(0.35, 0.95, lightW));
       wImg.data[o] = wc[0];
       wImg.data[o + 1] = wc[1];
       wImg.data[o + 2] = wc[2];
