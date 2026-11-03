@@ -500,8 +500,8 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
 
 /** Patsimon (cirrus) bulutlar: shamolda cho'zilgan ingichka tolalar, x bo'yicha davriy. */
 function cirrusSprites(): [HTMLCanvasElement, HTMLCanvasElement] {
-  const W = 640;
-  const H = 120;
+  const W = 512;
+  const H = 96;
   const noise = makeNoise(77);
   const warp = makeNoise(78);
   const period = 3;
@@ -518,7 +518,7 @@ function cirrusSprites(): [HTMLCanvasElement, HTMLCanvasElement] {
       const u = (px / W) * period;
       const bend = (fbm(warp, u * 1.5, v * 2, 3, period * 1.5) - 0.5) * 0.5;
       // x bo'yicha kuchli cho'zilgan shovqin — tolalar
-      const streak = fbm(noise, u * 2.2, (v + bend) * 7, 5, period * 2.2);
+      const streak = fbm(noise, u * 2.2, (v + bend) * 7, 4, period * 2.2);
       const body = fbm(noise, u * 0.9 + 11, v * 2.2, 3, period * 0.9);
       const a =
         clamp01((streak - 0.42) * 1.8) * smoothstep(0.5, 0.72, body) * Math.sin(v * Math.PI) ** 1.5;
