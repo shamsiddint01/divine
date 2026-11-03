@@ -1,7 +1,8 @@
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { useCurrentUser } from '@/features/session/api/session';
 import { hasAny, usePermissions } from '@/features/session/hooks/use-permissions';
+import { playSplashOnce } from '@/shared/lib/splash';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { findNavItem } from '../navigation-context';
 import { ForbiddenPage } from '../pages/ForbiddenPage';
@@ -41,6 +42,8 @@ function SectionGate() {
  * (`MobileNav`): `--mobile-nav-h` — uning balandligi; sahifa oxiri va sticky paneller uning ostida qolmaydi.
  */
 export function AppLayout() {
+  // Ichki saytga kirganda logotip animatsiyasi — sessiyada bir marta (logindan keyin esa har safar).
+  useEffect(() => playSplashOnce(), []);
   return (
     <div className="flex min-h-svh [--mobile-nav-h:calc(4rem+env(safe-area-inset-bottom))] md:[--mobile-nav-h:0px]">
       <Sidebar />

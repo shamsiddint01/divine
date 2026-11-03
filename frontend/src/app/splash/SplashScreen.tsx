@@ -1,6 +1,6 @@
 import { type CSSProperties, useEffect, useRef, useState } from 'react';
 import { t } from '@/i18n/uz';
-import { SPLASH_EVENT } from '@/shared/lib/splash';
+import { SPLASH_EVENT, consumePendingSplash } from '@/shared/lib/splash';
 import { D, HIGHLIGHT, IVINE, STAR, STAR_X, UZ, WIDTH } from '@/shared/ui/brand-paths';
 import { useUiStore } from '@/stores/ui.store';
 import './splash.css';
@@ -37,15 +37,6 @@ function motionAllowed(): boolean {
   return !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 }
 
-function shouldShow(): boolean {
-  if (!motionAllowed()) return false;
-  try {
-    return sessionStorage.getItem(SEEN_KEY) !== '1';
-  } catch {
-    return true;
-  }
-}
-
 /** Sahifada ko'rinib turgan to'liq logotip (splashning o'zidan tashqari). */
 function findTarget(): Element | null {
   for (const el of document.querySelectorAll('[data-brand-logo]')) {
@@ -59,34 +50,29 @@ function findTarget(): Element | null {
 type Phase = 'intro' | 'exit' | 'skip' | 'done';
 
 export function SplashScreen() {
-  const [phase, setPhase] = useState<Phase>(() => (shouldShow() ? 'intro' : 'done'));
+  const [phase, setPhase] = useState<Phase>('done');
   const theme = useUiStore((s) => s.theme);
   const logoRef = useRef<SVGSVGElement>(null);
-  // Landing doim qora — u yerda och mavzuda ham qorong'i splash (o'tish sakramasin).
-  const [variant, setVariant] = useState(() =>
-    window.location.pathname.startsWith('/welcome') ? 'dark' : theme,
-  );
+  const [variant, setVariant] = useState(theme);
   // Har qayta ijro — yangi `key`: CSS animatsiyalari boshidan boshlanadi.
   const [run, setRun] = useState(0);
 
   useEffect(() => {
     const replay = () => {
+      consumePendingSplash();
       if (!motionAllowed()) return;
       setVariant(useUiStore.getState().theme);
       setRun((n) => n + 1);
       setPhase('intro');
     };
     window.addEventListener(SPLASH_EVENT, replay);
+    // Signal shu komponent tinglay boshlashidan oldin kelgan bo'lsa (bir xil birinchi render).
+    if (consumePendingSplash()) replay();
     return () => window.removeEventListener(SPLASH_EVENT, replay);
   }, []);
 
   useEffect(() => {
     if (phase !== 'intro') return;
-    try {
-      sessionStorage.setItem(SEEN_KEY, '1');
-    } catch {
-      // Xotira yopiq — keyingi kirishda yana ko'rsatiladi.
-    }
     const timer = window.setTimeout(() => setPhase('exit'), INTRO_MS);
     const skip = () => setPhase('skip');
     window.addEventListener('keydown', skip);
