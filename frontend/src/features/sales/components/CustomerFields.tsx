@@ -20,7 +20,10 @@ interface CustomerFieldsProps {
   errors: { name?: string; phone?: string };
 }
 
-/** Mijoz: ism MAJBURIY (BR-05), telefon IXTIYORIY (BR-06). Mavjud mijozlardan tavsiya beriladi. */
+/**
+ * Mijoz: ism va telefon IXTIYORIY (ism bo'lmasa — umumiy "Noma'lum mijoz", 2026-11-03; BR-06).
+ * Mavjud mijozlardan tavsiya beriladi.
+ */
 export function CustomerFields({ value, onChange, errors }: CustomerFieldsProps) {
   const [focused, setFocused] = useState(false);
   const query = useDebouncedValue(value.name.trim(), 250);
@@ -35,7 +38,13 @@ export function CustomerFields({ value, onChange, errors }: CustomerFieldsProps)
 
   return (
     <div className="space-y-3">
-      <FormField id="pos-customer" label={t.sales.customer.name} required error={errors.name}>
+      <FormField
+        id="pos-customer"
+        label={t.sales.customer.name}
+        optional
+        error={errors.name}
+        hint={value.id ? undefined : t.sales.customer.nameHint}
+      >
         <div className="relative">
           <Input
             id="pos-customer"

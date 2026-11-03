@@ -120,10 +120,11 @@ export function PosView() {
   };
 
   const submit = async () => {
-    const name = customerNameSchema.safeParse(customer.name);
+    // Ism ixtiyoriy: bo'sh bo'lsa server umumiy mijozga yozadi; kiritilgan bo'lsa — tekshiriladi.
+    const name = customer.name.trim() ? customerNameSchema.safeParse(customer.name) : null;
     const phone = optionalPhoneSchema.safeParse(customer.phone);
     const nextErrors = {
-      name: name.success ? undefined : name.error.issues[0]?.message,
+      name: name && !name.success ? name.error.issues[0]?.message : undefined,
       phone: phone.success ? undefined : phone.error.issues[0]?.message,
     };
     setErrors(nextErrors);
@@ -139,7 +140,7 @@ export function PosView() {
           warehouseId,
           customer: customer.id
             ? { id: customer.id }
-            : { name: name.data ?? '', phone: phone.data ?? null },
+            : { name: name?.data ?? null, phone: phone.data ?? null },
           items: lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
         },
       });

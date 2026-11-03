@@ -45,11 +45,11 @@ export function CartPanel({ lines, onQuantity, onRemove }: CartPanelProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="size-7 shrink-0 text-muted-foreground hover:text-destructive"
+                className="size-9 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
                 onClick={() => onRemove(line.productId)}
                 aria-label={t.sales.cart.remove}
               >
-                <Trash2 />
+                <Trash2 className="size-5" />
               </Button>
             </div>
             <div className="flex items-center justify-between gap-2">
@@ -68,9 +68,11 @@ export function CartPanel({ lines, onQuantity, onRemove }: CartPanelProps) {
         ))}
       </ul>
       <div className="space-y-1.5 rounded-lg bg-muted/50 p-3 text-sm">
-        <div className="flex justify-between text-muted-foreground">
+        <div className="flex justify-between gap-2 text-muted-foreground">
+          <span className="tabular-nums">
+            {t.sales.cart.totalQuantity(formatQuantity(totals.totalQuantity))}
+          </span>
           <span>{t.sales.cart.itemsCount(totals.positions)}</span>
-          <span className="tabular-nums">{formatQuantity(totals.totalQuantity)}</span>
         </div>
         <div className="flex items-baseline justify-between">
           <span className="font-medium">{t.sales.cart.total}</span>
