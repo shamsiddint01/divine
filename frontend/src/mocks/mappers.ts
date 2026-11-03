@@ -17,7 +17,6 @@ import type {
   CustomerRow,
   ExpenseCategoryRow,
   ExpenseRow,
-  IncomingRow,
   MockState,
   MovementRow,
   ProductRow,
