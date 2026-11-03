@@ -98,12 +98,15 @@ export class ProductsController {
 
   @Post()
   @RequirePermissions(Permission.PRODUCTS_MANAGE)
-  @ApiOperation({ summary: 'Mahsulot yaratish' })
+  @ApiOperation({ summary: 'Mahsulot yaratish (ixtiyoriy boshlang‘ich qoldiq bilan)' })
   @ApiErrorResponses(
     ErrorCode.VALIDATION_ERROR,
     ErrorCode.BARCODE_TAKEN,
     ErrorCode.NOT_FOUND,
     ErrorCode.PRODUCT_GROUP_INACTIVE,
+    ErrorCode.FORBIDDEN,
+    ErrorCode.WAREHOUSE_INACTIVE,
+    ErrorCode.INVALID_QUANTITY,
   )
   create(
     @Ctx() ctx: AccessContext,
@@ -129,6 +132,25 @@ export class ProductsController {
     @Req() req: Request,
   ): Promise<ProductDto> {
     return this.products.update(ctx, id, body, requestMeta(req));
+  }
+
+  @Post(':id/stock')
+  @RequirePermissions(Permission.INCOMING_MANAGE, Permission.INCOMING_CONFIRM)
+  @ApiOperation({ summary: 'Qoldiq qo‘shish (tasdiqlangan kirim hujjati; ledger, audit)' })
+  @ApiErrorResponses(
+    ErrorCode.VALIDATION_ERROR,
+    ErrorCode.NOT_FOUND,
+    ErrorCode.WAREHOUSE_INACTIVE,
+    ErrorCode.PRODUCT_INACTIVE,
+    ErrorCode.INVALID_QUANTITY,
+  )
+  addStock(
+    @Ctx() ctx: AccessContext,
+    @idParam() id: string,
+    @ZodBody(stockReceiptSchema) body: StockReceiptInput,
+    @Req() req: Request,
+  ): Promise<ProductDto> {
+    return this.products.addStock(ctx, id, body, requestMeta(req));
   }
 
   @Patch(':id/status')

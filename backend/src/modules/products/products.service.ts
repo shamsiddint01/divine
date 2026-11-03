@@ -11,6 +11,7 @@ import {
   type ProductStatus,
   type ProductSummaryDto,
   type ProductUpdateInput,
+  type StockReceiptInput,
   VALIDATION_MESSAGES_UZ,
 } from '@divine/shared';
 import {
@@ -23,6 +24,7 @@ import { AppError } from '../../common/errors/app-error.js';
 import { toPaginated } from '../../common/query/prisma-query.js';
 import { type Tx, TransactionRunner } from '../../infrastructure/prisma/transaction-runner.js';
 import { AuditService, type RequestMeta } from '../audit/audit.service.js';
+import { IncomingService } from '../incoming/incoming.service.js';
 import {
   type ListProductsQuery,
   type ProductFilter,
@@ -66,6 +68,7 @@ export class ProductsService {
     private readonly repository: ProductsRepository,
     private readonly transactions: TransactionRunner,
     private readonly audit: AuditService,
+    private readonly incoming: IncomingService,
   ) {}
 
   async list(ctx: AccessContext, query: ListProductsQuery): Promise<Paginated<ProductDto>> {
@@ -126,6 +129,8 @@ export class ProductsService {
     input: ProductCreateInput,
     meta: RequestMeta,
   ): Promise<ProductDto> {
+    // Boshlang'ich qoldiq — kirim bilan bir xil ruxsat (sobiq "Kirim" bo'limi shu yerga ko'chgan).
+    if (input.initialStock) assertCanReceive(ctx);
     return this.transactions.run(async (tx) => {
       await this.assertGroupAssignable(tx, input.groupId, null);
       const barcode = input.barcode ?? null;
@@ -160,6 +165,51 @@ export class ProductsService {
           meta,
         },
         tx,
+      );
+      if (input.initialStock) {
+        const { warehouseId, quantity, date, notes } = input.initialStock;
+        // Kelgan narxi — kartadagi bilan bir xil (formada ikkinchi "kelgan narx" maydoni yo'q).
+        await this.incoming.receive(
+          tx,
+          ctx,
+          {
+            warehouseId,
+            date,
+            notes: notes ?? null,
+            items: [{ productId: id, quantity, costPrice: input.costPrice }],
+          },
+          meta,
+          (field) => (field === 'quantity' ? 'initialStock.quantity' : 'initialStock'),
+        );
+      }
+      return this.one(ctx, { ids: [id] }, tx);
+    });
+  }
+
+  /**
+   * Mavjud mahsulotga qoldiq qo'shish (`POST /products/:id/stock`) — tasdiqlangan kirim hujjati:
+   * ledger, ombor qoldig'i, hisobotlar va audit avvalgi "Kirim" bo'limi bilan bir xil. D-16: kelgan narxi
+   * mahsulot kartasidagi narxni o'zgartirmaydi.
+   */
+  async addStock(
+    ctx: AccessContext,
+    id: string,
+    input: StockReceiptInput,
+    meta: RequestMeta,
+  ): Promise<ProductDto> {
+    return this.transactions.run(async (tx) => {
+      (await this.repository.lock(tx, id)) ?? notFound();
+      await this.incoming.receive(
+        tx,
+        ctx,
+        {
+          warehouseId: input.warehouseId,
+          date: input.date,
+          notes: input.notes ?? null,
+          items: [{ productId: id, quantity: input.quantity, costPrice: input.costPrice }],
+        },
+        meta,
+        (field) => (field === 'quantity' ? 'quantity' : 'productId'),
       );
       return this.one(ctx, { ids: [id] }, tx);
     });
@@ -307,6 +357,15 @@ export class ProductsService {
         details: [{ field: 'barcode', message: ERROR_MESSAGES_UZ.BARCODE_TAKEN }],
       });
     }
+  }
+}
+
+function assertCanReceive(ctx: AccessContext): void {
+  if (
+    !hasPermission(ctx, Permission.INCOMING_MANAGE) ||
+    !hasPermission(ctx, Permission.INCOMING_CONFIRM)
+  ) {
+    throw new AppError(ErrorCode.FORBIDDEN);
   }
 }
 
