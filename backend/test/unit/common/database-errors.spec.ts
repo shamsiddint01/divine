@@ -93,7 +93,7 @@ describe('mapDbError (DATABASE §12)', () => {
     ['products_barcode_key', 'BARCODE_TAKEN', 'barcode'],
     ['product_groups_name_lower_key', 'NAME_TAKEN', 'name'],
     ['warehouses_name_lower_key', 'NAME_TAKEN', 'name'],
-    ['expense_categories_name_lower_key', 'NAME_TAKEN', 'name'],
+    ['expense_categories_owner_name_lower_key', 'NAME_TAKEN', 'name'],
   ])('unique %s → %s (maydon: %s)', (constraint, code, field) => {
     const mapped = map(pgError('23505', constraint));
     expect(mapped).toMatchObject({ code, severity: 'client' });

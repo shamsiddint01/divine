@@ -247,7 +247,7 @@ describe('indexlar (DATABASE.md §7)', () => {
       'audit_logs_occurred_at_idx',
       'product_groups_name_lower_key',
       'warehouses_name_lower_key',
-      'expense_categories_name_lower_key',
+      'expense_categories_owner_name_lower_key',
     ]) {
       expect(names, index).toContain(index);
     }
