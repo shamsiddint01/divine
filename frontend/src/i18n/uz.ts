@@ -692,7 +692,6 @@ export const uz = {
     never: 'Xarid yo‘q',
   },
 
-
   expenses: {
     description: 'Do‘kon xarajatlari hisobi: ijara, oylik, kommunal to‘lovlar va boshqalar',
     add: 'Xarajat qo‘shish',
