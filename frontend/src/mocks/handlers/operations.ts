@@ -17,15 +17,10 @@ import { formatDocNumber, postMovement } from '../inventory';
 import { fail, includesText, notFound, num, paginate, route, sortBy, validate } from '../lib/http';
 import { mockUuid } from '../lib/random';
 import { dateOnlyInRange } from '../lib/time';
-import { currentCan, toExpenseCategoryDto, toExpenseDto, toIncomingDto } from '../mappers';
-import type { IncomingRow } from '../state';
-import { quantityAllowed } from './catalog';
+import { currentCan, toExpenseCategoryDto, toExpenseDto } from '../mappers';
 import { mockToday, nowIso } from '../lib/clock';
 
 const now = nowIso;
-
-  return toIncomingDto(s, doc, true);
-});
 
 // ─── Xarajatlar ─────────────────────────────────────────────────────────────
 
