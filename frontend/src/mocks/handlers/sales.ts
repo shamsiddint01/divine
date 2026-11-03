@@ -7,6 +7,7 @@ import {
   formatIssuePath,
   idempotencyKeySchema,
   saleCreateSchema,
+  WALK_IN_CUSTOMER_NAME,
 } from '@divine/shared';
 import { addQty, compareQty, lineTotal, subMoney, sumMoney, sumQty } from '@/shared/lib/decimal';
 import { formatQuantity } from '@/shared/lib/format';
@@ -263,35 +264,27 @@ route('POST', '/sales', ({ body, headers }) => {
   });
   if (stockErrors.length > 0) fail(409, 'INSUFFICIENT_STOCK', stockErrors);
 
-  let customerId: string;
+  let customer: CustomerRow | undefined;
   let newCustomer = false;
-  let customerName: string;
-  let customerPhone: string | null;
   if ('id' in input.customer) {
     const id = input.customer.id;
-    const c =
+    customer =
       s.customers.find((x) => x.id === id) ??
       fail(404, 'NOT_FOUND', [{ field: 'customer.id', message: 'Ma’lumot topilmadi' }]);
-    ({ id: customerId, name: customerName, phone: customerPhone } = c);
-  } else {
+  } else if (input.customer.name === null) {
+    // Ismsiz sotuv (backend `lockWalkInCustomer` aksi): telefon bo'yicha so'nggi mijoz yoki umumiy mijoz.
     const { phone } = input.customer;
-    // Ismsiz sotuv (backend `lockWalkInCustomer` aksi): telefon bo'yicha eng so'nggi xaridor yoki umumiy mijoz.
-    const walkIn =
-      input.customer.name === null
-        ? phone !== null
-          ? s.customers
-              .filter((c) => c.phone === phone)
-              .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
-          : s.customers.find((c) => c.name === WALK_IN_CUSTOMER_NAME && c.phone === null)
-        : undefined;
-    if (walkIn) {
-      ({ id: customerId, name: customerName, phone: customerPhone } = walkIn);
-    }
+    customer =
+      phone !== null
+        ? s.customers
+            .filter((c) => c.phone === phone)
+            .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
+        : s.customers.find((c) => c.name === WALK_IN_CUSTOMER_NAME && c.phone === null);
   }
-  if (!('id' in input.customer) && customerId! === undefined) {
+  if (!customer && !('id' in input.customer)) {
     // Ism bilan kelgan mijoz — har doim yangi yozuv (API §11; takroriy ism/telefon ruxsat — D-17).
     const at = now();
-    const row: CustomerRow = {
+    customer = {
       id: mockUuid(),
       name: input.customer.name ?? WALK_IN_CUSTOMER_NAME,
       phone: input.customer.phone,
@@ -299,10 +292,11 @@ route('POST', '/sales', ({ body, headers }) => {
       createdAt: at,
       updatedAt: at,
     };
-    s.customers.push(row);
-    ({ id: customerId, name: customerName, phone: customerPhone } = row);
+    s.customers.push(customer);
     newCustomer = true;
   }
+  if (!customer) notFound();
+  const { id: customerId, name: customerName, phone: customerPhone } = customer;
 
   // "Tranzaksiya": barcha tekshiruvlar o'tdi — endi sale + items + stock ↓ + movements birga yoziladi.
   s.counters.sale += 1;
