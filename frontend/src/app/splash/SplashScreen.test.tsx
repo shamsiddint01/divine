@@ -41,7 +41,8 @@ describe('SplashScreen', () => {
     expect(screen.queryByTestId('splash')).toBeNull();
     act(() => playSplash());
     expect(screen.getByTestId('splash')).toBeInTheDocument();
-    act(() => vi.advanceTimersByTime(4600));
+    act(() => vi.advanceTimersByTime(3700));
+    act(() => vi.advanceTimersByTime(1000));
     expect(screen.queryByTestId('splash')).toBeNull();
   });
 });
