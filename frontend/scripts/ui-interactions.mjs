@@ -496,6 +496,7 @@ check(
   'Auth: landing "Kirish" → /login?redirect (qaytish manzili saqlanadi)',
   await waitFor(`location.pathname === '/login' && location.search === '?redirect=%2Fusers'`),
 );
+await waitFor(`!!document.querySelector('#login-login')`);
 const submitLogin = async (login, password) => {
   await typeInto('#login-login', login);
   await typeInto('#login-password', password);
