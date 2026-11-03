@@ -12,15 +12,14 @@
 }
 .splash--light .splash__bg {
   /* Ilova och mavzusi: fon + primary'ning nozik nuri */
-  background: radial-gradient(
-    ellipse at 50% 42%,
-    oklch(0.488 0.217 264.376 / 7%),
-    oklch(0.984 0.003 247.858) 65%
-  );
+  background:
+    radial-gradient(ellipse at 50% 42%, oklch(0.488 0.217 264.376 / 8%), transparent 65%),
+    oklch(0.984 0.003 247.858);
 }
 .splash--dark .splash__bg {
   /* Ilova qora mavzusi: toza qora fon + primary ko'kning nozik nuri */
-  background: radial-gradient(ellipse at 50% 42%, oklch(0.62 0.19 262 / 16%), oklch(0 0 0) 62%);
+  background:
+    radial-gradient(ellipse at 50% 42%, oklch(0.62 0.19 262 / 18%), transparent 62%), oklch(0 0 0);
 }
 .splash__center {
   position: absolute;
