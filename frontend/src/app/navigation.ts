@@ -7,7 +7,6 @@ import {
   House,
   LayoutDashboard,
   Package,
-  PackagePlus,
   Settings,
   ShieldCheck,
   ShoppingCart,
