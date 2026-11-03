@@ -233,8 +233,8 @@ export function LandingPage() {
             <svg className="ld-hero__frame" aria-hidden>
               <defs>
                 <linearGradient id="ld-frame-gradient" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0" stopColor="rgb(244,118,104)" stopOpacity=".67" />
-                  <stop offset="1" stopColor="rgb(244,118,104)" stopOpacity=".29" />
+                  <stop offset="0" stopColor="rgb(116,132,255)" stopOpacity=".7" />
+                  <stop offset="1" stopColor="rgb(61,78,219)" stopOpacity=".35" />
                 </linearGradient>
               </defs>
               <rect pathLength={1} stroke="url(#ld-frame-gradient)" />
