@@ -266,17 +266,7 @@ function MovementsTab({ warehouseId }: { warehouseId: string }) {
       key: 'ref',
       header: t.warehouses.movement.reference,
       hideBelow: 'lg',
-      cell: (m) =>
-        m.movementType === 'INCOMING' ? (
-          <Link
-            to={`/incoming/${m.referenceId}`}
-            className="font-mono text-xs text-primary hover:underline"
-          >
-            {m.referenceNumber}
-          </Link>
-        ) : (
-          <span className="font-mono text-xs">{m.referenceNumber}</span>
-        ),
+      cell: (m) => <span className="font-mono text-xs">{m.referenceNumber}</span>,
     },
     {
       key: 'user',

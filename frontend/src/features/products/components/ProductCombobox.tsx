@@ -38,7 +38,7 @@ export function ProductCombobox({
   value,
   onChange,
   clearLabel,
-  placeholder = t.incoming.form.productPlaceholder,
+  placeholder = t.products.pickPlaceholder,
   disabledIds = [],
   includeArchived = false,
   invalid,

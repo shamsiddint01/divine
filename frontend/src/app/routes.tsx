@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import type { RouteObject } from 'react-router';
+import { Navigate, type RouteObject } from 'react-router';
 import { RequireAuth, SessionLoader } from '@/features/session/components/RequireAuth';
 import { AppLayout } from './layouts/AppLayout';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -39,11 +39,6 @@ const CustomersPage = page(
 const CustomerDetailPage = page(
   () => import('@/features/customers/pages/CustomerDetailPage'),
   'CustomerDetailPage',
-);
-const IncomingPage = page(() => import('@/features/incoming/pages/IncomingPage'), 'IncomingPage');
-const IncomingEditorPage = page(
-  () => import('@/features/incoming/pages/IncomingEditorPage'),
-  'IncomingEditorPage',
 );
 const ExpensesPage = page(() => import('@/features/expenses/pages/ExpensesPage'), 'ExpensesPage');
 const ReportsPage = page(() => import('@/features/reports/pages/ReportsPage'), 'ReportsPage');
@@ -86,9 +81,8 @@ export const routes: RouteObject[] = [
       { path: 'sales', element: <SalesPage /> },
       { path: 'customers', element: <CustomersPage /> },
       { path: 'customers/:id', element: <CustomerDetailPage /> },
-      { path: 'incoming', element: <IncomingPage /> },
-      { path: 'incoming/new', element: <IncomingEditorPage /> },
-      { path: 'incoming/:id', element: <IncomingEditorPage /> },
+      // Sobiq "Kirim" bo'limi: qoldiq endi Mahsulotlar → "Mahsulot qo'shish" / "Qoldiq qo'shish".
+      { path: 'incoming/*', element: <Navigate to="/products" replace /> },
       { path: 'expenses', element: <ExpensesPage /> },
       { path: 'reports', element: <ReportsPage /> },
       { path: 'settings', element: <SettingsPage /> },

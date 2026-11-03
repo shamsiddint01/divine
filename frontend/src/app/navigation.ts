@@ -76,13 +76,6 @@ export const NAV_ITEMS: readonly NavItem[] = [
     anyOf: [Permission.CUSTOMERS_READ_HISTORY],
   },
   {
-    key: 'incoming',
-    path: '/incoming',
-    label: t.nav.incoming,
-    icon: PackagePlus,
-    anyOf: [Permission.INCOMING_READ],
-  },
-  {
     key: 'expenses',
     path: '/expenses',
     label: t.nav.expenses,
@@ -128,7 +121,7 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     title: t.nav.sectionCatalog,
     shortTitle: t.nav.sectionCatalogShort,
     icon: Package,
-    keys: ['products', 'productGroups', 'warehouses', 'incoming'],
+    keys: ['products', 'productGroups', 'warehouses'],
   },
   {
     key: 'operations',
