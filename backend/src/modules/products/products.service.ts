@@ -198,7 +198,8 @@ export class ProductsService {
     meta: RequestMeta,
   ): Promise<ProductDto> {
     return this.transactions.run(async (tx) => {
-      (await this.repository.lock(tx, id)) ?? notFound();
+      // Mahsulot qatori qulflanadi: parallel tahrir/holat o'zgarishi bilan navbat (holat receive'da tekshiriladi).
+      if (!(await this.repository.lock(tx, id))) notFound();
       await this.incoming.receive(
         tx,
         ctx,
