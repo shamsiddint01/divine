@@ -128,26 +128,25 @@ test.describe.serial('Asosiy oqim: katalog → kirim → sotuv → hisobot → a
     await expect(admin.getByText(sellerPassword)).toHaveCount(0);
   });
 
-  test('admin: kirim — jami miqdor dinamik (50 + 30 = 80 → 90), tasdiqlansa qoldiq oshadi', async () => {
+  test('admin: qoldiq mahsulotlar bo‘limidan — yangi mahsulot bilan boshlang‘ich qoldiq va “Qoldiq qo‘shish”', async () => {
+    // Alohida "Kirim" bo'limi yo'q: eski URL mahsulotlarga yo'naltiriladi.
     await admin.goto('/incoming/new');
-    await choose(admin, 'in-warehouse', WAREHOUSE);
-    const barcode = admin.getByLabel(t.incoming.form.barcode);
-    for (const code of [PRODUCT_A.barcode, PRODUCT_B.barcode]) {
-      await barcode.fill(code);
-      await barcode.press('Enter');
-    }
-    const total = admin.getByTestId('incoming-total-quantity');
-    await admin.getByLabel(`${t.incoming.form.quantity} 1`, { exact: true }).fill('50');
-    await admin.getByLabel(`${t.incoming.form.quantity} 2`, { exact: true }).fill('30');
-    await expect(total).toHaveText(t.incoming.form.totalQuantityValue('80'));
-    await admin.getByLabel(`${t.incoming.form.quantity} 1`, { exact: true }).fill('60');
-    await expect(total).toHaveText(t.incoming.form.totalQuantityValue('90'));
+    await expect(admin).toHaveURL(/\/products$/);
 
-    await admin.getByRole('button', { name: t.incoming.form.confirm }).click();
-    const dialog = admin.getByRole('alertdialog');
-    await expect(dialog).toContainText(t.incoming.form.confirmTitle);
-    await dialog.getByRole('button', { name: t.common.confirm }).click();
-    await expect(admin.getByText(t.incoming.form.confirmed)).toBeVisible();
+    // Mavjud mahsulotlarga qoldiq: detal oynasidagi "Qoldiq qo'shish" (A — 60, B — 30).
+    for (const [p, qty] of [
+      [PRODUCT_A, '60'],
+      [PRODUCT_B, '30'],
+    ] as const) {
+      await admin.getByRole('row', { name: new RegExp(p.name) }).first().click();
+      await admin.getByRole('button', { name: t.products.stock.add }).click();
+      const dialog = admin.getByRole('dialog', { name: t.products.stock.title });
+      await choose(admin, 'sr-warehouse', WAREHOUSE);
+      await dialog.locator('#sr-quantity').fill(qty);
+      await dialog.getByRole('button', { name: t.products.stock.submit }).click();
+      await expect(admin.getByText(t.products.stock.added(qty))).toBeVisible();
+      await expect(dialog).toBeHidden();
+    }
 
     await admin.goto('/warehouses');
     const card = admin.locator('[data-slot=card]', { hasText: WAREHOUSE });
