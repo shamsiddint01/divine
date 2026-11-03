@@ -138,7 +138,10 @@ test.describe.serial('Asosiy oqim: katalog → kirim → sotuv → hisobot → a
       [PRODUCT_A, '60'],
       [PRODUCT_B, '30'],
     ] as const) {
-      await admin.getByRole('row', { name: new RegExp(p.name) }).first().click();
+      await admin
+        .getByRole('row', { name: new RegExp(p.name) })
+        .first()
+        .click();
       await admin.getByRole('button', { name: t.products.stock.add }).click();
       const dialog = admin.getByRole('dialog', { name: t.products.stock.title });
       await choose(admin, 'sr-warehouse', WAREHOUSE);
