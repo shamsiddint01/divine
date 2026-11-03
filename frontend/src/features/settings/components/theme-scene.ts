@@ -378,14 +378,16 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
       let amp = 0.5;
       let f = 5;
       for (let o = 0; o < 4; o++) {
-        bumps += amp * (1 - Math.min(1, cells(x * f + o * 17, wv * f + o * 31) * 1.15)) ** 2;
+        // Har hujayra — yarim shar (yumaloq gumbazcha), keskin "igna" emas
+        const q = cells(x * f + o * 17, wv * f + o * 31) / 0.78;
+        bumps += amp * Math.sqrt(Math.max(0, 1 - q * q));
         amp *= 0.5;
         f *= 2.1;
       }
       bumps /= 0.9375;
       const fluff = fbm(wisp, x * 26, wv * 26, 2);
       const mass = smoothstep(0.3, 1.5, field);
-      let d = mass * 1.05 + (bumps - 0.32) * 1.1 * (1 - mass * 0.55) + (fluff - 0.5) * 0.14 - 0.05;
+      let d = mass * 1.05 + (bumps - 0.45) * 1.2 * (1 - mass * 0.5) + (fluff - 0.5) * 0.12 - 0.04;
       // Tag: deyarli tekis, lekin chizg'ich bilan emas
       const baseLine = 0.8 + (fbm(wisp, u * 7, 3.3, 2) - 0.5) * 0.05;
       d *= smoothstep(baseLine + 0.05, baseLine - 0.07, v);
@@ -431,11 +433,22 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
       const under = smoothstep(0.5, 0.82, v); // bulut tagi — soyada
       const bump = bumpMap[i]!;
 
-      // Kunduz: quyosh yuqori-chapda; osmon nuri (ko'kimtir) soyani yumshatadi
-      const lit = Math.exp(-optical(px, py, -0.45, -0.89) * 5.5);
-      const light = clamp01(lit * 0.78 + 0.2 + thin * 0.25 + (bump - 0.3) * 0.25 - under * 0.2);
-      let dc = mix([132, 142, 165], [206, 211, 222], smoothstep(0.05, 0.55, light));
-      dc = mix(dc, WHITE, smoothstep(0.5, 0.92, light));
+      // Sirt normali (zichlik maydonining qiyaligi): gumbazchaning quyoshga qaragan yuzi yorug'
+      const gx = at(px + 1, py) - at(px - 1, py);
+      const gy = at(px, py + 1) - at(px, py - 1);
+      const nx = -gx * 7;
+      const ny = -gy * 7;
+      const nl = 1 / Math.hypot(nx, ny, 1);
+
+      // Kunduz: quyosh yuqori-chapda va biroz oldinda; osmon nuri (ko'kimtir) soyani yumshatadi
+      const lit = Math.exp(-optical(px, py, -0.45, -0.89) * 5);
+      const ndl = (nx * -0.5 + ny * -0.68 + 0.54) * nl;
+      const diffuse = 0.5 + 0.5 * ndl; // "o'ralgan" yoritish — soya tomoni ham qora emas
+      const light = clamp01(
+        lit * 0.5 + diffuse * 0.62 + thin * 0.16 + (bump - 0.4) * 0.12 - under * 0.2,
+      );
+      let dc = mix([146, 156, 178], [214, 219, 230], smoothstep(0.15, 0.6, light));
+      dc = mix(dc, WHITE, smoothstep(0.55, 0.9, light));
       dImg.data[o] = dc[0];
       dImg.data[o + 1] = dc[1];
       dImg.data[o + 2] = dc[2];
@@ -443,7 +456,10 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
 
       // Shom/tong: yorug'lik ufqdan — pastdan, chapdan
       const litW = Math.exp(-optical(px, py, -0.9, 0.42) * 5);
-      const lightW = clamp01(litW * 0.9 + thin * 0.35 + (bump - 0.3) * 0.2 + under * 0.12);
+      const ndlW = (nx * -0.75 + ny * 0.35 + 0.56) * nl;
+      const lightW = clamp01(
+        litW * 0.6 + (0.5 + 0.5 * ndlW) * 0.45 + thin * 0.3 + under * 0.1 - 0.12,
+      );
       const shade = mix([58, 46, 88], [132, 84, 128], smoothstep(0, 0.5, lightW));
       const wc = mix(shade, [255, 184, 122], smoothstep(0.35, 0.95, lightW));
       wImg.data[o] = wc[0];
