@@ -95,7 +95,9 @@ describe('RBAC fuzz: sotuvchi admin endpointlariga aylanma yo‘l bilan kira olm
 
   it('yo‘l variantlari, HEAD va query’dagi rol/permission — hech qachon 2xx emas', async () => {
     const failures: string[] = [];
-    expect(denied().length).toBeGreaterThan(50);
+    // Marshrut kashfiyoti ishlayotganini tekshirish (kirim olib tashlangan, D-23 da sotuvchiga 3 ta xarajat
+    // endpointi ochilgan — 2026-11-03 da 48 ta).
+    expect(denied().length).toBeGreaterThan(40);
     for (const route of denied()) {
       const path = fill(route.path);
       const encoded = path.replace(/[a-z]/, (c) => `%${c.charCodeAt(0).toString(16)}`);
