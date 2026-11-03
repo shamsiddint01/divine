@@ -18,6 +18,10 @@ import { mockToday, nowIso } from '../lib/clock';
 
 const now = nowIso;
 
+function requireCan(permission: Parameters<typeof currentCan>[1]) {
+  if (!currentCan(db(), permission)) fail(403, 'FORBIDDEN');
+}
+
 // ─── Xarajatlar ─────────────────────────────────────────────────────────────
 
 // Backend shartnomasi (API §12; D-11, D-12, D-19): sxemalar shared'dan; kategoriya majburiy va faol;
