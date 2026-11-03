@@ -4,6 +4,7 @@ import {
   type ProductUnit,
   VALIDATION_MESSAGES_UZ,
   entityNameSchema,
+  isWholeQuantity,
   optionalBarcodeSchema,
   quantitySchema,
 } from '@divine/shared';
@@ -76,7 +77,11 @@ const schema = z
       ctx.addIssue({ code: 'custom', path: ['stock', 'quantity'], message: M.wholeQuantity });
     }
     if (!v.active) {
-      ctx.addIssue({ code: 'custom', path: ['stock', 'quantity'], message: M.initialStockInactive });
+      ctx.addIssue({
+        code: 'custom',
+        path: ['stock', 'quantity'],
+        message: M.initialStockInactive,
+      });
     }
     if (!v.stock.warehouseId) {
       ctx.addIssue({
@@ -129,10 +134,9 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   const { data: groups, error: groupsError, refetch: refetchGroups } = useGroupOptions();
   const save = useSaveProduct();
   // Boshlang'ich qoldiq — kirim bilan bir xil ruxsat; tahrirlashda yo'q (qoldiq "Qoldiq qo'shish"dan).
-  const canReceive =
-    useHasAnyPermission([Permission.INCOMING_MANAGE]) &&
-    useHasAnyPermission([Permission.INCOMING_CONFIRM]);
-  const withStock = !product && canReceive;
+  const canManageIncoming = useHasAnyPermission([Permission.INCOMING_MANAGE]);
+  const canConfirmIncoming = useHasAnyPermission([Permission.INCOMING_CONFIRM]);
+  const withStock = !product && canManageIncoming && canConfirmIncoming;
   const { single: singleWarehouse } = useActiveWarehouses();
   const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: empty });
   const { register, handleSubmit, control, reset, setValue, setError, formState } = form;
@@ -198,8 +202,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   const e = formState.errors;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
+      <DialogContent className={`${FORM_DIALOG_CLASS} sm:max-w-2xl`}>
+        <DialogHeader className={FORM_DIALOG_HEADER_CLASS}>
           <DialogTitle>
             {product ? t.products.form.editTitle : t.products.form.createTitle}
           </DialogTitle>
@@ -210,189 +214,203 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
         <form
           id="product-form"
           onSubmit={onSubmit}
-          className="grid gap-4 sm:grid-cols-2"
+          className={`${FORM_DIALOG_BODY_CLASS} space-y-6`}
           noValidate
         >
-          <FormField
-            id="p-name"
-            label={t.products.form.name}
-            required
-            error={e.name?.message}
-            className="sm:col-span-2"
-          >
-            <Input
+          <FormSection title={t.products.form.sectionMain}>
+            <FormField
               id="p-name"
-              placeholder={t.products.form.namePlaceholder}
-              aria-invalid={!!e.name}
-              {...register('name')}
-              autoFocus
-            />
-          </FormField>
-          <FormField
-            id="p-group"
-            label={t.products.form.group}
-            required
-            error={e.groupId?.message}
-            hint={
-              groupsError && !groups ? <OptionsLoadError onRetry={() => refetchGroups()} /> : null
-            }
-          >
-            <Controller
-              control={control}
-              name="groupId"
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="p-group" aria-invalid={!!e.groupId}>
-                    <SelectValue placeholder={t.common.selectPlaceholder} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {/* Arxivdagi guruhga yangi mahsulot qo'shilmaydi (422); mavjud guruhi saqlanadi. */}
-                    {(groups ?? [])
-                      .filter((g) => g.isActive || g.id === product?.groupId)
-                      .map((g) => (
-                        <SelectItem key={g.id} value={g.id}>
-                          {g.name}
+              label={t.products.form.name}
+              required
+              error={e.name?.message}
+              className="sm:col-span-2"
+            >
+              <Input
+                id="p-name"
+                placeholder={t.products.form.namePlaceholder}
+                aria-invalid={!!e.name}
+                {...register('name')}
+                autoFocus
+              />
+            </FormField>
+            <FormField
+              id="p-group"
+              label={t.products.form.group}
+              required
+              error={e.groupId?.message}
+              hint={
+                groupsError && !groups ? <OptionsLoadError onRetry={() => refetchGroups()} /> : null
+              }
+            >
+              <Controller
+                control={control}
+                name="groupId"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger id="p-group" aria-invalid={!!e.groupId}>
+                      <SelectValue placeholder={t.common.selectPlaceholder} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {/* Arxivdagi guruhga yangi mahsulot qo'shilmaydi (422); mavjud guruhi saqlanadi. */}
+                      {(groups ?? [])
+                        .filter((g) => g.isActive || g.id === product?.groupId)
+                        .map((g) => (
+                          <SelectItem key={g.id} value={g.id}>
+                            {g.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </FormField>
+            <FormField
+              id="p-barcode"
+              label={t.products.form.barcode}
+              optional
+              error={e.barcode?.message}
+              hint={t.products.form.barcodeHint}
+            >
+              <Input
+                id="p-barcode"
+                placeholder={t.products.form.barcodePlaceholder}
+                aria-invalid={!!e.barcode}
+                className="font-mono"
+                {...register('barcode')}
+              />
+            </FormField>
+            <FormField id="p-unit" label={t.products.form.unit} required>
+              <Controller
+                control={control}
+                name="unit"
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={(v) => {
+                      field.onChange(v as ProductUnit);
+                      setValue('allowDecimal', v !== 'DONA');
+                    }}
+                  >
+                    <SelectTrigger id="p-unit">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PRODUCT_UNITS.map((u) => (
+                        <SelectItem key={u} value={u}>
+                          {t.unitNames[u]}
                         </SelectItem>
                       ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </FormField>
-          <FormField
-            id="p-barcode"
-            label={t.products.form.barcode}
-            optional
-            error={e.barcode?.message}
-            hint={t.products.form.barcodeHint}
-          >
-            <Input
-              id="p-barcode"
-              placeholder={t.products.form.barcodePlaceholder}
-              aria-invalid={!!e.barcode}
-              className="font-mono"
-              {...register('barcode')}
-            />
-          </FormField>
-          <FormField
-            id="p-cost"
-            label={t.products.form.costPrice}
-            required
-            error={e.costPrice?.message}
-          >
-            <Input
-              id="p-cost"
-              inputMode="decimal"
-              aria-invalid={!!e.costPrice}
-              {...register('costPrice', {
-                onBlur: (ev) => setValue('costPrice', groupDigits(ev.target.value)),
-              })}
-            />
-          </FormField>
-          <FormField
-            id="p-sale"
-            label={t.products.form.salePrice}
-            required
-            error={e.salePrice?.message}
-            hint={
-              priceWarning ? (
-                <span className="inline-flex items-center gap-1 text-warning">
-                  <AlertTriangle className="size-3.5" />
-                  {t.products.form.priceWarning}
-                </span>
-              ) : undefined
-            }
-          >
-            <Input
-              id="p-sale"
-              inputMode="decimal"
-              aria-invalid={!!e.salePrice}
-              {...register('salePrice', {
-                onBlur: (ev) => setValue('salePrice', groupDigits(ev.target.value)),
-              })}
-            />
-          </FormField>
-          <FormField id="p-unit" label={t.products.form.unit} required>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </FormField>
+            <FormField
+              id="p-min"
+              label={t.products.form.minStock}
+              optional
+              error={e.minStock?.message}
+              hint={t.products.form.minStockHint}
+            >
+              <Input
+                id="p-min"
+                inputMode="decimal"
+                aria-invalid={!!e.minStock}
+                {...register('minStock')}
+              />
+            </FormField>
             <Controller
               control={control}
-              name="unit"
+              name="allowDecimal"
               render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={(v) => {
-                    field.onChange(v as ProductUnit);
-                    setValue('allowDecimal', v !== 'DONA');
-                  }}
-                >
-                  <SelectTrigger id="p-unit">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PRODUCT_UNITS.map((u) => (
-                      <SelectItem key={u} value={u}>
-                        {t.unitNames[u]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <label className="flex items-start justify-between gap-3 rounded-lg border p-3 sm:col-span-1">
+                  <span className="space-y-0.5">
+                    <span className="block text-sm font-medium">
+                      {t.products.form.allowDecimal}
+                    </span>
+                    <span className="block text-xs text-muted-foreground">
+                      {e.allowDecimal?.message ?? t.products.form.allowDecimalHint}
+                    </span>
+                  </span>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    disabled={unit === 'DONA'}
+                    aria-label={t.products.form.allowDecimal}
+                  />
+                </label>
               )}
             />
-          </FormField>
-          <FormField
-            id="p-min"
-            label={t.products.form.minStock}
-            optional
-            error={e.minStock?.message}
-            hint={t.products.form.minStockHint}
-          >
-            <Input
-              id="p-min"
-              inputMode="decimal"
-              aria-invalid={!!e.minStock}
-              {...register('minStock')}
+            <Controller
+              control={control}
+              name="active"
+              render={({ field }) => (
+                <label className="flex items-start justify-between gap-3 rounded-lg border p-3">
+                  <span className="space-y-0.5">
+                    <span className="block text-sm font-medium">{t.products.form.status}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {t.products.form.activeLabel}
+                    </span>
+                  </span>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    aria-label={t.products.form.status}
+                  />
+                </label>
+              )}
             />
-          </FormField>
-          <Controller
-            control={control}
-            name="allowDecimal"
-            render={({ field }) => (
-              <label className="flex items-start justify-between gap-3 rounded-lg border p-3 sm:col-span-1">
-                <span className="space-y-0.5">
-                  <span className="block text-sm font-medium">{t.products.form.allowDecimal}</span>
-                  <span className="block text-xs text-muted-foreground">
-                    {e.allowDecimal?.message ?? t.products.form.allowDecimalHint}
+          </FormSection>
+          <FormSection title={t.products.form.sectionPrice}>
+            <FormField
+              id="p-cost"
+              label={t.products.form.costPrice}
+              required
+              error={e.costPrice?.message}
+            >
+              <Input
+                id="p-cost"
+                inputMode="decimal"
+                aria-invalid={!!e.costPrice}
+                {...register('costPrice', {
+                  onBlur: (ev) => setValue('costPrice', groupDigits(ev.target.value)),
+                })}
+              />
+            </FormField>
+            <FormField
+              id="p-sale"
+              label={t.products.form.salePrice}
+              required
+              error={e.salePrice?.message}
+              hint={
+                priceWarning ? (
+                  <span className="inline-flex items-center gap-1 text-warning">
+                    <AlertTriangle className="size-3.5" />
+                    {t.products.form.priceWarning}
                   </span>
-                </span>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  disabled={unit === 'DONA'}
-                  aria-label={t.products.form.allowDecimal}
-                />
-              </label>
-            )}
-          />
-          <Controller
-            control={control}
-            name="active"
-            render={({ field }) => (
-              <label className="flex items-start justify-between gap-3 rounded-lg border p-3">
-                <span className="space-y-0.5">
-                  <span className="block text-sm font-medium">{t.products.form.status}</span>
-                  <span className="block text-xs text-muted-foreground">
-                    {t.products.form.activeLabel}
-                  </span>
-                </span>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  aria-label={t.products.form.status}
-                />
-              </label>
-            )}
-          />
+                ) : undefined
+              }
+            >
+              <Input
+                id="p-sale"
+                inputMode="decimal"
+                aria-invalid={!!e.salePrice}
+                {...register('salePrice', {
+                  onBlur: (ev) => setValue('salePrice', groupDigits(ev.target.value)),
+                })}
+              />
+            </FormField>
+          </FormSection>
+          {withStock ? (
+            <FormSection
+              title={t.products.form.sectionStock}
+              hint={t.products.form.sectionStockHint}
+            >
+              <StockFields control={control} register={register} errors={e} idPrefix="p-stock" />
+            </FormSection>
+          ) : null}
         </form>
-        <DialogFooter>
+        <DialogFooter className={FORM_DIALOG_FOOTER_CLASS}>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}

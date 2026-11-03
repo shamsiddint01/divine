@@ -470,7 +470,8 @@ export const uz = {
       activated: 'Mahsulot faollashtirildi.',
     },
     emptyTitle: 'Mahsulotlar mavjud emas',
-    emptyDescription: 'Birinchi mahsulotni qo‘shing — boshlang‘ich qoldiqni shu oynada kiritishingiz mumkin.',
+    emptyDescription:
+      'Birinchi mahsulotni qo‘shing — boshlang‘ich qoldiqni shu oynada kiritishingiz mumkin.',
     noResults: 'Mahsulotlar topilmadi',
   },
 
