@@ -7,7 +7,13 @@ import {
 } from '@tanstack/react-query';
 import type { ProductStatus } from '@divine/shared';
 import { apiRequest, type QueryValue } from '@/shared/lib/api-client';
-import type { Paginated, ProductDto, ProductInput, ProductSummaryDto } from '@/shared/types/api';
+import type {
+  Paginated,
+  ProductDto,
+  ProductInput,
+  ProductSummaryDto,
+  StockReceiptInput,
+} from '@/shared/types/api';
 
 export const productKeys = {
   all: ['products'] as const,
@@ -78,7 +84,20 @@ function useInvalidate() {
       qc.invalidateQueries({ queryKey: productKeys.all }),
       qc.invalidateQueries({ queryKey: ['product-groups'] }),
       qc.invalidateQueries({ queryKey: ['dashboard'] }),
+      // Qoldiq qo'shilishi omborlar, harakatlar va hisobotlarga ham ta'sir qiladi.
+      qc.invalidateQueries({ queryKey: ['warehouses'] }),
+      qc.invalidateQueries({ queryKey: ['reports'] }),
     ]);
+}
+
+/** Mavjud mahsulotga qoldiq (sobiq "Kirim"): `POST /products/:id/stock`. */
+export function useAddStock() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: StockReceiptInput }) =>
+      apiRequest<ProductDto>(`/products/${id}/stock`, { method: 'POST', body: input }),
+    onSuccess: invalidate,
+  });
 }
 
 export function useSaveProduct() {
