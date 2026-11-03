@@ -133,14 +133,14 @@ describe('Xarajatlar: admin (D-19)', () => {
     await user.click(options.at(-1) as HTMLElement);
     await user.type(
       await within(dialog).findByPlaceholderText(t.expenses.form.newCategoryPlaceholder),
-      'Reklama',
+      'Bank xizmatlari',
     );
     await user.click(within(dialog).getByRole('button', { name: t.expenses.form.addCategory }));
     expect(
       await within(dialog).findByRole('combobox', { name: /Kategoriya/ }, PAGE),
-    ).toHaveTextContent('Reklama');
+    ).toHaveTextContent('Bank xizmatlari');
     const admin = db().users.find((u) => u.login === 'admin')!;
-    expect(db().expenseCategories.find((c) => c.name === 'Reklama')?.createdBy).toBe(admin.id);
+    expect(db().expenseCategories.find((c) => c.name === 'Bank xizmatlari')?.createdBy).toBe(admin.id);
   });
 
   it('to‘liq ro‘yxat, "Jami" va kategoriyalar tugmasi', async () => {
