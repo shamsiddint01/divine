@@ -400,7 +400,14 @@ export const uz = {
     noWarehouse: 'Omborda yo‘q',
     form: {
       createTitle: 'Yangi mahsulot',
-      createDescription: 'Mahsulot katalogga qo‘shiladi. Qoldiq kirim orqali to‘ldiriladi.',
+      createDescription:
+        'Mahsulot katalogga qo‘shiladi. Omborda bo‘lsa — boshlang‘ich qoldiqni ham shu yerda kiriting.',
+      sectionMain: 'Asosiy ma’lumot',
+      sectionPrice: 'Narx',
+      sectionStock: 'Boshlang‘ich qoldiq',
+      sectionStockHint:
+        'Ixtiyoriy. Miqdor kiritilsa, mahsulot shu omborga darhol qabul qilinadi (kelgan narxi — yuqoridagi).',
+      stockWarehouseRequired: 'Qoldiq uchun omborni tanlang',
       editTitle: 'Mahsulotni tahrirlash',
       editDescription: 'Narx o‘zgarishi o‘tgan sotuvlarga ta’sir qilmaydi.',
       name: 'Mahsulot nomi',
@@ -420,6 +427,7 @@ export const uz = {
       activeLabel: 'Faol (sotuvda)',
       priceWarning: 'Sotuv narxi kelgan narxidan past',
       created: 'Mahsulot muvaffaqiyatli qo‘shildi.',
+      createdWithStock: (qty: string) => `Mahsulot qo‘shildi, omborga ${qty} birlik qabul qilindi.`,
       updated: 'Mahsulot ma’lumotlari yangilandi.',
     },
     detail: {
@@ -437,17 +445,32 @@ export const uz = {
       totalSold: 'Jami sotilgan',
       currentStock: 'Joriy qoldiq',
     },
+    /** Qoldiq qo'shish (sobiq "Kirim" bo'limi): ombor, miqdor, kelgan narxi, sana, izoh. */
+    stock: {
+      add: 'Qoldiq qo‘shish',
+      title: 'Qoldiq qo‘shish',
+      description: (name: string) => `«${name}» tanlangan omborga qabul qilinadi.`,
+      warehouse: 'Ombor',
+      quantity: 'Miqdor',
+      costPrice: 'Kelgan narxi',
+      costPriceHint: 'Shu partiya narxi. Mahsulot kartasidagi kelgan narxi o‘zgarmaydi.',
+      date: 'Sana',
+      notes: 'Izoh',
+      notesPlaceholder: 'Masalan: yetkazib beruvchi, hujjat raqami',
+      submit: 'Qabul qilish',
+      added: (qty: string) => `Omborga ${qty} birlik qabul qilindi.`,
+    },
     statusChange: {
       deactivate: 'Nofaol qilish',
       activate: 'Faollashtirish',
       deactivateTitle: 'Mahsulotni nofaol qilasizmi?',
       deactivateDescription:
-        'Nofaol mahsulotni sotib ham, kirim qilib ham bo‘lmaydi. Qoldiq va tarix saqlanadi.',
+        'Nofaol mahsulotni sotib ham, qoldiq qo‘shib ham bo‘lmaydi. Qoldiq va tarix saqlanadi.',
       deactivated: 'Mahsulot nofaol qilindi.',
       activated: 'Mahsulot faollashtirildi.',
     },
     emptyTitle: 'Mahsulotlar mavjud emas',
-    emptyDescription: 'Birinchi mahsulotni qo‘shing, keyin uni kirim orqali omborga oling.',
+    emptyDescription: 'Birinchi mahsulotni qo‘shing — boshlang‘ich qoldiqni shu oynada kiritishingiz mumkin.',
     noResults: 'Mahsulotlar topilmadi',
   },
 
