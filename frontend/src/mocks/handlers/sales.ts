@@ -274,11 +274,26 @@ route('POST', '/sales', ({ body, headers }) => {
       fail(404, 'NOT_FOUND', [{ field: 'customer.id', message: 'Ma’lumot topilmadi' }]);
     ({ id: customerId, name: customerName, phone: customerPhone } = c);
   } else {
+    const { phone } = input.customer;
+    // Ismsiz sotuv (backend `lockWalkInCustomer` aksi): telefon bo'yicha eng so'nggi xaridor yoki umumiy mijoz.
+    const walkIn =
+      input.customer.name === null
+        ? phone !== null
+          ? s.customers
+              .filter((c) => c.phone === phone)
+              .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
+          : s.customers.find((c) => c.name === WALK_IN_CUSTOMER_NAME && c.phone === null)
+        : undefined;
+    if (walkIn) {
+      ({ id: customerId, name: customerName, phone: customerPhone } = walkIn);
+    }
+  }
+  if (!('id' in input.customer) && customerId! === undefined) {
     // Ism bilan kelgan mijoz — har doim yangi yozuv (API §11; takroriy ism/telefon ruxsat — D-17).
     const at = now();
     const row: CustomerRow = {
       id: mockUuid(),
-      name: input.customer.name,
+      name: input.customer.name ?? WALK_IN_CUSTOMER_NAME,
       phone: input.customer.phone,
       notes: null,
       createdAt: at,
