@@ -244,60 +244,45 @@ check(
   await waitFor(`!document.body.innerText.includes('Savat bo‘sh')`),
 );
 
-// 5. Kirim: qoralama 200 → miqdor o'zgarsa darhol yangilanadi
-const draftId = await evaluate(
-  `JSON.parse(localStorage.getItem('divine.mock-db.v1')).incoming.find((d) => d.status === 'DRAFT')?.id`,
-);
-await go(`/incoming/${draftId}`);
+// 5. Qoldiq qo'shish (sobiq "Kirim" bo'limi) — Mahsulotlar bo'limida
+await go('/incoming/new');
 check(
-  'Kirim: qoralamaning ombori formada saqlanib ko‘rinadi (Radix Select regressiyasi)',
+  'Kirim: alohida bo‘lim yo‘q — eski URL /products ga yo‘naltiriladi',
+  await waitFor(`location.pathname === '/products'`),
+);
+await waitFor(tableReady);
+await clickText('Mahsulot qo‘shish');
+check(
+  'Mahsulot qo‘shish: “Boshlang‘ich qoldiq” bo‘limi (ombor, miqdor, sana, izoh) shu oynada',
   await waitFor(
-    `!!document.querySelector('#in-warehouse') && !document.querySelector('#in-warehouse').innerText.includes('Tanlang')`,
+    `!!document.querySelector('#p-stock-warehouse') && !!document.querySelector('#p-stock-quantity') && !!document.querySelector('#p-stock-date') && document.querySelector('[role=dialog]').innerText.includes('Boshlang‘ich qoldiq')`,
   ),
 );
 check(
-  'Kirim: TZ misoli — jami 200 dona',
-  await waitFor(
-    `document.querySelector('[data-testid=incoming-total-quantity]')?.innerText.includes('200')`,
-  ),
+  'Mahsulot qo‘shish: kelgan narxi oynada bitta (dublikat maydon yo‘q)',
+  await evaluate(`document.querySelectorAll('[role=dialog] input[id$=cost]').length === 1`),
 );
-await typeInto('input[aria-label="Miqdor 1"]', '60');
-check(
-  'Kirim: miqdor o‘zgarsa jami darhol 210',
-  await waitFor(
-    `document.querySelector('[data-testid=incoming-total-quantity]')?.innerText.includes('210')`,
-    2000,
-  ),
-);
-
-// 5b. Mahsulot tanlash: qidiruv server-side (katalog 100+ bo'lsa ham) + klaviatura
+await key('Escape');
+await waitFor(`!document.querySelector('[role=dialog]')`);
 const lastProduct = await evaluate(
   `(() => { const db = JSON.parse(localStorage.getItem('divine.mock-db.v1')); return db.products.filter((p) => p.status === 'ACTIVE' && p.barcode).sort((a, b) => b.name.localeCompare(a.name, 'uz'))[0]; })()`,
 );
-await go('/incoming/new');
-await waitFor(`!!document.querySelector('#in-product-0')`);
-await evaluate(`document.querySelector('#in-product-0').click()`);
-await waitFor(`!!document.querySelector('[role=listbox] [role=option]')`);
-await send('Input.insertText', { text: lastProduct.name });
-await waitFor(
-  `[...document.querySelectorAll('[role=option]')].length === 1 && document.querySelector('[role=option]').innerText.includes(${JSON.stringify(lastProduct.name)})`,
-);
-await key('Enter');
+await evaluate(`document.querySelector('table tbody tr').click()`);
+await waitFor(textOnPage('Qoldiq qo‘shish'));
+await clickText('Qoldiq qo‘shish');
 check(
-  'Mahsulot tanlash: alifbo bo‘yicha oxirgi mahsulot qidiruv + Enter bilan tanlanadi',
+  'Qoldiq qo‘shish: oyna ochiladi, kelgan narxi kartadan oldindan to‘ldirilgan',
   await waitFor(
-    `document.querySelector('#in-product-0')?.innerText.includes(${JSON.stringify(lastProduct.name)})`,
+    `!!document.querySelector('#sr-quantity') && document.querySelector('#sr-cost')?.value !== ''`,
   ),
 );
-await typeInto('input[aria-label="Shtrix-kod"]', lastProduct.barcode);
-await key('Enter');
+await typeInto('#sr-quantity', '1.5');
+await clickText('Qabul qilish');
 check(
-  'Kirim: shtrix-kod mavjud qatordagi miqdorni oshiradi (server lookup)',
-  await waitFor(`document.querySelector('input[aria-label="Miqdor 1"]')?.value === '1'`),
+  'Qoldiq qo‘shish: DONA mahsulotga kasr miqdor — maydon ostida xato, hech narsa yozilmaydi',
+  await waitFor(textOnPage('butun son')),
 );
-await typeInto('input[aria-label="Shtrix-kod"]', '0000000000000');
-await key('Enter');
-check('Kirim: noma’lum shtrix-kod xato xabarini beradi', await waitFor(textOnPage('topilmadi')));
+await key('Escape');
 await go('/sales?tab=history');
 await waitFor(`!!document.querySelector('[aria-label="Barcha mahsulotlar"]')`);
 await evaluate(`document.querySelector('[aria-label="Barcha mahsulotlar"]').click()`);
@@ -438,12 +423,12 @@ check(
   await waitFor(`!!document.querySelector('[role=dialog] nav')`, 2000),
 );
 await evaluate(
-  `[...document.querySelectorAll('[role=dialog] nav a')].find((a) => a.innerText.trim() === 'Kirim').click()`,
+  `[...document.querySelectorAll('[role=dialog] nav a')].find((a) => a.innerText.trim() === 'Ombor').click()`,
 );
 check(
   'Planshet: havola bosilsa sahifa almashadi va drawer yopiladi',
   await waitFor(
-    `location.pathname === '/incoming' && !document.querySelector('[role=dialog]')`,
+    `location.pathname === '/warehouses' && !document.querySelector('[role=dialog]')`,
     3000,
   ),
 );
@@ -466,17 +451,17 @@ await evaluate(
 check(
   'Telefon: guruh bosilsa bo‘limlari pastdan ochiladi',
   await waitFor(
-    `(() => { const d = document.querySelector('[role=dialog]'); return !!d && Math.abs(d.getBoundingClientRect().bottom - innerHeight) < 2 && [...d.querySelectorAll('nav a')].map((a) => a.innerText.trim()).join() === 'Mahsulotlar,Mahsulot guruhlari,Ombor,Kirim'; })()`,
+    `(() => { const d = document.querySelector('[role=dialog]'); return !!d && Math.abs(d.getBoundingClientRect().bottom - innerHeight) < 2 && [...d.querySelectorAll('nav a')].map((a) => a.innerText.trim()).join() === 'Mahsulotlar,Mahsulot guruhlari,Ombor'; })()`,
     2000,
   ),
 );
 await evaluate(
-  `[...document.querySelectorAll('[role=dialog] nav a')].find((a) => a.innerText.trim() === 'Kirim').click()`,
+  `[...document.querySelectorAll('[role=dialog] nav a')].find((a) => a.innerText.trim() === 'Ombor').click()`,
 );
 check(
   'Telefon: bo‘lim bosilsa sahifa almashadi, oyna yopiladi, guruh faol',
   await waitFor(
-    `location.pathname === '/incoming' && !document.querySelector('[role=dialog]') && [...${bottomNav}.querySelectorAll('button')].find((b) => b.innerText.trim() === 'Katalog')?.getAttribute('aria-current') === 'page'`,
+    `location.pathname === '/warehouses' && !document.querySelector('[role=dialog]') && [...${bottomNav}.querySelectorAll('button')].find((b) => b.innerText.trim() === 'Katalog')?.getAttribute('aria-current') === 'page'`,
     3000,
   ),
 );

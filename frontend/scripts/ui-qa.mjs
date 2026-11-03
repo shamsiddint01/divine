@@ -21,7 +21,7 @@ const THEMES = arg('themes', 'light,dark').split(',');
 const SHOTS = arg('shots', '');
 const ROUTES = arg(
   'routes',
-  '/,/users,/products,/product-groups,/warehouses,/sales,/sales?tab=history,/customers,/incoming,/incoming/new,/expenses,/reports,/settings,/settings?tab=audit,/nomalum-sahifa,/customers/yoq-id,/incoming/yoq-id',
+  '/,/users,/products,/product-groups,/warehouses,/sales,/sales?tab=history,/customers,/expenses,/reports,/settings,/settings?tab=audit,/nomalum-sahifa,/customers/yoq-id',
 ).split(',');
 const WAIT = Number(arg('wait', '2500'));
 const port = 9300 + Math.floor(Math.random() * 500);
