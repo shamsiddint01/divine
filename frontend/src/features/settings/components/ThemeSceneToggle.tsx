@@ -149,6 +149,8 @@ export function ThemeSceneToggle() {
     const nextCloud = () => {
       if (!tx) return;
       const more = buildNextCloud(tx);
+      // Harakat kamaytirilgan: sikl aylanmaydi — paydo bo'lish animatsiyasisiz, darhol to'liq
+      if (live.current.reduceMotion) tx.cloudsReadyAt[tx.cloudsReadyAt.length - 1]! -= 1000;
       kick();
       if (more) cloudTimer = window.setTimeout(nextCloud, 16);
     };
