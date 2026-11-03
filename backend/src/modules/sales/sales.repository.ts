@@ -1,11 +1,21 @@
 import { Injectable } from '@nestjs/common';
-import type { ProductStatus, ProductUnit, SaleDto, SaleItemDto, SortSpec } from '@divine/shared';
+import {
+  type ProductStatus,
+  type ProductUnit,
+  type SaleDto,
+  type SaleItemDto,
+  type SortSpec,
+  WALK_IN_CUSTOMER_NAME,
+} from '@divine/shared';
 import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import type { Tx } from '../../infrastructure/prisma/transaction-runner.js';
 import { toPrismaPagination, toSqlOrderBy } from '../../common/query/prisma-query.js';
 import { tashkentDateRangeToUtc } from '../../common/time/tashkent-time.js';
 import { escapeLike } from '../product-groups/product-groups.repository.js';
+
+/** Umumiy (ismsiz) mijozni yaratishni ketma-ketlashtirish (`lockWalkInCustomer`). */
+const WALK_IN_LOCK_KEY = 'divine.uz:walk-in-customer';
 
 export type SaleSortField = 'soldAt' | 'totalAmount' | 'number';
 

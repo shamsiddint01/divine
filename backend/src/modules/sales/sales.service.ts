@@ -14,6 +14,7 @@ import {
   type SaleDto,
   type SalesListResponse,
   VALIDATION_MESSAGES_UZ,
+  WALK_IN_CUSTOMER_NAME,
 } from '@divine/shared';
 import { type AccessContext, hasPermission, ownerScope } from '../../common/auth/access-context.js';
 import { AppError } from '../../common/errors/app-error.js';
