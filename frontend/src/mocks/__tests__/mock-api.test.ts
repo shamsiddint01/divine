@@ -1,3 +1,4 @@
+import { WALK_IN_CUSTOMER_NAME } from '@divine/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { addQty, compareQty, subMoney, sumMoney, sumQty } from '@/shared/lib/decimal';
 import type {
