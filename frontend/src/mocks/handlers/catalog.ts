@@ -15,6 +15,7 @@ import { mockUuid } from '../lib/random';
 import { diffChanges, hasChanges, recordAudit } from '../audit';
 import { currentCan, productTotals, toProductDto } from '../mappers';
 import { nowIso } from '../lib/clock';
+import { assertReceivable, receiveStock, requireReceivePermission } from '../stock-receipt';
 
 const now = nowIso;
 const lower = (s: string) => s.toLocaleLowerCase('uz');
@@ -228,8 +229,15 @@ route('GET', '/products/:id/summary', ({ params }): ProductSummaryDto => {
 route('POST', '/products', ({ body }) => {
   const input = validate(productCreateSchema, body);
   const s = db();
+  if (input.initialStock) requireReceivePermission();
   assertGroupAssignable(input.groupId, null);
   assertBarcodeFree(input.barcode);
+  const initialStock = input.initialStock && { ...input.initialStock, costPrice: input.costPrice };
+  if (initialStock) {
+    assertReceivable(input, initialStock, (field) =>
+      field === 'quantity' ? 'initialStock.quantity' : 'initialStock',
+    );
+  }
   const at = now();
   const row = {
     id: mockUuid(),
@@ -260,6 +268,18 @@ route('POST', '/products', ({ body }) => {
       status: row.status,
     },
   });
+  if (initialStock) receiveStock(row, initialStock);
+  return toProductDto(s, row, productTotals(s));
+});
+
+/** Mavjud mahsulotga qoldiq (sobiq "Kirim"): darhol tasdiqlangan kirim hujjati. */
+route('POST', '/products/:id/stock', ({ params, body }) => {
+  requireReceivePermission();
+  const input = validate(stockReceiptSchema, body);
+  const s = db();
+  const row = s.products.find((p) => p.id === params.id) ?? notFound();
+  assertReceivable(row, input, (field) => (field === 'quantity' ? 'quantity' : 'productId'));
+  receiveStock(row, input);
   return toProductDto(s, row, productTotals(s));
 });
 
