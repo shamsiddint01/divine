@@ -1,8 +1,11 @@
 import {
   PRODUCT_UNITS,
+  Permission,
   type ProductUnit,
+  VALIDATION_MESSAGES_UZ,
   entityNameSchema,
   optionalBarcodeSchema,
+  quantitySchema,
 } from '@divine/shared';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
@@ -30,7 +33,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/shared/ui/switch';
 import type { ProductDto } from '@/shared/types/api';
 import { useGroupOptions } from '@/features/product-groups/api/groups';
+import { useHasAnyPermission } from '@/features/session/hooks/use-permissions';
 import { useSaveProduct } from '../api/products';
+import {
+  FORM_DIALOG_BODY_CLASS,
+  FORM_DIALOG_CLASS,
+  FORM_DIALOG_FOOTER_CLASS,
+  FORM_DIALOG_HEADER_CLASS,
+  FormSection,
+  StockFields,
+  emptyStock,
+  stockShape,
+  useActiveWarehouses,
+} from './StockFields';
 
 const schema = z
   .object({
@@ -45,11 +60,34 @@ const schema = z
     salePrice: moneyField(),
     minStock: optionalQuantityField(),
     active: z.boolean(),
+    /** Boshlang'ich qoldiq (faqat yangi mahsulotda): miqdor bo'sh bo'lsa — hech narsa yozilmaydi. */
+    stock: z.object(stockShape),
   })
   .refine((v) => v.unit !== 'DONA' || !v.allowDecimal, {
     error: t.validation.donaNoDecimal,
     path: ['allowDecimal'],
+  })
+  .superRefine((v, ctx) => {
+    const qty = v.stock.quantity.trim();
+    if (!qty) return;
+    if (!quantitySchema.safeParse(normalizeNumberInput(qty) ?? '').success) {
+      ctx.addIssue({ code: 'custom', path: ['stock', 'quantity'], message: M.quantityFormat });
+    } else if (!v.allowDecimal && !isWholeQuantity(normalizeNumberInput(qty) ?? '')) {
+      ctx.addIssue({ code: 'custom', path: ['stock', 'quantity'], message: M.wholeQuantity });
+    }
+    if (!v.active) {
+      ctx.addIssue({ code: 'custom', path: ['stock', 'quantity'], message: M.initialStockInactive });
+    }
+    if (!v.stock.warehouseId) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['stock', 'warehouseId'],
+        message: t.products.form.stockWarehouseRequired,
+      });
+    }
   });
+
+const M = VALIDATION_MESSAGES_UZ;
 
 type FormValues = z.infer<typeof schema>;
 
@@ -63,6 +101,7 @@ const empty: FormValues = {
   salePrice: '',
   minStock: '',
   active: true,
+  stock: emptyStock(),
 };
 
 function toForm(p: ProductDto): FormValues {
@@ -76,6 +115,7 @@ function toForm(p: ProductDto): FormValues {
     salePrice: groupDigits(p.salePrice.replace(/\.00$/, '')),
     minStock: p.minStock ? formatQuantity(p.minStock) : '',
     active: p.status === 'ACTIVE',
+    stock: emptyStock(),
   };
 }
 
@@ -88,12 +128,24 @@ interface ProductFormDialogProps {
 export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDialogProps) {
   const { data: groups, error: groupsError, refetch: refetchGroups } = useGroupOptions();
   const save = useSaveProduct();
+  // Boshlang'ich qoldiq — kirim bilan bir xil ruxsat; tahrirlashda yo'q (qoldiq "Qoldiq qo'shish"dan).
+  const canReceive =
+    useHasAnyPermission([Permission.INCOMING_MANAGE]) &&
+    useHasAnyPermission([Permission.INCOMING_CONFIRM]);
+  const withStock = !product && canReceive;
+  const { single: singleWarehouse } = useActiveWarehouses();
   const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: empty });
   const { register, handleSubmit, control, reset, setValue, setError, formState } = form;
 
   useEffect(() => {
-    if (open) reset(product ? toForm(product) : empty);
-  }, [open, product, reset]);
+    if (open) {
+      reset(
+        product
+          ? toForm(product)
+          : { ...empty, stock: { ...emptyStock(), warehouseId: singleWarehouse } },
+      );
+    }
+  }, [open, product, reset, singleWarehouse]);
 
   const [cost, sale, unit] = useWatch({ control, name: ['costPrice', 'salePrice', 'unit'] });
   const costN = normalizeNumberInput(cost);
@@ -101,6 +153,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   const priceWarning = costN && saleN && compareMoney(saleN, costN) < 0;
 
   const onSubmit = handleSubmit(async (v) => {
+    const qty = withStock ? normalizeNumberInput(v.stock.quantity.trim()) : null;
     try {
       await save.mutateAsync({
         id: product?.id,
@@ -114,12 +167,31 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
           salePrice: toDecimal(v.salePrice),
           minStock: v.minStock.trim() ? toDecimal(v.minStock) : null,
           status: v.active ? 'ACTIVE' : 'INACTIVE',
+          ...(qty
+            ? {
+                initialStock: {
+                  warehouseId: v.stock.warehouseId,
+                  quantity: qty,
+                  date: v.stock.date,
+                  notes: v.stock.notes.trim() || null,
+                },
+              }
+            : {}),
         },
       });
-      toast.success(product ? t.products.form.updated : t.products.form.created);
+      toast.success(
+        product
+          ? t.products.form.updated
+          : qty
+            ? t.products.form.createdWithStock(formatQuantity(qty))
+            : t.products.form.created,
+      );
       onOpenChange(false);
     } catch (error) {
-      if (!applyFieldErrors(error, setError)) toastError(error);
+      const mapped = applyFieldErrors(error, setError, (field) =>
+        field.startsWith('initialStock') ? 'stock.quantity' : field,
+      );
+      if (!mapped) toastError(error);
     }
   });
 

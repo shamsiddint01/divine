@@ -11,9 +11,11 @@ export function toastError(error: unknown): void {
 export function applyFieldErrors(
   error: unknown,
   setError: (field: never, e: { message: string }) => void,
+  /** Server maydon nomi → forma maydoni (masalan, `initialStock.quantity` → `stock.quantity`). */
+  mapField: (field: string) => string = (field) => field,
 ): boolean {
   if (!(error instanceof ApiError) || error.details.length === 0) return false;
-  for (const d of error.details) setError(d.field as never, { message: d.message });
+  for (const d of error.details) setError(mapField(d.field) as never, { message: d.message });
   return true;
 }
 
