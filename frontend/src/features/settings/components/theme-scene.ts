@@ -75,6 +75,9 @@ const mix = (a: Rgb, b: Rgb, t: number): Rgb => [
 ];
 const rgba = (c: Rgb, a = 1) =>
   `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${clamp01(a).toFixed(3)})`;
+const WHITE: Rgb = [255, 255, 255];
+const MOON: Rgb = [236, 238, 255];
+
 export const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
 
 function skyAt(keys: SkyKey[], p: number): Sky {
@@ -613,8 +616,6 @@ export function createSceneTextures(): SceneTextures | null {
 }
 
 // --- Chizish ------------------------------------------------------------------------------------------
-const WHITE: Rgb = [255, 255, 255];
-const MOON: Rgb = [236, 238, 255];
 
 export interface DrawOptions {
   /** Soniyalarda — bo'sh turgandagi harakat (yulduz miltillashi, tuman, bulut, suv jilosi). */
@@ -623,6 +624,36 @@ export interface DrawOptions {
   mistOffset: number;
   /** Canvas piksel zichligi (devicePixelRatio). */
   dpr: number;
+}
+
+/** Quyosh diski: chiqish/botishda ufq bo'ylab biroz siljiydi; ufqda kattaroq, qizg'ish. */
+function sunGeom(w: number, h: number, hy: number, s: SceneParams) {
+  const alt = clamp01(s.sun);
+  const r = Math.max(8, h * 0.055) * lerp(1.18, 1, smoothstep(0, 0.35, alt));
+  return {
+    x: w * lerp(0.24, 0.3, smoothstep(-0.1, 0.6, s.sun)),
+    y: lerp(hy + r * 0.6, h * 0.2, s.sun),
+    r,
+    alt,
+    visible: smoothstep(-0.14, 0.02, s.sun),
+  };
+}
+
+/**
+ * Oy: sharqdan (o'ngdan) qiya yo'l bilan ko'tariladi / shu yo'l bilan botadi. Ufq yonida kattaroq
+ * ko'rinadi va havo qatlami orqali sarg'ish-to'q sariq tusga kiradi.
+ */
+function moonGeom(w: number, h: number, hy: number, s: SceneParams) {
+  const alt = clamp01(s.moon);
+  const r = Math.max(9, h * 0.07) * lerp(1.2, 1, smoothstep(0, 0.4, alt));
+  return {
+    x: w * lerp(0.86, 0.76, smoothstep(-0.2, 1, s.moon)),
+    y: lerp(hy + r * 1.05, h * 0.25, s.moon),
+    r,
+    alt,
+    // Shom paytida ham ko'rinadi (osmon hali yorug' — xiraroq), ufq ostida yashiringan
+    visible: smoothstep(-0.16, 0.02, s.moon) * clamp01(0.35 + s.night * 0.75 + s.warmth * 0.2),
+  };
 }
 
 function drawHills(
@@ -709,18 +740,19 @@ function drawSky(
     }
   }
 
-  // Oy: keng xira halo + teksturali disk
-  if (s.night > 0.01) {
-    const mx = w * 0.76;
-    const my = h * 0.25;
-    const mr = Math.max(9, h * 0.075);
+  // Oy: keng xira halo + teksturali disk; ufq yonida iliq tus (havo qatlami ko'k nurni yutadi)
+  const mg = moonGeom(w, h, hy, s);
+  if (mg.visible > 0.01) {
+    const { x: mx, y: my, r: mr } = mg;
+    const low = 1 - smoothstep(0, 0.45, mg.alt);
+    const haloTint = mix([200, 210, 255], [255, 206, 160], low);
     const halo = ctx.createRadialGradient(mx, my, mr * 0.9, mx, my, mr * 7);
-    halo.addColorStop(0, rgba([200, 210, 255], 0.3 * s.night));
-    halo.addColorStop(0.35, rgba([170, 185, 245], 0.09 * s.night));
-    halo.addColorStop(1, rgba([170, 185, 245], 0));
+    halo.addColorStop(0, rgba(haloTint, 0.3 * mg.visible * s.night + 0.06 * mg.visible));
+    halo.addColorStop(0.35, rgba(haloTint, 0.09 * mg.visible * s.night));
+    halo.addColorStop(1, rgba(haloTint, 0));
     ctx.fillStyle = halo;
     ctx.fillRect(mx - mr * 7, my - mr * 7, mr * 14, mr * 14);
-    ctx.globalAlpha = s.night;
+    ctx.globalAlpha = mg.visible;
     if (tx)
       ctx.drawImage(tx.moon, mx - mr / 0.92, my - mr / 0.92, (mr * 2) / 0.92, (mr * 2) / 0.92);
     else {
@@ -729,49 +761,100 @@ function drawSky(
       ctx.arc(mx, my, mr, 0, Math.PI * 2);
       ctx.fill();
     }
+    if (low > 0.02) {
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.globalAlpha = mg.visible * low * 0.85;
+      ctx.fillStyle = rgba([255, 196, 132]);
+      ctx.beginPath();
+      ctx.arc(mx, my, mr * 1.01, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+    }
     ctx.globalAlpha = 1;
   }
 
-  // Quyosh: oq-issiq yadro, yorqin halo, keng atmosfera nuri (ufqda to'q sariq va kattaroq)
-  const sunVisible = smoothstep(-0.12, 0.04, s.sun);
-  if (sunVisible > 0.01) {
-    const alt = clamp01(s.sun);
-    const sx = w * 0.3;
-    const sr = Math.max(8, h * 0.06);
-    const sy = lerp(hy + sr * 0.5, h * 0.2, s.sun);
-    const tint = mix([255, 150, 70], [255, 244, 214], alt);
-    const wide = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr * lerp(14, 9, alt));
-    wide.addColorStop(0, rgba(tint, 0.45 * sunVisible));
-    wide.addColorStop(0.25, rgba(tint, 0.16 * sunVisible));
+  // Quyosh: keng atmosfera nuri (Mie sochilishi), yorqin halo, oq-issiq yadro; ufqda yassi va qizg'ish
+  const sg = sunGeom(w, h, hy, s);
+  if (sg.visible > 0.01) {
+    const { x: sx, y: sy, r: sr, alt } = sg;
+    const tint = mix([255, 128, 56], [255, 240, 210], smoothstep(0, 0.55, alt));
+    const wide = ctx.createRadialGradient(
+      sx,
+      sy,
+      0,
+      sx,
+      sy,
+      Math.max(w, h) * lerp(0.75, 0.55, alt),
+    );
+    wide.addColorStop(0, rgba(tint, 0.42 * sg.visible));
+    wide.addColorStop(0.12, rgba(tint, 0.2 * sg.visible));
+    wide.addColorStop(0.4, rgba(tint, 0.06 * sg.visible));
     wide.addColorStop(1, rgba(tint, 0));
     ctx.fillStyle = wide;
     ctx.fillRect(0, 0, w, hy);
-    const core = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr * 1.25);
-    core.addColorStop(0, rgba([255, 255, 250], sunVisible));
-    core.addColorStop(0.7, rgba(mix(tint, WHITE, 0.6), sunVisible));
-    core.addColorStop(1, rgba(tint, 0));
+    const bloom = ctx.createRadialGradient(sx, sy, sr * 0.6, sx, sy, sr * 3.2);
+    bloom.addColorStop(0, rgba(mix(tint, WHITE, 0.7), 0.85 * sg.visible));
+    bloom.addColorStop(0.3, rgba(mix(tint, WHITE, 0.35), 0.35 * sg.visible));
+    bloom.addColorStop(1, rgba(tint, 0));
+    ctx.fillStyle = bloom;
+    ctx.fillRect(sx - sr * 3.3, sy - sr * 3.3, sr * 6.6, sr * 6.6);
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.scale(1, lerp(0.84, 1, smoothstep(0, 0.25, alt)));
+    const core = ctx.createRadialGradient(0, 0, 0, 0, 0, sr);
+    core.addColorStop(0, rgba([255, 255, 252], sg.visible));
+    core.addColorStop(0.82, rgba(mix(tint, WHITE, 0.75), sg.visible));
+    core.addColorStop(1, rgba(mix(tint, WHITE, 0.5), 0));
     ctx.fillStyle = core;
-    ctx.fillRect(sx - sr * 1.3, sy - sr * 1.3, sr * 2.6, sr * 2.6);
+    ctx.beginPath();
+    ctx.arc(0, 0, sr, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
-  // Bulutlar: kunduzgi va iliq variantlar shom/tongda aralashadi; tunda deyarli ko'rinmaydi
+  // Baland patsimon bulutlar: juda sekin suzadi; shomda pushti-oltin
   const cloudAlpha = clamp01(day * 1.2 - 0.05);
+  if (tx && cloudAlpha > 0.01) {
+    const cw = w * 1.4;
+    const ch = hy * 0.42;
+    const off = -((time * 0.0016 * w) % cw);
+    for (const k of [0, 1]) {
+      const x = off + k * cw;
+      ctx.globalAlpha = cloudAlpha * 0.55 * (1 - s.warmth);
+      ctx.drawImage(tx.cirrusDay, x, hy * 0.02, cw, ch);
+      if (s.warmth > 0.01) {
+        ctx.globalAlpha = cloudAlpha * 0.75 * s.warmth;
+        ctx.drawImage(tx.cirrusWarm, x, hy * 0.02, cw, ch);
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Kumulus bulutlar: yaqinlari tepada va katta; uzoqlari ufq yonida, havo pardasi ortida xira
   if (tx && cloudAlpha > 0.01) {
     for (const c of a.clouds) {
       const cw = c.width * h;
-      const ch = cw * (170 / 360);
+      const ch = cw * 0.5;
       const span = w + cw * 1.2;
       const x = ((((c.x * span + time * c.speed * w) % span) + span) % span) - cw * 0.6;
-      const y = c.y * hy - ch * 0.55;
-      ctx.globalAlpha = cloudAlpha * (1 - s.warmth);
+      const y = c.y * hy - ch * 0.62;
+      const fade = cloudAlpha * (1 - c.depth * 0.3);
+      ctx.globalAlpha = fade * (1 - s.warmth);
       ctx.drawImage(tx.cloudsDay[c.sprite]!, x, y, cw, ch);
       if (s.warmth > 0.01) {
-        ctx.globalAlpha = cloudAlpha * s.warmth;
+        ctx.globalAlpha = fade * s.warmth;
         ctx.drawImage(tx.cloudsWarm[c.sprite]!, x, y, cw, ch);
       }
     }
     ctx.globalAlpha = 1;
   }
+
+  // Havo perspektivasi: ufq yonida osmon rangidagi parda (uzoq bulut va tepaliklarni yumshatadi)
+  const haze = ctx.createLinearGradient(0, hy * 0.55, 0, hy);
+  haze.addColorStop(0, rgba(s.sky.horizon, 0));
+  haze.addColorStop(1, rgba(mix(s.sky.horizon, WHITE, 0.1 * day), 0.5 * day + 0.15));
+  ctx.fillStyle = haze;
+  ctx.fillRect(0, hy * 0.55, w, hy * 0.45);
 
   // Qirg'oq: uzoq qatlam havoda xiralashgan, yaqinrog'i to'qroq (havo perspektivasi)
   const far = mix(s.sky.horizon, s.sky.top, 0.35);
@@ -847,8 +930,36 @@ export function drawScene(
       }
     }
   }
-  // Fresnel: ufq yonida aks kuchli, yaqin suv chuqur va qorong'iroq
-  const deep = mix(s.sky.top, [2, 6, 18], 0.55);
+  // To'lqinlar: perspektivada — ufqda mayda va zich, kameraga yaqin yirik; sekin suzadi
+  if (tx) {
+    tx.ripplePattern ??= ctx.createPattern(tx.ripple, 'repeat');
+    const pattern = tx.ripplePattern;
+    if (pattern) {
+      ctx.globalCompositeOperation = 'overlay';
+      const bands = 14;
+      for (let i = 0; i < bands; i++) {
+        const t0 = (i / bands) ** 1.7;
+        const t1 = ((i + 1) / bands) ** 1.7;
+        const y0 = hy + t0 * waterH;
+        const y1 = hy + t1 * waterH + 1;
+        const depth = (t0 + t1) / 2;
+        const scale = 0.18 + depth * 1.5;
+        pattern.setTransform(
+          new DOMMatrix()
+            .translateSelf((time * (6 + depth * 22)) % (tx.ripple.width * scale), y0)
+            .scaleSelf(scale, scale * 0.55),
+        );
+        ctx.globalAlpha = (0.22 + 0.35 * day) * (0.55 + depth * 0.45);
+        ctx.fillStyle = pattern;
+        ctx.fillRect(0, y0, w, y1 - y0);
+      }
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // Fresnel: ufq yonida aks kuchli, yaqin suv chuqur va qorong'iroq (kunduzi zangori-ko'k ko'l)
+  const deep = mix(mix(s.sky.top, [2, 6, 18], 0.55), [8, 52, 86], day * 0.65);
   const fres = ctx.createLinearGradient(0, hy, 0, h);
   fres.addColorStop(0, rgba(deep, 0.12));
   fres.addColorStop(0.5, rgba(deep, 0.35));
@@ -873,16 +984,25 @@ export function drawScene(
 
   // 3) Quyosh/oy yo'li: suvda titrab turuvchi yaltirash uchqunlari
   const paths: { x: number; color: Rgb; strength: number; width: number }[] = [];
-  const sunVisible = smoothstep(-0.12, 0.04, s.sun);
+  const sg = sunGeom(w, h, hy, s);
+  const sunVisible = sg.visible * smoothstep(-0.02, 0.06, s.sun);
   if (sunVisible > 0.01)
     paths.push({
-      x: w * 0.3,
-      color: mix([255, 168, 90], [255, 250, 232], clamp01(s.sun)),
-      strength: sunVisible * lerp(1, 0.6, clamp01(s.sun)),
-      width: h * 0.16,
+      x: sg.x,
+      color: mix([255, 150, 70], [255, 250, 232], smoothstep(0, 0.5, sg.alt)),
+      strength: sunVisible * lerp(1, 0.75, sg.alt),
+      // Quyosh baland — yo'l keng va siyrak; past — tor va zich
+      width: h * lerp(0.12, 0.24, sg.alt),
     });
-  if (s.night > 0.01)
-    paths.push({ x: w * 0.76, color: MOON, strength: s.night * 0.7, width: h * 0.12 });
+  const mg = moonGeom(w, h, hy, s);
+  const moonVisible = mg.visible * smoothstep(-0.02, 0.08, s.moon);
+  if (moonVisible > 0.01)
+    paths.push({
+      x: mg.x,
+      color: mix([255, 206, 150], MOON, smoothstep(0, 0.45, mg.alt)),
+      strength: moonVisible * 0.7,
+      width: h * 0.12,
+    });
   const tick = Math.floor(time * 14);
   ctx.globalCompositeOperation = 'lighter';
   for (const p of paths) {
@@ -897,7 +1017,7 @@ export function drawScene(
     ctx.fillRect(-p.width, 0, p.width * 2, p.width);
     ctx.restore();
     // Yaltirash uchqunlari: mayda, har xil uzunlikda, har kadrda o'rnini o'zgartiradi
-    for (let i = 0; i < 90; i++) {
+    for (let i = 0; i < 140; i++) {
       const k = Math.sin((i + 1) * 78.233 + tick * 0.37) * 43758.5453;
       const rnd = k - Math.floor(k);
       const k2 = Math.sin((i + 1) * 12.989 + tick * 0.73) * 24634.634;
@@ -915,7 +1035,7 @@ export function drawScene(
 
   // 4) Tuman: ikki qatlam, har xil tezlik (parallaks); tunda qalin, kunduzi yupqa havo
   if (tx) {
-    const amount = lerp(0.22, 0.95, s.night) + s.warmth * 0.15;
+    const amount = lerp(0.1, 0.95, s.night) + s.warmth * 0.15;
     const layers = [
       { y: hy - h * 0.1, hgt: h * 0.32, speed: 0.012, alpha: 0.55, scale: 1.4 },
       { y: hy - h * 0.02, hgt: h * 0.26, speed: 0.022, alpha: 0.7, scale: 1 },
