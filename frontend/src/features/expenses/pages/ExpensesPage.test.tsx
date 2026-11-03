@@ -203,25 +203,35 @@ describe('Xarajatlar: admin (D-19)', () => {
 });
 
 describe('mock API backend bilan bir xil (RBAC §5, D-12, D-19)', () => {
-  it('sotuvchi: kategoriyalar faqat faol va `id, name`; ro‘yxat, detal, tahrirlash, o‘chirish, kategoriya boshqaruvi 403', async () => {
+  it('sotuvchi (D-23): faqat o‘z kategoriyalari (`id, name`) va xarajatlari; adminniki — ro‘yxatda yo‘q, detal 404; tahrirlash va boshqaruv 403', async () => {
     renderApp('/login?redirect=%2Fsales', { loggedOut: true });
     const s = as('aziz');
-    s.expenseCategories[0]!.isActive = false;
-    const list = await mockRequest<ExpenseCategoryDto[]>('/expense-categories', {
-      query: { isActive: 'false' },
+    expect(await mockRequest<ExpenseCategoryDto[]>('/expense-categories')).toEqual([]);
+    const own = await mockRequest<ExpenseCategoryDto>('/expense-categories', {
+      method: 'POST',
+      body: { name: 'Ijara' }, // admin'da ham bor — boshqa egasi, ruxsat
     });
-    expect(list.length).toBe(s.expenseCategories.filter((c) => c.isActive).length);
-    for (const c of list) expect(Object.keys(c).sort()).toEqual(['id', 'name']);
+    expect(Object.keys(own).sort()).toEqual(['id', 'name']);
+    const list = await mockRequest<ExpenseCategoryDto[]>('/expense-categories');
+    expect(list.map((c) => c.id)).toEqual([own.id]);
 
-    const id = s.expenses[0]!.id;
+    const adminExpense = s.expenses[0]!.id;
+    const mine = await mockRequest<{ data: { id: string }[] }>('/expenses');
+    expect(mine.data.map((e) => e.id)).not.toContain(adminExpense);
+    await expect(mockRequest(`/expenses/${adminExpense}`)).rejects.toMatchObject({ status: 404 });
+    const adminCategory = s.expenseCategories.find((c) => !c.createdBy)!.id;
+    await expect(
+      mockRequest('/expenses', {
+        method: 'POST',
+        body: { date: '2026-10-06', amount: '1', categoryId: adminCategory },
+      }),
+    ).rejects.toMatchObject({ status: 404 });
+
     for (const [path, method] of [
-      ['/expenses', 'GET'],
-      [`/expenses/${id}`, 'GET'],
-      [`/expenses/${id}`, 'PATCH'],
-      [`/expenses/${id}`, 'DELETE'],
-      ['/expense-categories', 'POST'],
-      [`/expense-categories/${list[0]!.id}`, 'PATCH'],
-      [`/expense-categories/${list[0]!.id}`, 'DELETE'],
+      [`/expenses/${adminExpense}`, 'PATCH'],
+      [`/expenses/${adminExpense}`, 'DELETE'],
+      [`/expense-categories/${own.id}`, 'PATCH'],
+      [`/expense-categories/${own.id}`, 'DELETE'],
     ] as const) {
       await expect(
         mockRequest(path, { method, body: { amount: '1', name: 'X' } }),
