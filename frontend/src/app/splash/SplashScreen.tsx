@@ -1,6 +1,6 @@
 import { type CSSProperties, useEffect, useRef, useState } from 'react';
 import { t } from '@/i18n/uz';
-import { BRAND_PATHS } from '@/shared/ui/brand-logo';
+import { D, HIGHLIGHT, IVINE, STAR, STAR_X, UZ, WIDTH } from '@/shared/ui/brand-paths';
 import { useUiStore } from '@/stores/ui.store';
 import './splash.css';
 
@@ -16,7 +16,6 @@ const INTRO_MS = 3700;
 const EXIT_MS = 800;
 const SKIP_MS = 300;
 
-const { STAR, D, HIGHLIGHT, IVINE, UZ, STAR_X, WIDTH } = BRAND_PATHS;
 /** Yulduz paydo bo'lganda sochiladigan uchqunlar yo'nalishi (belgi koordinatalarida). */
 const SPARKS = [
   [16, -10],
