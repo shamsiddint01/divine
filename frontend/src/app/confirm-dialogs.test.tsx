@@ -56,17 +56,6 @@ describe('BR-33: destructive amallar tasdiq oynasisiz bajarilmaydi', () => {
     expect(active()).toBe(before);
   });
 
-  it('kirimni tasdiqlash va bekor qilish', async () => {
-    const draft = resetEphemeralDb(TEST_NOW).incoming.find((d) => d.status === 'DRAFT')!;
-    renderApp(`/incoming/${draft.id}`);
-    const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: t.incoming.form.confirm }, PAGE));
-    await confirmShownThenCancel(user, t.incoming.form.confirmTitle);
-    await user.click(screen.getByRole('button', { name: t.incoming.form.cancelDoc }));
-    await confirmShownThenCancel(user, t.incoming.form.cancelTitle);
-    expect(db().incoming.find((d) => d.id === draft.id)?.status).toBe('DRAFT');
-  });
-
   it('POS: savatni tozalash', async () => {
     renderApp('/sales');
     const user = userEvent.setup();

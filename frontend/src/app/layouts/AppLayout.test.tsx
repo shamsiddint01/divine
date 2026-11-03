@@ -41,12 +41,14 @@ describe('ilova karkasi (layout)', () => {
   it('navigatsiya orqali sahifa almashadi va active holat o‘zgaradi', async () => {
     const { router } = renderApp('/');
     const nav = await screen.findByRole('navigation', { name: t.nav.mainMenu }, PAGE);
-    await userEvent.click(within(nav).getByRole('link', { name: 'Kirim' }));
-    expect(router.state.location.pathname).toBe('/incoming');
+    // Alohida "Kirim" bo'limi yo'q — qoldiq Mahsulotlar bo'limidan qo'shiladi.
+    expect(within(nav).queryByRole('link', { name: 'Kirim' })).toBeNull();
+    await userEvent.click(within(nav).getByRole('link', { name: 'Ombor' }));
+    expect(router.state.location.pathname).toBe('/warehouses');
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Kirim' }, PAGE),
+      await screen.findByRole('heading', { level: 1, name: 'Omborlar' }, PAGE),
     ).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: 'Kirim' })).toHaveAttribute(
+    expect(within(nav).getByRole('link', { name: 'Ombor' })).toHaveAttribute(
       'aria-current',
       'page',
     );
@@ -76,10 +78,10 @@ describe('ilova karkasi (layout)', () => {
       within(sheet)
         .getAllByRole('link')
         .map((a) => a.textContent),
-    ).toEqual(['Mahsulotlar', 'Mahsulot guruhlari', 'Ombor', 'Kirim']);
+    ).toEqual(['Mahsulotlar', 'Mahsulot guruhlari', 'Ombor']);
 
-    await userEvent.click(within(sheet).getByRole('link', { name: 'Kirim' }));
-    expect(router.state.location.pathname).toBe('/incoming');
+    await userEvent.click(within(sheet).getByRole('link', { name: 'Ombor' }));
+    expect(router.state.location.pathname).toBe('/warehouses');
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(within(bottom).getByRole('button', { name: 'Katalog' })).toHaveAttribute(
       'aria-current',

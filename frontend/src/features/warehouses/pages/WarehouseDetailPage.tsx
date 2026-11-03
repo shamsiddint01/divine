@@ -9,7 +9,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import { Permission } from '@divine/shared';
-import { Link, useParams, useSearchParams } from 'react-router';
+import { useParams, useSearchParams } from 'react-router';
 import { useGroupOptions } from '@/features/product-groups/api/groups';
 import { useHasAnyPermission } from '@/features/session/hooks/use-permissions';
 import { t } from '@/i18n/uz';
