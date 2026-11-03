@@ -49,47 +49,12 @@ import { ExpenseFormDialog } from '../components/ExpenseFormDialog';
  * va o'chirish ko'rinmaydi (so'rov ham yuborilmaydi). Kategoriya majburiy (D-19): faol kategoriya
  * bo'lmasa, xarajat qo'shib bo'lmaydi va sahifa buni tushuntiradi.
  */
+/**
+ * Xarajatlar. Admin (`expenses.read`) — barcha xarajatlar va kategoriyalar; sotuvchi (faqat
+ * `expenses.create`, D-23) — faqat o'zi qo'shgan xarajatlar va kategoriyalar (server doirasi bilan).
+ */
 export function ExpensesPage() {
-  const canRead = useHasAnyPermission([Permission.EXPENSES_READ]);
-  return canRead ? <ExpensesRegister /> : <ExpenseCreateOnly />;
-}
-
-function ExpenseCreateOnly() {
-  const [formOpen, setFormOpen] = useState(false);
-  const { data: categories } = useExpenseCategories();
-  const noCategories = categories !== undefined && categories.length === 0;
-  const addButton = (
-    <Button onClick={() => setFormOpen(true)} disabled={!categories || noCategories}>
-      <Plus />
-      {t.expenses.add}
-    </Button>
-  );
-  return (
-    <>
-      <PageHeader
-        title={t.nav.expenses}
-        description={t.expenses.createOnly.description}
-        actions={addButton}
-      />
-      <div className="rounded-xl border bg-card">
-        {noCategories ? (
-          <EmptyState
-            icon={Tags}
-            title={t.expenses.createOnly.noCategoriesTitle}
-            description={t.expenses.createOnly.noCategoriesHint}
-          />
-        ) : (
-          <EmptyState
-            icon={Wallet}
-            title={t.expenses.createOnly.title}
-            description={t.expenses.createOnly.hint}
-            action={addButton}
-          />
-        )}
-      </div>
-      <ExpenseFormDialog open={formOpen} onOpenChange={setFormOpen} />
-    </>
-  );
+  return <ExpensesRegister />;
 }
 
 function ExpensesRegister() {
@@ -101,6 +66,8 @@ function ExpensesRegister() {
   const { data: categories } = useExpenseCategories();
   const remove = useDeleteExpense();
   const canManage = useHasAnyPermission([Permission.EXPENSES_MANAGE]);
+  // Sotuvchi faqat o'zinikini ko'radi — "Kiritgan" ustuni ortiqcha.
+  const canReadAll = useHasAnyPermission([Permission.EXPENSES_READ]);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ExpenseDto | null>(null);
@@ -164,14 +131,20 @@ function ExpensesRegister() {
       align: 'right',
       cell: (e) => <MoneyText value={e.amount} className="font-medium" />,
     },
-    {
-      key: 'by',
-      header: t.expenses.col.createdBy,
-      hideBelow: '2xl',
-      cell: (e) => (
-        <span className="text-muted-foreground">{e.createdBy.fullName ?? e.createdBy.login}</span>
-      ),
-    },
+    ...(canReadAll
+      ? [
+          {
+            key: 'by',
+            header: t.expenses.col.createdBy,
+            hideBelow: '2xl' as const,
+            cell: (e: ExpenseDto) => (
+              <span className="text-muted-foreground">
+                {e.createdBy.fullName ?? e.createdBy.login}
+              </span>
+            ),
+          },
+        ]
+      : []),
   ];
   if (canManage) {
     columns.push({
@@ -218,7 +191,7 @@ function ExpensesRegister() {
     <>
       <PageHeader
         title={t.nav.expenses}
-        description={t.expenses.description}
+        description={canReadAll ? t.expenses.description : t.expenses.own.description}
         actions={
           <>
             {canManage ? (
@@ -325,7 +298,7 @@ function ExpensesRegister() {
             <EmptyState
               icon={Wallet}
               title={t.expenses.emptyTitle}
-              description={t.expenses.emptyDescription}
+              description={canReadAll ? t.expenses.emptyDescription : t.expenses.own.emptyDescription}
               action={
                 <Button onClick={openCreate}>
                   <Plus />
