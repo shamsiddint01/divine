@@ -419,7 +419,15 @@ describe('audit qamrovi (AC-21, REQ-120, BR-24)', () => {
 
   it('har bir endpoint chaqirildi va AuditAction katalogidagi har bir amal real oqimda paydo bo‘ldi', () => {
     expect([...covered].sort()).toEqual(Object.keys(EXPECTED).sort());
-    expect([...produced].sort()).toEqual([...AUDIT_ACTIONS].sort());
+    // Sobiq "Kirim" bo'limining amallari: endpointi yo'q, lekin eski audit yozuvlari uchun katalogda qoladi.
+    const historical = new Set<string>([
+      'INCOMING_CREATED',
+      'INCOMING_UPDATED',
+      'INCOMING_CANCELLED',
+    ]);
+    expect([...produced].sort()).toEqual(
+      [...AUDIT_ACTIONS].filter((a) => !historical.has(a)).sort(),
+    );
   });
 
   it('muvaffaqiyatsiz mutatsiya audit qoldirmaydi (amal bilan bitta tranzaksiya)', async () => {
