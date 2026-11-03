@@ -11,6 +11,8 @@ import {
   type ProductDto,
   type ProductStatusInput,
   productStatusSchema,
+  type StockReceiptInput,
+  stockReceiptSchema,
   type ProductSummaryDto,
   type ProductUpdateInput,
   productUpdateSchema,
