@@ -330,16 +330,22 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
     const v = py / H;
     for (let px = 0; px < W; px++) {
       const u = px / W;
-      const wu = u + (fbm(warpX, u * 4, v * 4, 3) - 0.5) * 0.08;
-      const wv = v + (fbm(warpY, u * 4, v * 4, 3) - 0.5) * 0.08;
+      const wu = u + (fbm(warpX, u * 4, v * 4, 2) - 0.5) * 0.08;
+      const wv = v + (fbm(warpY, u * 4, v * 4, 2) - 0.5) * 0.08;
       let field = 0;
       for (const p of puffs) {
-        const d = Math.hypot((wu - p.x) * aspect, wv - p.y) / p.rad;
-        field += Math.exp(-d * d * 1.4);
+        // exp(−1.4·d²) d > 2.3 da ~0 — uzoq bo'laklar hisoblanmaydi (generatsiya ~3× tez)
+        const dy = (wv - p.y) / p.rad;
+        if (dy > 2.3 || dy < -2.3) continue;
+        const dx = ((wu - p.x) * aspect) / p.rad;
+        if (dx > 2.3 || dx < -2.3) continue;
+        field += Math.exp(-(dx * dx + dy * dy) * 1.4);
       }
       // "Gulkaram": billowy shovqin (|2n−1|) chetni mayda gumbazchalarga bo'ladi
-      const billow = 1 - Math.abs(fbm(shape, u * 9 * aspect, v * 9, 5) * 2 - 1);
-      const fine = fbm(erode, u * 22 * aspect, v * 22, 3);
+      // Bulutdan uzoq bo'sh joy — shovqin hisoblanmaydi
+      if (field < 0.12) continue;
+      const billow = 1 - Math.abs(fbm(shape, u * 9 * aspect, v * 9, 4) * 2 - 1);
+      const fine = fbm(erode, u * 22 * aspect, v * 22, 2);
       const mass = smoothstep(0.35, 1.6, field);
       let d = mass * 1.15 - (1 - billow) * 0.55 * (1 - mass * 0.7) - (1 - fine) * 0.12 + 0.06;
       d *= smoothstep(0.86, 0.75, v); // tekis tag (kondensatsiya sathi)
