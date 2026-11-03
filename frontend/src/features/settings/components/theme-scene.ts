@@ -99,13 +99,15 @@ export interface SceneParams {
   warmth: number;
   /** Quyosh: balandligi (0 — ufqda, 1 — kunduzgi joyida, <0 — ufq ostida). */
   sun: number;
+  /** Oy: balandligi (1 — tungi joyida, 0 — ufqda, <0 — ufq ostida). */
+  moon: number;
 }
 
 export function sceneParams({ dir, p, direct }: SceneState): SceneParams {
   const sky = skyAt((direct ? DIRECT_KEYS : KEYS)[dir], p);
   if (direct) {
     const day = dir === 'toDay' ? p : 1 - p;
-    return { sky, night: 1 - day, warmth: 0, sun: day > 0.5 ? 1 : -1 };
+    return { sky, night: 1 - day, warmth: 0, sun: day > 0.5 ? 1 : -1, moon: day > 0.5 ? -1 : 1 };
   }
   if (dir === 'toDay') {
     return {
@@ -114,6 +116,8 @@ export function sceneParams({ dir, p, direct }: SceneState): SceneParams {
       warmth: bell(p, 0.62, 0.17),
       // Quyosh tong oldidan keyin ufqdan ko'tariladi
       sun: lerp(-0.12, 1, 1 - (1 - smoothstep(0.38, 1, p)) ** 3),
+      // Oy tong otguncha g'arbga — ufq ortiga botadi
+      moon: lerp(1, -0.3, smoothstep(0, 0.52, p) ** 1.3),
     };
   }
   return {
@@ -122,6 +126,8 @@ export function sceneParams({ dir, p, direct }: SceneState): SceneParams {
     warmth: bell(p, 0.6, 0.17),
     // Quyosh shomgacha ufqqa tushadi va uning ortiga botadi
     sun: lerp(1, -0.15, smoothstep(0, 0.74, p) ** 1.6),
+    // Oy quyosh botgach sharqdan — ufqdan ko'tariladi
+    moon: lerp(-0.3, 1, 1 - (1 - smoothstep(0.48, 1, p)) ** 2.2),
   };
 }
 
