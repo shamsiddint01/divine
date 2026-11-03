@@ -289,8 +289,10 @@ export function ExpenseFormDialog({
                       ))}
                       {options.length > 0 ? <SelectSeparator /> : null}
                       <SelectItem value={NEW_CATEGORY} className="font-medium text-primary">
-                        <Plus className="text-primary" />
-                        {t.expenses.form.newCategory}
+                        <span className="inline-flex items-center gap-1.5">
+                          <Plus className="size-4 text-primary" aria-hidden />
+                          {t.expenses.form.newCategory}
+                        </span>
                       </SelectItem>
                     </SelectContent>
                   </Select>
