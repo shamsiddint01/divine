@@ -207,7 +207,6 @@ function adminOps(): Op[] {
       'GET /warehouses/:id/stock',
       () => ({ method: 'GET', path: `/warehouses/${loadWarehouse}/stock?pageSize=20` }),
     ],
-    [10, 'GET /incoming', () => ({ method: 'GET', path: '/incoming?pageSize=20' })],
     [10, 'GET /expenses', () => ({ method: 'GET', path: '/expenses?pageSize=20' })],
     [5, 'GET /users', () => ({ method: 'GET', path: '/users?pageSize=20' })],
     [10, 'GET /audit-logs', () => ({ method: 'GET', path: '/audit-logs?limit=50' })],
@@ -354,19 +353,17 @@ beforeAll(async () => {
     });
     loadProducts.push({ id: p.id, barcode });
   }
-  const incoming = await must<{ id: string }>('POST', '/incoming', {
-    token,
-    body: {
-      date: new Date().toISOString().slice(0, 10),
-      warehouseId: loadWarehouse,
-      items: loadProducts.map((p, i) => ({
-        productId: p.id,
+  for (const [i, p] of loadProducts.entries()) {
+    await must('POST', `/products/${p.id}/stock`, {
+      token,
+      body: {
+        date: new Date().toISOString().slice(0, 10),
+        warehouseId: loadWarehouse,
         quantity: '100000',
         costPrice: String(1000 * (i + 1)),
-      })),
-    },
-  });
-  await must('POST', `/incoming/${incoming.id}/confirm`, { token });
+      },
+    });
+  }
   const sellers = await t.prisma.user.findMany({
     where: { login: { startsWith: 'bench' } },
     orderBy: { login: 'asc' },

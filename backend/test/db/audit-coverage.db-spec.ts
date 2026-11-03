@@ -40,13 +40,10 @@ const EXPECTED: Record<string, AuditAction | { exempt: string }> = {
   'POST /products': 'PRODUCT_CREATED',
   'PATCH /products/:id': 'PRODUCT_UPDATED',
   'PATCH /products/:id/status': 'PRODUCT_STATUS_CHANGED',
+  'POST /products/:id/stock': 'INCOMING_CONFIRMED',
   'POST /warehouses': 'WAREHOUSE_CREATED',
   'PATCH /warehouses/:id': 'WAREHOUSE_UPDATED',
   'PATCH /warehouses/:id/status': 'WAREHOUSE_STATUS_CHANGED',
-  'POST /incoming': 'INCOMING_CREATED',
-  'PATCH /incoming/:id': 'INCOMING_UPDATED',
-  'POST /incoming/:id/confirm': 'INCOMING_CONFIRMED',
-  'POST /incoming/:id/cancel': 'INCOMING_CANCELLED',
   'POST /customers': 'CUSTOMER_CREATED',
   'PATCH /customers/:id': 'CUSTOMER_UPDATED',
   'POST /sales': 'SALE_CREATED',
@@ -259,31 +256,10 @@ describe('audit qamrovi (AC-21, REQ-120, BR-24)', () => {
     const newPassword = reset.body.generatedPassword as string;
     expect(newPassword).not.toBe(sellerPassword);
 
-    // ── Kirim ──
-    const incomingBody = {
-      date: '2026-10-09',
-      warehouseId: wh,
-      items: [{ productId: product, quantity: '10', costPrice: '600' }],
-    };
-    const incoming = id(
-      await expectAudited('POST /incoming', 'post', '/incoming', {
-        body: incomingBody,
-        status: 201,
-      }),
-    );
-    await expectAudited('PATCH /incoming/:id', 'patch', `/incoming/${incoming}`, {
-      body: { notes: 'AC21' },
-      status: 200,
-      entityId: incoming,
-    });
-    await expectAudited('POST /incoming/:id/confirm', 'post', `/incoming/${incoming}/confirm`, {
-      status: 200,
-      entityId: incoming,
-    });
-    const draft = id((await call('post', '/incoming', { body: incomingBody })).res);
-    await expectAudited('POST /incoming/:id/cancel', 'post', `/incoming/${draft}/cancel`, {
-      status: 200,
-      entityId: draft,
+    // ── Qoldiq qo'shish (sobiq Kirim) — kirim hujjati yaratiladi va darhol tasdiqlanadi ──
+    await expectAudited('POST /products/:id/stock', 'post', `/products/${product}/stock`, {
+      body: { date: '2026-10-09', warehouseId: wh, quantity: '10', costPrice: '600' },
+      status: 201,
     });
 
     // ── Mijoz va sotuv ──
