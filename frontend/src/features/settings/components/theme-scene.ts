@@ -304,22 +304,25 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
   const warpX = makeNoise(seed * 7 + 3);
   const warpY = makeNoise(seed * 13 + 9);
   const aspect = W / H;
+  const lobeMap = new Float32Array(W * H);
 
-  // Asos — markazda baland, chetga pasayuvchi gumbazlar qatori; ustida 2–4 "minora"
+  // Bir-biriga kirishgan bo'laklar: keng asos qatori, ustida ikkinchi va uchinchi qavat (yaxlit massa)
   const puffs: { x: number; y: number; rad: number }[] = [];
-  const base = 5 + Math.floor(r() * 3);
-  for (let i = 0; i < base; i++) {
-    const t = i / (base - 1);
-    const dome = Math.sin(t * Math.PI);
-    puffs.push({
-      x: 0.16 + t * 0.68 + (r() - 0.5) * 0.05,
-      y: 0.66 - dome * 0.06,
-      rad: 0.12 + dome * 0.1 + r() * 0.05,
-    });
-  }
-  const towers = 2 + Math.floor(r() * 3);
-  for (let i = 0; i < towers; i++) {
-    puffs.push({ x: 0.32 + r() * 0.36, y: 0.44 - r() * 0.12, rad: 0.11 + r() * 0.08 });
+  const rows = [
+    { n: 9 + Math.floor(r() * 3), y: 0.68, x0: 0.13, x1: 0.87, rad: 0.11 },
+    { n: 5 + Math.floor(r() * 3), y: 0.55, x0: 0.24, x1: 0.76, rad: 0.115 },
+    { n: 2 + Math.floor(r() * 3), y: 0.42, x0: 0.34, x1: 0.66, rad: 0.11 },
+  ];
+  for (const row of rows) {
+    for (let i = 0; i < row.n; i++) {
+      const t = row.n === 1 ? 0.5 : i / (row.n - 1);
+      const dome = Math.sin(t * Math.PI);
+      puffs.push({
+        x: lerp(row.x0, row.x1, t) + (r() - 0.5) * 0.05,
+        y: row.y - dome * 0.04 + (r() - 0.5) * 0.05,
+        rad: row.rad * (0.7 + dome * 0.45 + r() * 0.3),
+      });
+    }
   }
 
   const dens = new Float32Array(W * H);
@@ -327,25 +330,26 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
     const v = py / H;
     for (let px = 0; px < W; px++) {
       const u = px / W;
-      const wu = u + (fbm(warpX, u * 3, v * 3, 3) - 0.5) * 0.1;
-      const wv = v + (fbm(warpY, u * 3, v * 3, 3) - 0.5) * 0.1;
+      const wu = u + (fbm(warpX, u * 4, v * 4, 3) - 0.5) * 0.08;
+      const wv = v + (fbm(warpY, u * 4, v * 4, 3) - 0.5) * 0.08;
       let field = 0;
       for (const p of puffs) {
         const d = Math.hypot((wu - p.x) * aspect, wv - p.y) / p.rad;
-        field += Math.exp(-d * d * 1.7);
+        field += Math.exp(-d * d * 1.4);
       }
-      // "Gulkaram": yuqori chastotali bo'laklar faqat chetga yaqin joyni yemiradi
-      const billow = fbm(shape, u * 7 * aspect, v * 7, 5);
-      const fine = fbm(erode, u * 18 * aspect, v * 18, 3);
-      let d = smoothstep(0.25, 1.1, field);
-      d = d * 1.25 - (1 - billow) * 0.55 * (1 - d * 0.6) - (1 - fine) * 0.1 + 0.08;
-      d *= smoothstep(0.86, 0.74, v); // tekis tag (kondensatsiya sathi)
+      // "Gulkaram": billowy shovqin (|2n−1|) chetni mayda gumbazchalarga bo'ladi
+      const billow = 1 - Math.abs(fbm(shape, u * 9 * aspect, v * 9, 5) * 2 - 1);
+      const fine = fbm(erode, u * 22 * aspect, v * 22, 3);
+      const mass = smoothstep(0.35, 1.6, field);
+      let d = mass * 1.15 - (1 - billow) * 0.55 * (1 - mass * 0.7) - (1 - fine) * 0.12 + 0.06;
+      d *= smoothstep(0.86, 0.75, v); // tekis tag (kondensatsiya sathi)
       d *=
-        smoothstep(0, 0.08, u) *
-        smoothstep(1, 0.92, u) *
-        smoothstep(0, 0.1, v) *
+        smoothstep(0, 0.07, u) *
+        smoothstep(1, 0.93, u) *
+        smoothstep(0, 0.08, v) *
         smoothstep(1, 0.9, v);
       dens[py * W + px] = clamp01(d);
+      lobeMap[py * W + px] = billow;
     }
   }
   const at = (x: number, y: number) => {
@@ -380,7 +384,8 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
 
       // Kunduz: yorug'lik yuqori-chapdan
       const lit = Math.exp(-optical(px, py, -0.5, -0.86) * 4.2);
-      const lightDay = clamp01(lit * 0.9 + 0.12 + edge * 0.35 - baseShade * 0.22);
+      const lobe = 0.82 + (lobeMap[i]! - 0.5) * 0.5; // bo'lak tepasi yorug', orasi soyada
+      const lightDay = clamp01((lit * 0.9 + 0.12) * lobe + edge * 0.35 - baseShade * 0.22);
       let dc = mix([132, 148, 178], [244, 247, 252], lightDay);
       dc = mix(dc, WHITE, clamp01((lightDay - 0.78) * 3) * 0.9); // quyosh tushgan cho'qqilar oppoq
       dImg.data[o] = dc[0];
@@ -390,7 +395,7 @@ function cloudSprites(seed: number): [HTMLCanvasElement, HTMLCanvasElement] {
 
       // Shom/tong: yorug'lik ufqdan — pastdan, chapdan
       const litW = Math.exp(-optical(px, py, -0.9, 0.42) * 4);
-      const lightWarm = clamp01(litW * 0.95 + edge * 0.4 + baseShade * 0.15);
+      const lightWarm = clamp01(litW * 0.95 * lobe + edge * 0.4 + baseShade * 0.15);
       const shade = mix([62, 50, 92], [138, 88, 132], clamp01(lightWarm * 1.5));
       const wc = mix(shade, [255, 186, 124], clamp01(lightWarm ** 1.3 * 1.15));
       wImg.data[o] = wc[0];
@@ -424,10 +429,10 @@ function cirrusSprites(): [HTMLCanvasElement, HTMLCanvasElement] {
       const u = (px / W) * period;
       const bend = (fbm(warp, u * 1.5, v * 2, 3, period * 1.5) - 0.5) * 0.5;
       // x bo'yicha kuchli cho'zilgan shovqin — tolalar
-      const streak = fbm(noise, u * 1.2, (v + bend) * 14, 5, period * 1.2);
-      const body = fbm(noise, u * 0.8 + 11, v * 2.5, 3, period * 0.8);
+      const streak = fbm(noise, u * 2.2, (v + bend) * 7, 5, period * 2.2);
+      const body = fbm(noise, u * 0.9 + 11, v * 2.2, 3, period * 0.9);
       const a =
-        clamp01((streak - 0.5) * 3) * smoothstep(0.45, 0.7, body) * Math.sin(v * Math.PI) ** 1.5;
+        clamp01((streak - 0.42) * 1.8) * smoothstep(0.5, 0.72, body) * Math.sin(v * Math.PI) ** 1.5;
       const o = (py * W + px) * 4;
       dImg.data[o] = 248;
       dImg.data[o + 1] = 250;
