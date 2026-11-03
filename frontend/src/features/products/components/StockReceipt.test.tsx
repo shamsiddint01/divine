@@ -89,7 +89,9 @@ describe('Qoldiq qo‘shish (mavjud mahsulot)', () => {
     await waitFor(() => expect(within(table).getAllByRole('row').length).toBe(2), PAGE);
     await user.click(within(table).getAllByRole('row')[1] as HTMLElement);
     const sheet = await screen.findByRole('dialog');
-    await user.click(await within(sheet).findByRole('button', { name: t.products.stock.add }, PAGE));
+    await user.click(
+      await within(sheet).findByRole('button', { name: t.products.stock.add }, PAGE),
+    );
 
     const dialog = await screen.findByRole('dialog', { name: t.products.stock.title });
     const warehouse = activeWarehouse();
