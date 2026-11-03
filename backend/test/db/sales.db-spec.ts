@@ -213,6 +213,29 @@ describe('sotuv yaratish (AC-11, BR-09, BR-15, D-16)', () => {
     expect(missing.body.error.details).toEqual([expect.objectContaining({ field: 'customer.id' })]);
   });
 
+  it('ismsiz sotuv (2026-11-03): telefonsiz — bitta umumiy mijoz; telefon bilan — shu raqamli mijoz yoki yangisi', async () => {
+    const p = await product('5');
+    const a = await sell(saleBody(p, '1', { customer: {} })).expect(201);
+    const b = await sell(saleBody(p, '1', { customer: { name: '  ', phone: '' } })).expect(201);
+    expect(a.body.customer).toMatchObject({ name: WALK_IN_CUSTOMER_NAME, phone: null });
+    expect(b.body.customer.id).toBe(a.body.customer.id);
+    const walkIn = await t.prisma.customer.findUniqueOrThrow({ where: { id: a.body.customer.id } });
+    expect(walkIn.purchaseCount).toBe(2);
+
+    const digits = () => String(Math.floor(1_000_000 + Math.random() * 8_999_999));
+    const phone = `+99893${digits()}`;
+    const known = (
+      await api('post', '/customers', adminToken).send({ name: uniqueLogin('Tel'), phone })
+    ).body;
+    const c = await sell(saleBody(p, '1', { customer: { phone } })).expect(201);
+    expect(c.body.customer).toEqual({ id: known.id, name: known.name, phone });
+
+    const freshPhone = `+99894${digits()}`;
+    const d = await sell(saleBody(p, '1', { customer: { phone: freshPhone } })).expect(201);
+    expect(d.body.customer).toMatchObject({ name: WALK_IN_CUSTOMER_NAME, phone: freshPhone });
+    expect(d.body.customer.id).not.toBe(a.body.customer.id);
+  });
+
   it('D-18(1): ism va telefon mavjud mijoznikiga teng bo‘lsa ham — har doim yangi mijoz; mavjudining yig‘malari o‘zgarmaydi', async () => {
     const p = await product('5');
     const name = uniqueLogin('Bir xil');
