@@ -420,7 +420,7 @@ export const uz = {
       costPrice: 'Kelgan narxi',
       salePrice: 'Sotuv narxi',
       minStock: 'Minimal qoldiq',
-      minStockHint: 'Shundan kam qolsa, “Kam qolgan” deb belgilanadi',
+      minStockHint: 'Qoldiq shu miqdorga tushsa, “Kam qolgan” deb belgilanadi. Bo‘sh qoldirilsa — 1',
       allowDecimal: 'Kasr miqdorda sotiladi',
       allowDecimalHint: 'Masalan, kg yoki litr bo‘yicha',
       status: 'Holat',

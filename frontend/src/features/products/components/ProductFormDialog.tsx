@@ -94,6 +94,9 @@ const schema = z
 
 const M = VALIDATION_MESSAGES_UZ;
 
+/** Minimal qoldiq kiritilmasa — 1 (egasining qarori): qoldiq 1 ga tushsa "Kam qolgan". */
+const DEFAULT_MIN_STOCK = '1';
+
 type FormValues = z.infer<typeof schema>;
 
 const empty: FormValues = {
@@ -104,7 +107,7 @@ const empty: FormValues = {
   allowDecimal: false,
   costPrice: '',
   salePrice: '',
-  minStock: '',
+  minStock: DEFAULT_MIN_STOCK,
   active: true,
   stock: emptyStock(),
 };
@@ -118,7 +121,7 @@ function toForm(p: ProductDto): FormValues {
     allowDecimal: p.allowDecimal,
     costPrice: groupDigits(p.costPrice?.replace(/\.00$/, '') ?? ''),
     salePrice: groupDigits(p.salePrice.replace(/\.00$/, '')),
-    minStock: p.minStock ? formatQuantity(p.minStock) : '',
+    minStock: p.minStock ? formatQuantity(p.minStock) : DEFAULT_MIN_STOCK,
     active: p.status === 'ACTIVE',
     stock: emptyStock(),
   };
@@ -169,7 +172,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
           allowDecimal: v.allowDecimal,
           costPrice: toDecimal(v.costPrice),
           salePrice: toDecimal(v.salePrice),
-          minStock: v.minStock.trim() ? toDecimal(v.minStock) : null,
+          minStock: toDecimal(v.minStock.trim() || DEFAULT_MIN_STOCK),
           status: v.active ? 'ACTIVE' : 'INACTIVE',
           ...(qty
             ? {
@@ -308,13 +311,13 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
             <FormField
               id="p-min"
               label={t.products.form.minStock}
-              optional
               error={e.minStock?.message}
               hint={t.products.form.minStockHint}
             >
               <Input
                 id="p-min"
                 inputMode="decimal"
+                placeholder={DEFAULT_MIN_STOCK}
                 aria-invalid={!!e.minStock}
                 {...register('minStock')}
               />
