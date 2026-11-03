@@ -6,7 +6,6 @@ import type {
   ExpenseDto,
   ExpensesListResponse,
   FinanceSummaryDto,
-  IncomingDto,
   MyDashboardSummaryDto,
   Paginated,
   ProductDto,
@@ -53,13 +52,6 @@ describe('seed ma’lumotlari (ledger izchilligi)', () => {
     expect(summary.today.salesCount).toBeGreaterThan(0);
     expect(summary.lowStock.count).toBeGreaterThan(0);
     expect(summary.users.active).toBeGreaterThan(0);
-  });
-
-  it('TZ misolidagi qoralama kirim: 50 + 30 + 100 + 20 = 200', async () => {
-    const list = await get<Paginated<IncomingDto>>('/incoming', { status: 'DRAFT' });
-    const draft = list.data[0];
-    expect(draft?.totalQuantity).toBe('200.000');
-    expect(draft?.itemsCount).toBe(4);
   });
 });
 
@@ -150,18 +142,69 @@ describe('sotuv (POST /sales)', () => {
   });
 });
 
-describe('kirim (DRAFT → CONFIRMED)', () => {
-  it('tasdiqlash qoldiqni oshiradi; takroriy tasdiqlash rad etiladi', async () => {
-    const list = await get<Paginated<IncomingDto>>('/incoming', { status: 'DRAFT' });
-    const draft = list.data[0] as IncomingDto;
-    const totalBefore = Object.values(state.stock).reduce((a, q) => addQty(a, q), '0');
-    const confirmed = await post<IncomingDto>(`/incoming/${draft.id}/confirm`);
-    expect(confirmed.status).toBe('CONFIRMED');
-    const totalAfter = Object.values(state.stock).reduce((a, q) => addQty(a, q), '0');
-    expect(totalAfter).toBe(addQty(totalBefore, '200'));
-    await expect(post(`/incoming/${draft.id}/confirm`)).rejects.toMatchObject({
-      code: 'INCOMING_NOT_DRAFT',
+describe('qoldiq qo‘shish (sobiq kirim)', () => {
+  async function activeWarehouse() {
+    const warehouses = await get<Paginated<WarehouseDto>>('/warehouses');
+    return warehouses.data.find((w) => w.status === 'ACTIVE') as WarehouseDto;
+  }
+
+  it('yangi mahsulot + boshlang‘ich qoldiq: qoldiq, tasdiqlangan kirim hujjati va audit bir vaqtda', async () => {
+    const w = await activeWarehouse();
+    const groupId = state.groups.find((g) => g.isActive)!.id;
+    const created = await post<ProductDto>('/products', {
+      name: 'Qoldiqli yangi mahsulot',
+      groupId,
+      costPrice: '700',
+      salePrice: '900',
+      unit: 'DONA',
+      allowDecimal: false,
+      initialStock: { warehouseId: w.id, quantity: '12', date: '2026-10-06' },
     });
+    expect(created.stock).toBe('12.000');
+    const doc = state.incoming.find((d) => d.items.some((i) => i.productId === created.id));
+    expect(doc).toMatchObject({ status: 'CONFIRMED', warehouseId: w.id });
+    expect(doc?.items[0]).toMatchObject({ quantity: '12', costPrice: '700' });
+  });
+
+  it('atomiklik: kasr miqdor (DONA) → 422 va mahsulot yaratilmaydi', async () => {
+    const w = await activeWarehouse();
+    const before = state.products.length;
+    await expect(
+      post('/products', {
+        name: 'Kasr qoldiqli',
+        groupId: state.groups.find((g) => g.isActive)!.id,
+        costPrice: '1',
+        salePrice: '2',
+        unit: 'DONA',
+        allowDecimal: false,
+        initialStock: { warehouseId: w.id, quantity: '1.5', date: '2026-10-06' },
+      }),
+    ).rejects.toMatchObject({ status: 422, code: 'INVALID_QUANTITY' });
+    expect(state.products).toHaveLength(before);
+  });
+
+  it('mavjud mahsulotga qoldiq qo‘shish: ombor qoldig‘i oshadi, kartadagi kelgan narxi o‘zgarmaydi (D-16)', async () => {
+    const w = await activeWarehouse();
+    const product = state.products.find((p) => p.status === 'ACTIVE' && !p.allowDecimal)!;
+    const key = `${w.id}:${product.id}`;
+    const before = state.stock[key] ?? '0';
+    const res = await post<ProductDto>(`/products/${product.id}/stock`, {
+      warehouseId: w.id,
+      quantity: '5',
+      costPrice: '1.00',
+      date: '2026-10-06',
+    });
+    expect(res.id).toBe(product.id);
+    expect(state.stock[key]).toBe(addQty(before, '5'));
+    expect(state.products.find((p) => p.id === product.id)!.costPrice).toBe(product.costPrice);
+    await expect(
+      post(`/products/${product.id}/stock`, {
+        warehouseId: w.id,
+        quantity: '1.5',
+        costPrice: '1',
+        date: '2026-10-06',
+      }),
+    ).rejects.toMatchObject({ status: 422, code: 'INVALID_QUANTITY' });
   });
 });
 
