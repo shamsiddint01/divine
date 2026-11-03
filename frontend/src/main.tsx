@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router';
 import { AppProviders } from './app/providers';
 import { routes } from './app/routes';
+import { SplashScreen } from './app/splash/SplashScreen';
 import { applyTheme, useUiStore } from './stores/ui.store';
 import './styles/globals.css';
 
@@ -18,6 +19,7 @@ createRoot(rootElement).render(
   <StrictMode>
     <AppProviders>
       <RouterProvider router={router} />
+      <SplashScreen />
     </AppProviders>
   </StrictMode>,
 );

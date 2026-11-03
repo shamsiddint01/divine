@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { type CSSProperties, useEffect, useRef, useState } from 'react';
+import { t } from '@/i18n/uz';
 import { BRAND_PATHS } from '@/shared/ui/brand-logo';
 import { useUiStore } from '@/stores/ui.store';
 import './splash.css';
@@ -139,7 +140,7 @@ export function SplashScreen() {
                 height: p.size,
                 '--d': p.duration,
                 '--t': p.delay,
-              } as React.CSSProperties
+              } as CSSProperties
             }
           />
         ))}
@@ -255,7 +256,7 @@ export function SplashScreen() {
                   className="sp-pt"
                   r="1.1"
                   fill={light ? '#E0A12A' : '#FFD978'}
-                  style={{ '--x': `${x}px`, '--y': `${y}px` } as React.CSSProperties}
+                  style={{ '--x': `${x}px`, '--y': `${y}px` } as CSSProperties}
                 />
               ))}
               <g className="sp-star">
@@ -284,7 +285,7 @@ export function SplashScreen() {
             </g>
           </g>
         </svg>
-        <p className="splash__tagline">Savdo va ombor boshqaruvi</p>
+        <p className="splash__tagline">{t.app.tagline}</p>
       </div>
       <div className="splash__progress" />
     </div>
