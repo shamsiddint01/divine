@@ -2,7 +2,6 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router';
 import { AppProviders } from './app/providers';
-import { IntroSplash } from './app/splash/IntroSplash';
 import { routes } from './app/routes';
 import { applyTheme, useUiStore } from './stores/ui.store';
 import './styles/globals.css';
@@ -19,7 +18,6 @@ createRoot(rootElement).render(
   <StrictMode>
     <AppProviders>
       <RouterProvider router={router} />
-      <IntroSplash />
     </AppProviders>
   </StrictMode>,
 );
