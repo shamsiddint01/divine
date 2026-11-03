@@ -122,7 +122,7 @@ export const isWholeQuantity = (quantity: string): boolean => /^\d+(\.0+)?$/.tes
 
 // ─── Matn maydonlari ───────────────────────────────────────────────────────
 
-/** Mijoz ismi — har bir sotuvda majburiy (BR-05). */
+/** Mijoz ismi — mijoz kartochkasida majburiy (BR-05); sotuvda bo'sh bo'lsa umumiy mijoz (`WALK_IN_CUSTOMER_NAME`). */
 export const customerNameSchema = requiredText(M.customerNameRequired, PERSON_NAME_MAX_LENGTH);
 
 /** Mahsulot, guruh, ombor, kategoriya nomi. */

@@ -213,6 +213,28 @@ export class SalesRepository {
     return rows[0] ?? null;
   }
 
+  /**
+   * Ismsiz sotuv mijozi: telefon bo'lsa — shu raqamli eng so'nggi xaridor; bo'lmasa — yagona umumiy
+   * yozuv (`WALK_IN_CUSTOMER_NAME`, telefonsiz). Parallel sotuvlar ikkita umumiy yozuv yaratmasin —
+   * advisory lock. Topilmasa `null` (chaqiruvchi yangisini yaratadi).
+   */
+  async lockWalkInCustomer(
+    tx: Tx,
+    phone: string | null,
+  ): Promise<{ id: string; name: string; phone: string | null } | null> {
+    if (phone !== null) {
+      const rows = await tx.$queryRaw<{ id: string; name: string; phone: string | null }[]>`
+        SELECT id, name, phone FROM customers WHERE phone = ${phone}
+        ORDER BY last_purchase_at DESC NULLS LAST, created_at DESC LIMIT 1 FOR UPDATE`;
+      return rows[0] ?? null;
+    }
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${WALK_IN_LOCK_KEY}))`;
+    const rows = await tx.$queryRaw<{ id: string; name: string; phone: string | null }[]>`
+      SELECT id, name, phone FROM customers WHERE name = ${WALK_IN_CUSTOMER_NAME} AND phone IS NULL
+      ORDER BY created_at LIMIT 1 FOR UPDATE`;
+    return rows[0] ?? null;
+  }
+
   async createCustomer(
     tx: Tx,
     data: { name: string; phone: string | null; createdById: string },

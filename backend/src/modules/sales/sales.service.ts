@@ -350,7 +350,13 @@ export class SalesService {
       }
       return customer;
     }
-    const { name, phone } = input.customer;
+    const { phone } = input.customer;
+    if (input.customer.name === null) {
+      // Ismsiz sotuv: telefon bo'yicha mavjud mijoz yoki bitta umumiy "Noma'lum mijoz" (2026-11-03).
+      const walkIn = await this.repository.lockWalkInCustomer(tx, phone);
+      if (walkIn) return walkIn;
+    }
+    const name = input.customer.name ?? WALK_IN_CUSTOMER_NAME;
     const id = await this.repository.createCustomer(tx, { name, phone, createdById: ctx.userId });
     await this.audit.record(
       {
