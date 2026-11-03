@@ -53,6 +53,7 @@ export function toExpenseCategoryDto(row: ExpenseCategoryRow, full: boolean): Ex
     name: row.name,
     isActive: row.isActive,
     expenseCount: row.expenseCount,
+    createdBy: { id: row.createdById, login: row.createdByLogin, fullName: row.createdByFullName },
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -75,16 +76,21 @@ export class ExpensesService {
     private readonly clock: Clock,
   ) {}
 
-  async list(query: ListExpensesQuery): Promise<ExpensesListResponse> {
-    const { rows, total, totalAmount } = await this.repository.list(query);
+  /** `expenses.read`siz (sotuvchi, D-23) — faqat o'zi qo'shgan xarajatlar; `createdBy` filtri majburan o'zi. */
+  async list(ctx: AccessContext, query: ListExpensesQuery): Promise<ExpensesListResponse> {
+    const scoped = canReadAll(ctx) ? query : { ...query, createdBy: ctx.userId };
+    const { rows, total, totalAmount } = await this.repository.list(scoped);
     return {
-      ...toPaginated(rows.map(toExpenseDto), total, query),
+      ...toPaginated(rows.map(toExpenseDto), total, scoped),
       summary: { count: total, totalAmount },
     };
   }
 
-  async get(id: string): Promise<ExpenseDto> {
-    return toExpenseDto((await this.repository.find(id)) ?? notFound());
+  /** Begona xarajat sotuvchiga — `404` (mavjudligi ham oshkor qilinmaydi). */
+  async get(ctx: AccessContext, id: string): Promise<ExpenseDto> {
+    const row = await this.repository.find(id);
+    if (!row || (!canReadAll(ctx) && row.createdById !== ctx.userId)) notFound();
+    return toExpenseDto(row);
   }
 
   async create(
@@ -94,7 +100,7 @@ export class ExpensesService {
   ): Promise<ExpenseDto> {
     this.assertDateAllowed(input.date);
     return this.transactions.run(async (tx) => {
-      await this.assertCategoryUsable(tx, input.categoryId);
+      await this.assertCategoryUsable(tx, ctx, input.categoryId);
       const note = input.note ?? null;
       const id = await this.repository.create(tx, {
         date: input.date,
@@ -145,7 +151,7 @@ export class ExpensesService {
         changes.amount = input.amount;
       }
       if (input.categoryId !== undefined && input.categoryId !== current.categoryId) {
-        await this.assertCategoryUsable(tx, input.categoryId);
+        await this.assertCategoryUsable(tx, ctx, input.categoryId);
         changes.categoryId = input.categoryId;
         audited.categoryId = { from: current.categoryId, to: input.categoryId };
       }
@@ -192,15 +198,18 @@ export class ExpensesService {
 
   // ─── Kategoriyalar ────────────────────────────────────────────────────────
 
-  /** Ro'yxat ko'ruvchi/boshqaruvchi — hammasi (filtr bilan); faqat qo'shuvchi — faqat faollari, minimal. */
+  /**
+   * Ro'yxat ko'ruvchi/boshqaruvchi — hammasi (filtr bilan, kim qo'shgani bilan); faqat qo'shuvchi
+   * (sotuvchi, D-23) — faqat o'zi qo'shgan faol kategoriyalar, `id, name`.
+   */
   async listCategories(
     ctx: AccessContext,
     filter: { isActive?: boolean },
   ): Promise<ExpenseCategoryDto[]> {
-    const full =
-      hasPermission(ctx, Permission.EXPENSES_READ) ||
-      hasPermission(ctx, Permission.EXPENSES_MANAGE);
-    const rows = await this.repository.listCategories(full ? filter : { isActive: true });
+    const full = canSeeAllCategories(ctx);
+    const rows = await this.repository.listCategories(
+      full ? filter : { isActive: true, ownerId: ctx.userId },
+    );
     return rows.map((row) => toExpenseCategoryDto(row, full));
   }
 
@@ -210,7 +219,8 @@ export class ExpensesService {
     meta: RequestMeta,
   ): Promise<ExpenseCategoryDto> {
     return this.transactions.run(async (tx) => {
-      if (await this.repository.categoryNameTaken(tx, input.name)) throw nameTaken();
+      // Nom qo'shuvchining o'z kategoriyalari ichida noyob (D-23).
+      if (await this.repository.categoryNameTaken(tx, input.name, ctx.userId)) throw nameTaken();
       const id = await this.repository.createCategory(tx, {
         name: input.name,
         createdById: ctx.userId,
@@ -226,7 +236,10 @@ export class ExpensesService {
         },
         tx,
       );
-      return toExpenseCategoryDto((await this.repository.findCategory(id, tx)) ?? notFound(), true);
+      return toExpenseCategoryDto(
+        (await this.repository.findCategory(id, tx)) ?? notFound(),
+        canSeeAllCategories(ctx),
+      );
     });
   }
 
@@ -240,7 +253,9 @@ export class ExpensesService {
       const category = (await this.repository.lockCategory(tx, id)) ?? notFound();
       const changes: Record<string, Change> = {};
       if (input.name !== undefined && input.name !== category.name) {
-        if (await this.repository.categoryNameTaken(tx, input.name, id)) throw nameTaken();
+        if (await this.repository.categoryNameTaken(tx, input.name, category.createdById, id)) {
+          throw nameTaken();
+        }
         changes.name = { from: category.name, to: input.name };
       }
       if (input.isActive !== undefined && input.isActive !== category.isActive) {
@@ -298,10 +313,17 @@ export class ExpensesService {
     }
   }
 
-  /** Kategoriya mavjud (`404`) va faol (`422 EXPENSE_CATEGORY_INACTIVE`) bo'lishi shart (D-19). */
-  private async assertCategoryUsable(tx: Tx, categoryId: string): Promise<void> {
+  /**
+   * Kategoriya mavjud (`404`) va faol (`422 EXPENSE_CATEGORY_INACTIVE`) bo'lishi shart (D-19); sotuvchi
+   * faqat o'zi qo'shgan kategoriyani tanlay oladi (begonasi — `404`, D-23).
+   */
+  private async assertCategoryUsable(
+    tx: Tx,
+    ctx: AccessContext,
+    categoryId: string,
+  ): Promise<void> {
     const category = await this.repository.shareCategory(tx, categoryId);
-    if (!category) {
+    if (!category || (!canSeeAllCategories(ctx) && category.createdById !== ctx.userId)) {
       throw new AppError(ErrorCode.NOT_FOUND, {
         details: [{ field: 'categoryId', message: ERROR_MESSAGES_UZ.NOT_FOUND }],
       });
@@ -319,6 +341,18 @@ function sameMoney(a: string, b: string): boolean {
   const [ai = '0', af = ''] = a.split('.');
   const [bi = '0', bf = ''] = b.split('.');
   return BigInt(ai) === BigInt(bi) && af.padEnd(2, '0') === bf.padEnd(2, '0');
+}
+
+/** Barcha xarajatlarni ko'rish — `expenses.read` (ADMIN). */
+function canReadAll(ctx: AccessContext): boolean {
+  return hasPermission(ctx, Permission.EXPENSES_READ);
+}
+
+/** Barcha kategoriyalar (boshqalarniki ham) — ko'ruvchi yoki boshqaruvchi. */
+function canSeeAllCategories(ctx: AccessContext): boolean {
+  return (
+    hasPermission(ctx, Permission.EXPENSES_READ) || hasPermission(ctx, Permission.EXPENSES_MANAGE)
+  );
 }
 
 function notFound(): never {

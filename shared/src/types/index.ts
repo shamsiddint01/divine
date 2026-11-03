@@ -317,6 +317,8 @@ export interface ExpenseCategoryDto {
   isActive?: boolean;
   /** Bog'langan xarajatlar soni (soft-delete qilinganlari ham — FK). `0` bo'lsa o'chirish mumkin (BR-31). */
   expenseCount?: number;
+  /** Kim qo'shgan (faqat to'liq ko'rinishda — admin; sotuvchi faqat o'zinikini ko'radi, D-23). */
+  createdBy?: UserRefDto;
   createdAt?: IsoDateTimeString;
   updatedAt?: IsoDateTimeString;
 }

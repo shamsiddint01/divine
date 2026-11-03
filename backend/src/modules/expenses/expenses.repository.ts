@@ -176,7 +176,8 @@ export class ExpensesRepository {
     ownerId?: string;
   }): Promise<ExpenseCategoryRow[]> {
     const conditions: Prisma.Sql[] = [Prisma.sql`TRUE`];
-    if (filter.isActive !== undefined) conditions.push(Prisma.sql`c.is_active = ${filter.isActive}`);
+    if (filter.isActive !== undefined)
+      conditions.push(Prisma.sql`c.is_active = ${filter.isActive}`);
     if (filter.ownerId) conditions.push(Prisma.sql`c.created_by = ${filter.ownerId}::uuid`);
     return this.prisma.$queryRaw<ExpenseCategoryRow[]>`
       SELECT ${CATEGORY_COLUMNS} FROM ${CATEGORY_FROM}

@@ -56,20 +56,25 @@ export class ExpensesController {
   constructor(private readonly expenses: ExpensesService) {}
 
   @Get()
-  @RequirePermissions(Permission.EXPENSES_READ)
-  @ApiOperation({ summary: 'Xarajatlar ro‘yxati (filtrlar, saralash, pagination) va yig‘ma' })
+  @RequireAnyPermission(Permission.EXPENSES_READ, Permission.EXPENSES_CREATE)
+  @ApiOperation({
+    summary: 'Xarajatlar ro‘yxati va yig‘ma (sotuvchi — faqat o‘zi qo‘shganlari, D-23)',
+  })
   @ApiOkResponse({ description: 'ExpensesListResponse' })
   @ApiErrorResponses(ErrorCode.VALIDATION_ERROR, ErrorCode.FORBIDDEN)
-  list(@ZodQuery(listExpensesQuerySchema) query: ListExpensesQuery): Promise<ExpensesListResponse> {
-    return this.expenses.list(query);
+  list(
+    @Ctx() ctx: AccessContext,
+    @ZodQuery(listExpensesQuerySchema) query: ListExpensesQuery,
+  ): Promise<ExpensesListResponse> {
+    return this.expenses.list(ctx, query);
   }
 
   @Get(':id')
-  @RequirePermissions(Permission.EXPENSES_READ)
-  @ApiOperation({ summary: 'Xarajat ma’lumotlari' })
+  @RequireAnyPermission(Permission.EXPENSES_READ, Permission.EXPENSES_CREATE)
+  @ApiOperation({ summary: 'Xarajat ma’lumotlari (sotuvchi — faqat o‘ziniki)' })
   @ApiErrorResponses(ErrorCode.NOT_FOUND, ErrorCode.FORBIDDEN)
-  get(@idParam() id: string): Promise<ExpenseDto> {
-    return this.expenses.get(id);
+  get(@Ctx() ctx: AccessContext, @idParam() id: string): Promise<ExpenseDto> {
+    return this.expenses.get(ctx, id);
   }
 
   @Post()
@@ -122,8 +127,8 @@ export class ExpensesController {
 }
 
 /**
- * Xarajat kategoriyalari (D-19). O'qish — xarajat qo'sha oladigan har kim (sotuvchi: faqat faollari,
- * `id, name`); boshqarish — `expenses.manage` (ADMIN).
+ * Xarajat kategoriyalari (D-19, D-23). O'qish va qo'shish — xarajat qo'sha oladigan har kim (sotuvchi:
+ * faqat o'zi qo'shgan faol kategoriyalar, `id, name`); tahrirlash/o'chirish — `expenses.manage` (ADMIN).
  */
 @ApiTags('Expenses')
 @Controller('expense-categories')
@@ -147,8 +152,10 @@ export class ExpenseCategoriesController {
   }
 
   @Post()
-  @RequirePermissions(Permission.EXPENSES_MANAGE)
-  @ApiOperation({ summary: 'Kategoriya qo‘shish' })
+  @RequireAnyPermission(Permission.EXPENSES_MANAGE, Permission.EXPENSES_CREATE)
+  @ApiOperation({
+    summary: 'Kategoriya qo‘shish (sotuvchi ham — o‘ziga; nom bitta user ichida noyob, D-23)',
+  })
   @ApiErrorResponses(ErrorCode.VALIDATION_ERROR, ErrorCode.NAME_TAKEN, ErrorCode.FORBIDDEN)
   create(
     @Ctx() ctx: AccessContext,
