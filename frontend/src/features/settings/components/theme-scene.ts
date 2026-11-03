@@ -279,9 +279,9 @@ function cloudSprites(): [HTMLCanvasElement, HTMLCanvasElement] {
     for (let px = 0; px < W; px++) {
       const u = (px / W) * period;
       const v = py / H;
-      const n = fbm(noise, u, v * 3.2, 5, period);
-      const fine = fbm(detail, u * 4, v * 12, 3, period * 4);
-      field[py * W + px] = n * 0.85 + fine * 0.15;
+      const n = fbm(noise, u * 1.3, v * 2, 5, period * 1.3);
+      const fine = fbm(detail, u * 5, v * 7, 3, period * 5);
+      field[py * W + px] = n * 0.82 + fine * 0.18;
     }
   }
   const day = canvas(W, H);
@@ -294,11 +294,11 @@ function cloudSprites(): [HTMLCanvasElement, HTMLCanvasElement] {
   const lift = Math.round(H * 0.035);
   for (let py = 0; py < H; py++) {
     const v = py / H;
-    const profile = smoothstep(0, 0.18, v) * smoothstep(1, 0.72, v);
+    const profile = smoothstep(0, 0.15, v) * smoothstep(1, 0.78, v);
     for (let px = 0; px < W; px++) {
       const i = py * W + px;
       const n = field[i]!;
-      const dens = smoothstep(0.5, 0.78, n) * profile;
+      const dens = smoothstep(0.44, 0.7, n) * profile;
       if (dens <= 0) continue;
       const up = field[Math.max(0, py - lift) * W + px]!;
       const light = clamp01(0.55 + (n - up) * 6 - dens * 0.15);
