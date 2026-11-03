@@ -70,6 +70,8 @@ export interface ProductInput {
   allowDecimal: boolean;
   minStock?: Quantity | null;
   status: ProductStatus;
+  /** Faqat yaratishda: boshlang'ich qoldiq (kelgan narxi — `costPrice`). */
+  initialStock?: Omit<StockReceiptInput, 'costPrice'>;
 }
 
 // ─── Omborlar ───────────────────────────────────────────────────────────────
