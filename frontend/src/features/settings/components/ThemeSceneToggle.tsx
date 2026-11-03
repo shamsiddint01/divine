@@ -7,6 +7,8 @@ import { type Theme, useUiStore } from '@/stores/ui.store';
 import {
   type Direction,
   type SceneState,
+  type SceneTextures,
+  buildNextCloud,
   createSceneAssets,
   createSceneTextures,
   drawScene,
@@ -27,6 +29,9 @@ interface Transition {
   /** UI mavzusi o'tishning o'rtasida almashadi — sahna va interfeys bir paytda o'zgaradi. */
   switched: boolean;
 }
+
+/** Teksturalar sahifalar orasida saqlanadi — Sozlamalarga qayta kirilganda qayta yaratilmaydi. */
+let sharedTextures: SceneTextures | null | undefined;
 
 const restState = (theme: Theme): SceneState => ({
   dir: 'toDay',
@@ -125,8 +130,9 @@ export function ThemeSceneToggle() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    // Bulut, oy, tuman teksturalari — bir marta (shovqin generatsiyasi, ~30–60 ms)
-    assets.current.textures ??= createSceneTextures();
+    // Oy, tuman, to'lqin teksturalari — bir marta; og'ir kumulus bulutlar — quyida, birma-bir
+    sharedTextures ??= createSceneTextures();
+    assets.current.textures = sharedTextures;
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
       const dpr = Math.min(2, window.devicePixelRatio || 1) * quality.current.scale;
@@ -137,11 +143,24 @@ export function ThemeSceneToggle() {
     };
     resizeRef.current = resize;
     resize();
-    if (typeof ResizeObserver === 'undefined') return;
+    // Bulutlar: har biri alohida vazifada — sahifa qotmaydi; tayyor bo'lgani ohista paydo bo'ladi
+    const tx = sharedTextures;
+    let cloudTimer = 0;
+    const nextCloud = () => {
+      if (!tx) return;
+      const more = buildNextCloud(tx);
+      kick();
+      if (more) cloudTimer = window.setTimeout(nextCloud, 16);
+    };
+    if (tx) cloudTimer = window.setTimeout(nextCloud, 60);
+    if (typeof ResizeObserver === 'undefined') return () => window.clearTimeout(cloudTimer);
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
-    return () => ro.disconnect();
-  }, [render]);
+    return () => {
+      ro.disconnect();
+      window.clearTimeout(cloudTimer);
+    };
+  }, [render, kick]);
 
   // Sikl faqat kerak bo'lganda aylanadi: ko'rinib turibdi va (idle harakat yoki o'tish bor).
   // Ekrandan chiqsa yoki tab yashirilsa — pauza; qaytganda davom etadi.

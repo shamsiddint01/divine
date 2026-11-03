@@ -287,6 +287,8 @@ export interface SceneTextures {
   /** Kunduzgi (quyosh tomondan yoritilgan, tagi ko'kimtir soyada) va shom (ufqdan iliq) bulutlar. */
   cloudsDay: HTMLCanvasElement[];
   cloudsWarm: HTMLCanvasElement[];
+  /** Bulut teksturasi tayyor bo'lgan payt (`performance.now()`): paydo bo'lganda ohista ko'rinadi. */
+  cloudsReadyAt: number[];
   /** Baland patsimon (cirrus) bulutlar: kunduzgi oq va shom pushti-oltin varianti. */
   cirrusDay: HTMLCanvasElement;
   cirrusWarm: HTMLCanvasElement;
@@ -686,15 +688,21 @@ function grainSprite(): HTMLCanvasElement {
   return c;
 }
 
-/** Brauzerda teksturalarni yaratadi (bir marta, ~30–60 ms). Canvas bo'lmasa (jsdom) — null. */
+export const CLOUD_SPRITES = 6;
+
+/**
+ * Brauzerda teksturalarni yaratadi (bir marta). Kumulus bulutlar bu yerda YO'Q — ular og'ir
+ * (har biri o'nlab ms), shuning uchun `buildNextCloud` bilan birma-bir, sahna ko'ringandan keyin
+ * tayyorlanadi. Canvas bo'lmasa (jsdom) — null.
+ */
 export function createSceneTextures(): SceneTextures | null {
   const probe = document.createElement('canvas').getContext('2d');
   if (!probe) return null;
-  const pairs = [0, 1, 2, 3, 4, 5].map((i) => cloudSprites(101 + i * 13));
   const [cirrusDay, cirrusWarm] = cirrusSprites();
   return {
-    cloudsDay: pairs.map((p) => p[0]),
-    cloudsWarm: pairs.map((p) => p[1]),
+    cloudsDay: [],
+    cloudsWarm: [],
+    cloudsReadyAt: [],
     cirrusDay,
     cirrusWarm,
     ripple: rippleSprite(),
@@ -705,6 +713,17 @@ export function createSceneTextures(): SceneTextures | null {
     sky: canvas(1, 1),
     skySmall: canvas(1, 1),
   };
+}
+
+/** Navbatdagi bulut teksturasini yaratadi; hammasi tayyor bo'lsa `false`. */
+export function buildNextCloud(tx: SceneTextures): boolean {
+  const i = tx.cloudsDay.length;
+  if (i >= CLOUD_SPRITES) return false;
+  const [day, warm] = cloudSprites(101 + i * 13);
+  tx.cloudsDay.push(day);
+  tx.cloudsWarm.push(warm);
+  tx.cloudsReadyAt.push(performance.now());
+  return i + 1 < CLOUD_SPRITES;
 }
 
 // --- Chizish ------------------------------------------------------------------------------------------
@@ -930,12 +949,16 @@ function drawSky(
       const span = w + cw * 1.2;
       const x = ((((c.x * span + time * c.speed * w) % span) + span) % span) - cw * 0.6;
       const y = c.y * hy - ch * 0.62;
-      const fade = cloudAlpha * (1 - c.depth * 0.3);
+      const day = tx.cloudsDay[c.sprite];
+      const warm = tx.cloudsWarm[c.sprite];
+      if (!day || !warm) continue; // hali tayyorlanmoqda
+      const appear = clamp01((performance.now() - tx.cloudsReadyAt[c.sprite]!) / 700);
+      const fade = cloudAlpha * (1 - c.depth * 0.3) * appear;
       ctx.globalAlpha = fade * (1 - s.warmth);
-      ctx.drawImage(tx.cloudsDay[c.sprite]!, x, y, cw, ch);
+      ctx.drawImage(day, x, y, cw, ch);
       if (s.warmth > 0.01) {
         ctx.globalAlpha = fade * s.warmth;
-        ctx.drawImage(tx.cloudsWarm[c.sprite]!, x, y, cw, ch);
+        ctx.drawImage(warm, x, y, cw, ch);
       }
     }
     ctx.globalAlpha = 1;
