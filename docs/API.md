@@ -501,67 +501,24 @@ Modul: `backend/src/modules/inventory`. Qoldiq **faqat** `InventoryService` orqa
 
 ---
 
-## 9. Incoming — kirim (Phase 8) ✅
+## 9. Qoldiq qo‘shish (sobiq "Kirim" bo‘limi) ✅
 
-Modul: `backend/src/modules/incoming`. Sxemalar — `@divine/shared` (`incomingCreateSchema`, `incomingUpdateSchema`); body `strictObject` — noma’lum maydon (shu jumladan client yuborgan `totalAmount`, `totalQuantity`, `lineTotal`) → `400`.
+**2026-11-03 (biznes egasi so‘rovi):** alohida "Kirim" bo‘limi va `/incoming*` endpointlari olib tashlandi. Qoldiq faqat Mahsulotlar bo‘limidan qo‘shiladi. Server har safar **darhol tasdiqlangan** kirim hujjatini yozadi (`incoming` / `incoming_items` jadvallari, `INCOMING` ledger, hisobotlar, `incoming30` — avvalgidek). Eski hujjatlar (shu jumladan DRAFT/CANCELLED) bazada qoladi va hisobotlarda ko‘rinadi. Modul: `backend/src/modules/incoming` (HTTP endpointsiz, `IncomingService.receive`).
 
-Holat mashinasi (BR-17): `DRAFT → CONFIRMED` (stock ↑) · `DRAFT → CANCELLED`. CONFIRMED va CANCELLED — yakuniy, o‘zgarmaydi (BR-16; DB trigger’lari ham himoyalaydi). O‘chirish endpointi yo‘q.
+- **Ruxsat:** `incoming.manage` **va** `incoming.confirm` (avvalgi kirim qilish huquqi).
+- **Tranzaksiya:** `assertOperationalWarehouse` (ruxsat + ACTIVE, `FOR SHARE`) → mahsulot `FOR SHARE` (ACTIVE, `allowDecimal` siyosati) → hujjat + qator (snapshot D-08) → CONFIRMED (totallar DB’da) → `InventoryService.increase` (`unit_cost = costPrice`) → audit. Biror qadam xato bersa — hammasi qaytariladi.
+- **D-16:** qoldiq qo‘shish `products.cost_price`ni o‘zgartirmaydi; partiya narxi hujjat qatorida va ledger’da.
+- **Audit:** `INCOMING_CONFIRMED` (`{ number, warehouseId, date, itemsCount, totalQuantity, totalAmount }`). `INCOMING_CREATED/UPDATED/CANCELLED` — faqat eski yozuvlarda.
 
-```ts
-interface IncomingDto { id; number /* "K-000123" */; date: DateOnly; warehouseId; warehouseName; notes: string | null;
-  status: 'DRAFT' | 'CONFIRMED' | 'CANCELLED'; itemsCount: number; totalQuantity: Quantity;
-  totalAmount?: Money;                       // FAQAT products.read_cost
-  items?: IncomingItemDto[];                 // ro‘yxatda yo‘q, detalda bor
-  createdBy: UserRef; confirmedBy: UserRef | null; confirmedAt: IsoDateTime | null;
-  cancelledBy: UserRef | null; cancelledAt: IsoDateTime | null; createdAt; updatedAt }
-interface IncomingItemDto { id; productId; productName /* snapshot */; groupName; barcode /* snapshot */; unit;
-  quantity: Quantity; costPrice?: Money; lineTotal?: Money }   // narxlar FAQAT products.read_cost
-```
+### `POST /products` + `initialStock` (ixtiyoriy) — yangi mahsulot boshlang‘ich qoldiq bilan
+- **Body:** mahsulot maydonlari + `"initialStock": { "warehouseId": "…", "quantity": "12", "date": "2026-11-03", "notes": "…" }`. Kelgan narxi — mahsulotning `costPrice` (ikkinchi narx maydoni yo‘q).
+- Mahsulot va qoldiq **bitta tranzaksiyada**: ombor nofaol / kasr miqdor / boshqa xato bo‘lsa — mahsulot ham yaratilmaydi.
+- **Xatolar:** `403 FORBIDDEN` (kirim ruxsati yo‘q) · `400` (`initialStock` + `status: INACTIVE`) · `422 WAREHOUSE_INACTIVE` · `422 INVALID_QUANTITY` (`initialStock.quantity`) · `403 WAREHOUSE_ACCESS_DENIED` · `404`
+- **201:** `ProductDto` (`stock`, `received` yangilangan) · **Audit:** `PRODUCT_CREATED` + `INCOMING_CONFIRMED`
 
-### `GET /incoming`
-- **Ruxsat:** `incoming.read` · ombor doirasi: `warehouses.read_all`siz user faqat biriktirilgan omborlar hujjatlarini ko‘radi; begona `warehouseId` → `403 WAREHOUSE_ACCESS_DENIED`.
-- **Query:** `page`, `pageSize`, `search` (raqam `K-000123` / `123` yoki izoh), `status`, `warehouseId`, `productId`, `createdBy`, `dateFrom`, `dateTo` (hujjat sanasi), `sort` ∈ {`date`, `createdAt`, `totalQuantity`, `totalAmount`} (standart `date:desc`; `totalAmount` — faqat `products.read_cost`, aks holda `400`)
-- **200:** `Paginated<IncomingDto>` (qatorlarsiz)
-
-### `POST /incoming` — qoralama yaratish
-- **Ruxsat:** `incoming.manage`
-- **Body:**
-  ```json
-  { "date": "2026-10-06", "warehouseId": "…", "notes": "Yetkazib beruvchi: …",
-    "items": [
-      { "productId": "…telefon",    "quantity": "50",  "costPrice": "1800000.00" },
-      { "productId": "…quloqchin",  "quantity": "30",  "costPrice": "95000.00" },
-      { "productId": "…kabel",      "quantity": "100", "costPrice": "15000.00" },
-      { "productId": "…sichqoncha", "quantity": "20",  "costPrice": "60000.00" } ] }
-  ```
-- **Validatsiya:** `date` — `YYYY-MM-DD` (haqiqiy sana); `warehouseId` — ruxsat etilgan ACTIVE ombor; `notes` ≤ 1000 (bo‘sh → `null`); `items` — 1–500 ta; `productId` — mavjud ACTIVE mahsulot; `quantity` — `quantitySchema` (> 0, ≤ 3 kasr, ≤ 11 butun xona; `NaN`/`Infinity`/son turi rad etiladi) + mahsulotning `allowDecimal` siyosati; `costPrice` — `moneySchema` (≥ 0, ≤ 2 kasr); bitta mahsulot bir marta (`400`, `items[i].productId` — "Mahsulot takrorlangan").
-- **Totallar:** DB’dagi qatorlardan: `totalQuantity = Σ quantity` (misolda **200**), `totalAmount = Σ line_total`, `line_total = round(quantity × costPrice, 2)` GENERATED (REQ-062/063/065).
-- **Snapshot:** `productName`, `barcode` — saqlash paytidagi mahsulotdan (D-08); `costPrice` — kiritilgan kelgan narxi. Mahsulot keyin tahrirlansa ham hujjat o‘zgarmaydi.
-- **201:** `IncomingDto` (status `DRAFT`, qatorlar bilan). **Qoldiq o‘zgarmaydi.**
-- **Xatolar:** `404 NOT_FOUND` (ombor; mahsulot — `items[i].productId`) · `403 WAREHOUSE_ACCESS_DENIED` · `422 WAREHOUSE_INACTIVE` · `422 PRODUCT_INACTIVE` (`items[i].productId`) · `422 INVALID_QUANTITY` (`items[i].quantity`)
-- **Audit:** `INCOMING_CREATED` (`{ number, warehouseId, date, itemsCount, totalQuantity }`)
-
-### `GET /incoming/:id`
-- **Ruxsat:** `incoming.read` · **200:** `IncomingDto` (qatorlar bilan) · **404** (yo‘q yoki begona ombor hujjati)
-
-### `PATCH /incoming/:id` — qoralamani tahrirlash
-- **Ruxsat:** `incoming.manage` · faqat `DRAFT`
-- **Body:** `POST` bilan bir xil maydonlar, hammasi ixtiyoriy (kamida bittasi); `items` berilsa — **to‘liq almashtiriladi** (snapshot’lar yangilanadi). Ombor ACTIVE va ruxsat etilgan bo‘lishi shart (nofaol omborning qoralamasi faqat faol omborga ko‘chirilganda tahrirlanadi yoki bekor qilinadi).
-- Totallar har safar serverda qayta hisoblanadi (AC-08). Qoldiq o‘zgarmaydi.
-- **Xatolar:** `409 INCOMING_NOT_DRAFT` · validatsiya xatolari `POST` bilan bir xil · **Audit:** `INCOMING_UPDATED` (`{ number, changes: { date|warehouseId|notes: { from, to } }, items?: { replaced, totalsChanged, from, to } }`)
-
-### `POST /incoming/:id/confirm` — tasdiqlash (stock ↑, atomic)
-- **Ruxsat:** `incoming.confirm` · **Body:** yo‘q (UI’da tasdiqlash dialogi totallar bilan)
-- Bitta tranzaksiya ([ARCHITECTURE.md §12.2](ARCHITECTURE.md#122-kirimni-tasdiqlash-post-incomingidconfirm)): hujjat `FOR UPDATE` → DRAFT → `InventoryService.assertOperationalWarehouse` (ruxsat + ACTIVE, ombor `FOR SHARE`) → qatorlar (kamida 1) va mahsulotlar `FOR SHARE` (ACTIVE, `allowDecimal` siyosati — qoralamadan keyin o‘zgargan bo‘lsa ham) → holat + totallar (qatorlardan) → `InventoryService.increase` (stock ↑ + `INCOMING` ledger, `unit_cost = costPrice`) → audit. Biror qadam xato bersa — hujjat, qoldiq, ledger va audit to‘liq qaytariladi.
-- **200:** `IncomingDto` (status `CONFIRMED`, `confirmedBy`, `confirmedAt`)
-- **Idempotent:** takroriy yoki parallel so‘rov qulfni kutadi va `409 INCOMING_NOT_DRAFT` oladi (`details: [{ field: "status", message: "<joriy holat>" }]`); stock ikki marta oshmaydi (ledger `UNIQUE(reference_type, reference_item_id)` ham kafolat).
-- **Xatolar:** `409 INCOMING_NOT_DRAFT` · `422 INCOMING_EMPTY` · `422 PRODUCT_INACTIVE` · `422 INVALID_QUANTITY` · `422 WAREHOUSE_INACTIVE` · `403 WAREHOUSE_ACCESS_DENIED` · `404`
-- **Mahsulot kartochkasi o‘zgarmaydi (D-16):** tasdiqlash `products.cost_price`ni yangilamaydi; kirim narxi hujjat qatorida va ledger'da (`unitCost`) qoladi. Foyda va ombor qiymati kartochka tannarxidan.
-- **Audit:** `INCOMING_CONFIRMED` (`{ number, warehouseId, itemsCount, totalQuantity, totalAmount }`)
-
-### `POST /incoming/:id/cancel`
-- **Ruxsat:** `incoming.manage` · faqat `DRAFT` · qoldiqqa tegmaydi · **200:** `IncomingDto` (status `CANCELLED`, `cancelledBy`, `cancelledAt`)
-- **Xatolar:** `409 INCOMING_NOT_DRAFT` · `404` · **Audit:** `INCOMING_CANCELLED` (`{ number, warehouseId }`)
+### `POST /products/:id/stock` — mavjud mahsulotga qoldiq
+- **Body:** `{ "warehouseId": "…", "quantity": "5", "costPrice": "1500.00", "date": "2026-11-03", "notes": null }` (`strictObject`; client totallari → `400`)
+- **201:** `ProductDto` · **Xatolar:** `404` · `422 PRODUCT_INACTIVE` · `422 WAREHOUSE_INACTIVE` · `422 INVALID_QUANTITY` (`quantity`) · `403`
 
 ---
 
