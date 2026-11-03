@@ -717,11 +717,12 @@ function drawSky(
       const off = -((time * l.speed * w + l.y * 3) % tileW);
       const a1 = cloudAlpha * l.alpha * appear;
       for (let x = off; x < w; x += tileW) {
+        // +2px ustma-ust: masshtablashda chetdagi yarim shaffof ustun chok bo'lib ko'rinmasin
         ctx.globalAlpha = a1 * (1 - s.warmth);
-        ctx.drawImage(tx.cloudsDay, x, l.y, tileW, l.hgt);
+        ctx.drawImage(tx.cloudsDay, x - 1, l.y, tileW + 2, l.hgt);
         if (s.warmth > 0.01) {
           ctx.globalAlpha = a1 * s.warmth;
-          ctx.drawImage(tx.cloudsWarm, x, l.y, tileW, l.hgt);
+          ctx.drawImage(tx.cloudsWarm, x - 1, l.y, tileW + 2, l.hgt);
         }
       }
     }
