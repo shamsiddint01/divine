@@ -34,7 +34,11 @@ export const saleCustomerSchema = z
       return { id: value.id };
     }
     const phone = value.phone ?? null;
-    if (value.name == null || (typeof value.name === 'string' && value.name.trim() === '')) {
+    if (
+      value.name === undefined ||
+      value.name === null ||
+      (typeof value.name === 'string' && value.name.trim() === '')
+    ) {
       return { name: null, phone };
     }
     const name = customerNameSchema.safeParse(value.name);
