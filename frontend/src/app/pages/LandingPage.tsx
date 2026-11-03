@@ -37,7 +37,7 @@ function TelegramButton({ label, className }: { label: string; className?: strin
       href={TELEGRAM_URL}
       target="_blank"
       rel="noopener noreferrer"
-      className={`ld-btn ld-btn--coral ${className ?? ''}`}
+      className={`ld-btn ld-btn--primary ${className ?? ''}`}
     >
       {label}
       <span className="sr-only"> — {t.landing.opensTelegram}</span>

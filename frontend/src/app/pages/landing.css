@@ -1,4 +1,5 @@
-/* /welcome — ochiq landing. Ilova tokenlaridan mustaqil: doim qora fon, marjon aksent.
+/* /welcome — ochiq landing. Doim qora fon; ranglar ilovaning qora mavzusi bilan bir xil
+   (globals.css `.dark`: fon, karta, chegara, matn, primary ko'k) — sayt va ilova bitta brend.
    O'lchamlar 1440 kenglikdagi kadr pikselida (--u); hero kartasi ekran balandligiga ham qaraydi (--v).
    Planshet (768×700 / 768×612) va telefon (390×655) — o'z kadrlari. */
 
@@ -13,13 +14,21 @@ html:has(.ld) {
 }
 
 .ld {
-  --ld-text: #fff;
-  --ld-muted: rgba(255, 255, 255, 0.64);
-  --ld-line: rgba(255, 255, 255, 0.2);
-  --ld-soft-line: rgba(255, 255, 255, 0.1);
-  --ld-coral-1: #ff8a73;
-  --ld-coral-2: #f0605a;
-  --ld-accent: linear-gradient(135deg, var(--ld-coral-1), var(--ld-coral-2));
+  /* Ilova `.dark` tokenlari (landing mavzudan qat'i nazar doim qora) */
+  --ld-text: oklch(0.97 0.003 264);
+  --ld-muted: oklch(0.72 0.012 260);
+  --ld-line: oklch(1 0 0 / 11%);
+  --ld-soft-line: oklch(1 0 0 / 7%);
+  --ld-card: oklch(0.16 0.005 264);
+  --ld-surface: oklch(0.26 0.01 264);
+  --ld-primary: oklch(0.62 0.19 262);
+  /* Qora fonda o'qiladigan primary (ikonka, havola, raqamlar) */
+  --ld-primary-text: oklch(0.76 0.13 262);
+  --ld-primary-soft: oklch(0.62 0.19 262 / 14%);
+  --ld-primary-line: oklch(0.62 0.19 262 / 45%);
+  --ld-primary-glow: oklch(0.62 0.19 262 / 55%);
+  --ld-accent: linear-gradient(135deg, oklch(0.74 0.15 262), oklch(0.58 0.2 264));
+  --ld-radius: 0.5rem;
   --ld-ease: cubic-bezier(0.22, 1, 0.36, 1);
   container-type: inline-size;
   min-height: 100svh;
@@ -28,7 +37,7 @@ html:has(.ld) {
   -webkit-font-smoothing: antialiased;
 }
 .ld :focus-visible {
-  outline: 2px solid var(--ld-coral-1);
+  outline: 2px solid oklch(0.62 0.19 262 / 70%);
   outline-offset: 3px;
 }
 
@@ -78,8 +87,8 @@ html:has(.ld) {
   align-items: center;
   justify-content: center;
   gap: 0.45em;
-  border-radius: 999px;
-  font-weight: 600;
+  border-radius: var(--ld-radius);
+  font-weight: 500;
   white-space: nowrap;
   transition:
     transform 0.25s var(--ld-ease),
@@ -92,29 +101,26 @@ html:has(.ld) {
   width: 1.05em;
   height: 1.05em;
 }
-.ld-btn--coral {
-  background: var(--ld-accent);
-  color: #fff;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.38),
-    inset 0 -8px 18px rgba(255, 255, 255, 0.08),
-    0 6px 18px -8px rgba(240, 96, 90, 0.7);
+.ld-btn--primary {
+  /* Ilovadagi asosiy tugma: primary fon, oq yozuv, hover'da 90% */
+  background: var(--ld-primary);
+  color: oklch(0.985 0 0);
+  box-shadow: 0 6px 20px -10px var(--ld-primary-glow);
 }
-.ld-btn--coral:hover {
+.ld-btn--primary:hover {
+  background: oklch(0.62 0.19 262 / 90%);
   transform: translateY(-1px);
-  filter: saturate(1.08);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -8px 18px rgba(255, 255, 255, 0.12),
-    0 10px 30px -8px rgba(255, 128, 100, 0.85);
+  box-shadow: 0 10px 28px -10px var(--ld-primary-glow);
 }
 .ld-btn--ghost {
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
+  /* Ilovadagi "outline" tugma */
+  border: 1px solid oklch(1 0 0 / 15%);
+  background: oklch(0 0 0 / 55%);
+  color: var(--ld-text);
 }
 .ld-btn--ghost:hover {
-  border-color: rgba(255, 255, 255, 0.45);
+  border-color: oklch(1 0 0 / 28%);
+  background: var(--ld-surface);
   transform: translateY(-1px);
 }
 
@@ -147,7 +153,7 @@ html:has(.ld) {
   position: relative;
   font-size: calc(15 * var(--u));
   font-weight: 450;
-  color: rgba(255, 255, 255, 0.82);
+  color: oklch(0.97 0.003 264 / 82%);
   transition: color 0.2s ease;
 }
 .ld-underline::after {
@@ -162,7 +168,7 @@ html:has(.ld) {
   transition: transform 0.35s var(--ld-ease);
 }
 .ld-underline:hover {
-  color: #fff;
+  color: var(--ld-text);
 }
 .ld-underline:hover::after {
   transform: scaleX(1);
@@ -321,15 +327,15 @@ html:has(.ld) {
 .ld-card {
   height: 100%;
   padding: calc(28 * var(--u));
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: calc(16 * var(--u));
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
+  border: 1px solid var(--ld-line);
+  border-radius: calc(14 * var(--u));
+  background: var(--ld-card);
   transition:
     border-color 0.3s ease,
     transform 0.3s var(--ld-ease);
 }
 .ld-card:hover {
-  border-color: rgba(244, 118, 104, 0.45);
+  border-color: var(--ld-primary-line);
   transform: translateY(-2px);
 }
 .ld-card__icon {
@@ -338,8 +344,8 @@ html:has(.ld) {
   width: calc(44 * var(--u));
   height: calc(44 * var(--u));
   border-radius: calc(12 * var(--u));
-  background: rgba(255, 138, 115, 0.12);
-  color: var(--ld-coral-1);
+  background: var(--ld-primary-soft);
+  color: var(--ld-primary-text);
 }
 .ld-card__icon svg {
   width: calc(22 * var(--u));
@@ -420,7 +426,7 @@ html:has(.ld) {
   flex: none;
   width: calc(20 * var(--u));
   height: calc(20 * var(--u));
-  color: var(--ld-coral-1);
+  color: var(--ld-primary-text);
   transition: transform 0.3s var(--ld-ease);
 }
 .ld-faq details[open] summary svg {
@@ -747,7 +753,7 @@ html:has(.ld) {
   .ld-hero__actions {
     animation: ld-expand 0.45s 0.78s var(--ld-ease) both;
   }
-  .ld-hero__actions .ld-btn--coral {
+  .ld-hero__actions .ld-btn--primary {
     animation: ld-bounce 0.45s 1.02s var(--ld-ease) backwards;
   }
   .ld-footer__about .ld-brand {
@@ -785,11 +791,11 @@ html:has(.ld) {
   flex-direction: column;
   align-items: center;
   padding: calc(64 * var(--u)) calc(24 * var(--u));
-  border: 1px solid rgba(244, 118, 104, 0.35);
+  border: 1px solid oklch(0.62 0.19 262 / 35%);
   border-radius: calc(20 * var(--u));
   background:
-    radial-gradient(ellipse 60% 90% at 50% 120%, rgba(240, 96, 90, 0.28), transparent 70%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent);
+    radial-gradient(ellipse 60% 90% at 50% 120%, oklch(0.62 0.19 262 / 28%), transparent 70%),
+    var(--ld-card);
   text-align: center;
 }
 .ld-final__actions {
@@ -873,7 +879,7 @@ html:has(.ld) {
     inset-inline: 0;
     top: -1px;
     height: 1px;
-    background: linear-gradient(90deg, var(--ld-coral-1), var(--ld-line) 60%);
+    background: linear-gradient(90deg, var(--ld-primary), var(--ld-line) 60%);
     transform: scaleX(0);
     transform-origin: left;
     transition: transform 1s calc(var(--i, 0) * 90ms + 0.1s) var(--ld-ease);
@@ -889,12 +895,12 @@ html:has(.ld) {
 }
 @keyframes ld-glow {
   0% {
-    box-shadow: 0 0 0 0 rgba(255, 138, 115, 0);
+    box-shadow: 0 0 0 0 oklch(0.62 0.19 262 / 0%);
   }
   40% {
-    box-shadow: 0 0 0 8px rgba(255, 138, 115, 0.18);
+    box-shadow: 0 0 0 8px oklch(0.62 0.19 262 / 20%);
   }
   100% {
-    box-shadow: 0 0 0 14px rgba(255, 138, 115, 0);
+    box-shadow: 0 0 0 14px oklch(0.62 0.19 262 / 0%);
   }
 }
