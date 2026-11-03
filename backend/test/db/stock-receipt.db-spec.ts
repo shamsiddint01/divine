@@ -194,7 +194,11 @@ describe('yangi mahsulot + boshlang‘ich qoldiq (bitta tranzaksiya)', () => {
     expect(await stockOf(warehouseA, id)).toBe('12.000');
 
     const doc = await lastIncomingOf(id);
-    expect(doc).toMatchObject({ status: 'CONFIRMED', notes: 'Boshlang‘ich', confirmedById: adminId });
+    expect(doc).toMatchObject({
+      status: 'CONFIRMED',
+      notes: 'Boshlang‘ich',
+      confirmedById: adminId,
+    });
     expect(doc.incomingDate.toISOString().slice(0, 10)).toBe('2026-10-05');
     expect(doc.items).toHaveLength(1);
     expect(doc.items[0]!.costPrice.toFixed(2)).toBe('700.00');
