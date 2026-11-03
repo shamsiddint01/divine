@@ -11,10 +11,16 @@
   inset: 0;
 }
 .splash--light .splash__bg {
-  background: radial-gradient(ellipse at 50% 42%, #ffffff, #ebeefa);
+  /* Ilova och mavzusi: fon + primary'ning nozik nuri */
+  background: radial-gradient(
+    ellipse at 50% 42%,
+    oklch(0.488 0.217 264.376 / 7%),
+    oklch(0.984 0.003 247.858) 65%
+  );
 }
 .splash--dark .splash__bg {
-  background: radial-gradient(ellipse at 50% 42%, #1a2060, #05060a 75%);
+  /* Ilova qora mavzusi: toza qora fon + primary ko'kning nozik nuri */
+  background: radial-gradient(ellipse at 50% 42%, oklch(0.62 0.19 262 / 16%), oklch(0 0 0) 62%);
 }
 .splash__center {
   position: absolute;
@@ -51,10 +57,10 @@
   animation: sp-rise 0.5s 2.35s both;
 }
 .splash--light .splash__tagline {
-  color: #6b7190;
+  color: oklch(0.554 0.046 257.417);
 }
 .splash--dark .splash__tagline {
-  color: #a3acd6;
+  color: oklch(0.72 0.012 260);
 }
 .splash__progress {
   position: absolute;
@@ -65,13 +71,13 @@
   animation: sp-progress 3.6s linear both;
 }
 .splash--light .splash__progress {
-  background: #3d4edb;
+  background: oklch(0.488 0.217 264.376);
 }
 .splash--dark .splash__progress {
-  background: #f1ac2c;
+  background: oklch(0.62 0.19 262);
 }
 
-/* Ko'tariluvchi oltin yulduzchalar (oq fonda ham ko'rinishi uchun to'q oltin gradient). */
+/* Ko'tariluvchi yulduzchalar — ilova primary ko'kida (oltin faqat logotip yulduzida). */
 .splash__dust {
   position: absolute;
   inset: 0;
@@ -85,10 +91,10 @@
   animation: sp-dust var(--d) var(--t) ease-out infinite;
 }
 .splash--light .splash__dust span {
-  background: linear-gradient(135deg, #ffd978, #c7841a);
+  background: linear-gradient(135deg, oklch(0.62 0.19 262), oklch(0.488 0.217 264.376));
 }
 .splash--dark .splash__dust span {
-  background: linear-gradient(135deg, #fff3c4, #f1ac2c);
+  background: linear-gradient(135deg, oklch(0.86 0.08 264), oklch(0.62 0.19 262));
 }
 
 /* Logotip bo'laklari */
