@@ -29,14 +29,24 @@ describe('sotuv sxemasi (API §11, BR-05, BR-06, BR-15)', () => {
     ).toBe(false);
   });
 
-  it('ismsiz mijoz → xato `customer.name` maydonida (AC-15)', () => {
-    for (const customer of [{}, { name: '  ' }, { phone: '+998901234567' }]) {
+  it('ismsiz mijoz → `name: null`, telefon saqlanadi (umumiy mijoz, 2026-11-03)', () => {
+    for (const customer of [{}, { name: '  ' }, { name: null }]) {
+      expect(saleCreateSchema.parse({ warehouseId: W, customer, items }).customer).toEqual({
+        name: null,
+        phone: null,
+      });
+    }
+    expect(
+      saleCreateSchema.parse({ warehouseId: W, customer: { phone: '90 123 45 67' }, items })
+        .customer,
+    ).toEqual({ name: null, phone: '+998901234567' });
+  });
+
+  it('noto‘g‘ri ism (juda uzun, matn emas) → xato `customer.name` maydonida', () => {
+    for (const customer of [{ name: 'A'.repeat(151) }, { name: 5 }]) {
       const res = saleCreateSchema.safeParse({ warehouseId: W, customer, items });
       expect(res.success).toBe(false);
-      expect(res.error?.issues[0]).toMatchObject({
-        path: ['customer', 'name'],
-        message: 'Mijoz ismi majburiy',
-      });
+      expect(res.error?.issues[0]?.path).toEqual(['customer', 'name']);
     }
   });
 
