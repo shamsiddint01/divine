@@ -21,6 +21,9 @@ const UZ =
 const STAR_X = 143.59;
 const WIDTH = 204.75;
 
+/** Splash animatsiyasi shu shakllarni bo'laklab harakatlantiradi (app/splash). */
+export const BRAND_PATHS = { STAR, D, HIGHLIGHT, IVINE, UZ, STAR_X, WIDTH } as const;
+
 /** `auto` — joriy mavzu: och mavzuda to'q belgi, qorong'ida "shisha" belgi. */
 function useResolvedVariant(variant: Variant): 'light' | 'dark' {
   const theme = useUiStore((s) => s.theme);
@@ -139,6 +142,7 @@ export function BrandLogo({ variant = 'auto', className, ...props }: SvgProps) {
       role="img"
       aria-label={t.app.name}
       className={cn('w-auto shrink-0', className)}
+      data-brand-logo=""
       {...props}
     >
       <Gradients ids={ids} />
