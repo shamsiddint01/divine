@@ -40,8 +40,8 @@ export function useCreateSale() {
       }),
     onSuccess: () =>
       Promise.all(
-        ['sales', 'products', 'warehouses', 'dashboard', 'customers', 'reports', 'credits'].map((key) =>
-          qc.invalidateQueries({ queryKey: [key] }),
+        ['sales', 'products', 'warehouses', 'dashboard', 'customers', 'reports', 'credits'].map(
+          (key) => qc.invalidateQueries({ queryKey: [key] }),
         ),
       ),
   });

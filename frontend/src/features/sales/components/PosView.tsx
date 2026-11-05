@@ -162,7 +162,10 @@ export function PosView() {
   };
 
   /** Sotuvni yaratadi va chekni ko'rsatadi; xato chaqiruvchiga qaytadi. */
-  const finishSale = async (saleCustomer: CreateSaleInput['customer'], credit?: SaleCreditInput) => {
+  const finishSale = async (
+    saleCustomer: CreateSaleInput['customer'],
+    credit?: SaleCreditInput,
+  ) => {
     const sale = await createSale.mutateAsync({
       idempotencyKey,
       input: {
@@ -218,9 +221,7 @@ export function PosView() {
   const submitCredit = async (credit: SaleCreditInput) => {
     try {
       await finishSale(
-        customer.id
-          ? { id: customer.id }
-          : { name: credit.debtorName, phone: credit.debtorPhone },
+        customer.id ? { id: customer.id } : { name: credit.debtorName, phone: credit.debtorPhone },
         credit,
       );
     } catch (error) {
