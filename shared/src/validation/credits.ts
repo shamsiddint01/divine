@@ -14,7 +14,8 @@ import {
 
 const TASHKENT_OFFSET_MS = 5 * 60 * 60 * 1000;
 
-const toCents = (value: string): bigint => {
+/** Pul satri → tiyin (float'siz aniq hisob). */
+export const moneyToCents = (value: string): bigint => {
   const [int = '0', frac = ''] = value.split('.');
   return BigInt(int) * 100n + BigInt(frac.padEnd(2, '0').slice(0, 2));
 };
@@ -53,7 +54,7 @@ export const creditCreateSchema = z
     path: ['firstDueDate'],
   })
   // Har bir to'lov kamida 1 tiyin bo'lishi kerak.
-  .refine((v) => toCents(v.amount) >= BigInt(v.installments), {
+  .refine((v) => moneyToCents(v.amount) >= BigInt(v.installments), {
     error: M.creditInstallments,
     path: ['installments'],
   });
@@ -102,7 +103,7 @@ export interface CreditSchedule {
   next: { dueDate: string; amount: string } | null;
 }
 
-const fromCents = (cents: bigint): string =>
+export const centsToMoney = (cents: bigint): string =>
   `${cents / 100n}.${String(cents % 100n).padStart(2, '0')}`;
 
 /** `YYYY-MM-DD` + kun (UTC hisobida — sana vaqt mintaqasiga bog'liq emas). */
@@ -121,14 +122,14 @@ export function buildCreditInstallments(input: {
   installments: number;
   intervalDays: number;
 }): CreditInstallment[] {
-  const total = toCents(input.amount);
+  const total = moneyToCents(input.amount);
   const count = BigInt(input.installments);
   const whole = (total / count / 100n) * 100n;
   const base = whole > 0n ? whole : total / count;
   return Array.from({ length: input.installments }, (_, index) => ({
     seq: index + 1,
     dueDate: addDays(input.firstDueDate, index * input.intervalDays),
-    amount: fromCents(index === input.installments - 1 ? total - base * (count - 1n) : base),
+    amount: centsToMoney(index === input.installments - 1 ? total - base * (count - 1n) : base),
   }));
 }
 
@@ -141,12 +142,12 @@ export function computeCreditSchedule(
   paidAmount: string,
   today: string,
 ): CreditSchedule {
-  const paidTotal = toCents(paidAmount);
+  const paidTotal = moneyToCents(paidAmount);
   let left = paidTotal;
   let carry = 0n;
   let total = 0n;
   const rows = installments.map((row, index): CreditScheduleRow => {
-    const amount = toCents(row.amount);
+    const amount = moneyToCents(row.amount);
     total += amount;
     const paid = left < amount ? left : amount;
     left -= paid;
@@ -166,19 +167,19 @@ export function computeCreditSchedule(
     }
     return {
       ...row,
-      paid: fromCents(paid),
-      remaining: fromCents(remaining),
-      toPay: fromCents(toPay),
+      paid: centsToMoney(paid),
+      remaining: centsToMoney(remaining),
+      toPay: centsToMoney(toPay),
       state,
     };
   });
   const remainingAmount = total - paidTotal;
-  const nextRow = rows.find((row) => toCents(row.toPay) > 0n);
+  const nextRow = rows.find((row) => moneyToCents(row.toPay) > 0n);
   const overdue = rows.some((row) => row.state === 'CARRIED' || row.state === 'OVERDUE');
   return {
     rows,
-    paidAmount: fromCents(paidTotal),
-    remainingAmount: fromCents(remainingAmount > 0n ? remainingAmount : 0n),
+    paidAmount: centsToMoney(paidTotal),
+    remainingAmount: centsToMoney(remainingAmount > 0n ? remainingAmount : 0n),
     status: remainingAmount <= 0n ? 'PAID' : overdue ? 'OVERDUE' : 'ACTIVE',
     next: nextRow ? { dueDate: nextRow.dueDate, amount: nextRow.toPay } : null,
   };
@@ -191,9 +192,9 @@ export function computeCreditSchedule(
 export function creditAmountDueOn(schedule: CreditSchedule, date: string): string | null {
   const index = schedule.rows.findIndex((row) => row.dueDate === date);
   const target = schedule.rows[index];
-  if (!target || toCents(target.remaining) === 0n) return null;
+  if (!target || moneyToCents(target.remaining) === 0n) return null;
   const sum = schedule.rows
     .slice(0, index + 1)
-    .reduce((acc, row) => acc + toCents(row.remaining), 0n);
-  return fromCents(sum);
+    .reduce((acc, row) => acc + moneyToCents(row.remaining), 0n);
+  return centsToMoney(sum);
 }

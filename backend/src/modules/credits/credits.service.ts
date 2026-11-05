@@ -3,6 +3,7 @@ import {
   AuditAction,
   AuditEntityType,
   buildCreditInstallments,
+  centsToMoney,
   computeCreditSchedule,
   creditAmountDueOn,
   type CreditCreateInput,
@@ -15,6 +16,7 @@ import {
   type CreditsListResponse,
   type CreditStatus,
   ErrorCode,
+  moneyToCents,
   type SortSpec,
   VALIDATION_MESSAGES_UZ,
 } from '@divine/shared';
@@ -91,7 +93,9 @@ export class CreditsService {
     const direction = query.sort.direction === 'asc' ? 1 : -1;
     const key = (c: (typeof all)[number]): string | number => {
       if (query.sort.field === 'takenAt') return c.row.takenAt.getTime();
-      if (query.sort.field === 'remainingAmount') return Number(c.schedule.remainingAmount);
+      if (query.sort.field === 'remainingAmount') {
+        return Number(moneyToCents(c.schedule.remainingAmount));
+      }
       // Yopilgan nasiyalar — oxirida.
       return c.schedule.next?.dueDate ?? '9999-12-31';
     };
@@ -101,10 +105,7 @@ export class CreditsService {
     });
     const start = (query.page - 1) * query.pageSize;
     const open = matched.filter((c) => c.schedule.status !== 'PAID');
-    const remainingCents = open.reduce(
-      (sum, c) => sum + BigInt(c.schedule.remainingAmount.replace('.', '')),
-      0n,
-    );
+    const remaining = open.reduce((sum, c) => sum + moneyToCents(c.schedule.remainingAmount), 0n);
     return {
       ...toPaginated(
         sorted
@@ -114,7 +115,7 @@ export class CreditsService {
         query,
       ),
       summary: {
-        remainingAmount: `${remainingCents / 100n}.${String(remainingCents % 100n).padStart(2, '0')}`,
+        remainingAmount: centsToMoney(remaining),
         activeCount: open.length,
         overdueCount: open.filter((c) => c.schedule.status === 'OVERDUE').length,
       },
@@ -213,7 +214,7 @@ export class CreditsService {
       const row = (await this.repository.find(id, tx)) ?? notFound();
       const plan = (await this.repository.installmentsOf([id], tx)).get(id) ?? [];
       const { remainingAmount } = computeCreditSchedule(plan, row.paidAmount, today);
-      if (Number(input.amount) > Number(remainingAmount)) {
+      if (moneyToCents(input.amount) > moneyToCents(remainingAmount)) {
         throw new AppError(ErrorCode.CREDIT_OVERPAID, {
           details: [{ field: 'amount', message: `Qolgan qarz: ${remainingAmount}` }],
         });
