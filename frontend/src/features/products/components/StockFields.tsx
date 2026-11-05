@@ -14,6 +14,7 @@ import { FormField } from '@/shared/components/FormField';
 import { OptionsLoadError } from '@/shared/components/OptionsLoadError';
 import { z } from '@/shared/forms/zod';
 import { todayInTashkent } from '@/shared/lib/format';
+import { cn } from '@/shared/lib/utils';
 import { Input } from '@/shared/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
 import { Textarea } from '@/shared/ui/textarea';
@@ -120,7 +121,7 @@ export function StockFields<T extends FieldValues>({
           )}
         />
       </FormField>
-      <FormField id={id('notes')} label={t.products.stock.notes} optional className="sm:col-span-2">
+      <FormField id={id('notes')} label={t.products.stock.notes} optional className="col-span-full">
         <Textarea
           id={id('notes')}
           rows={2}
@@ -136,15 +137,18 @@ export function StockFields<T extends FieldValues>({
 export function FormSection({
   title,
   hint,
+  columns = 2,
   children,
 }: {
   title: string;
   hint?: string;
+  /** Katta ekrandagi ustunlar soni (telefonda doim bitta). */
+  columns?: 2 | 3;
   children: ReactNode;
 }) {
   return (
-    <fieldset className="grid gap-4 sm:grid-cols-2">
-      <legend className="mb-3 w-full sm:col-span-2">
+    <fieldset className={cn('grid gap-4', columns === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2')}>
+      <legend className="mb-3 w-full">
         <span className="block text-sm font-semibold">{title}</span>
         {hint ? <span className="mt-0.5 block text-xs text-muted-foreground">{hint}</span> : null}
       </legend>

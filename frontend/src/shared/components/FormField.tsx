@@ -42,7 +42,7 @@ export function FormField({
     </Label>
   );
   return (
-    <div className={cn('grid gap-1.5', className)}>
+    <div className={cn('grid content-start gap-1.5', className)}>
       {action ? (
         <div className="flex items-center justify-between gap-2">
           {labelEl}

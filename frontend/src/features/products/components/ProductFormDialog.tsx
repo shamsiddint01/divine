@@ -383,7 +383,11 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
               )}
             />
           </FormSection>
-          <FormSection title={t.products.form.sectionPrice}>
+          <FormSection
+            title={t.products.form.sectionPrice}
+            hint={t.products.form.priceHint}
+            columns={3}
+          >
             <FormField
               id="p-cost"
               label={t.products.form.costPrice}
@@ -399,12 +403,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                 })}
               />
             </FormField>
-            <FormField
-              id="p-sale"
-              label={t.products.form.salePrice}
-              error={e.salePrice?.message}
-              hint={t.products.form.priceHint}
-            >
+            <FormField id="p-sale" label={t.products.form.salePrice} error={e.salePrice?.message}>
               <Input
                 id="p-sale"
                 inputMode="decimal"
@@ -429,7 +428,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
               />
             </FormField>
             {priceWarning ? (
-              <p className="inline-flex items-center gap-1 text-xs text-warning sm:col-span-2">
+              <p className="col-span-full inline-flex items-center gap-1 text-xs text-warning">
                 <AlertTriangle className="size-3.5" aria-hidden />
                 {t.products.form.priceWarning}
               </p>
@@ -439,6 +438,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
             <FormSection
               title={t.products.form.sectionStock}
               hint={t.products.form.sectionStockHint}
+              columns={3}
             >
               <StockFields control={control} register={register} errors={e} idPrefix="p-stock" />
             </FormSection>
