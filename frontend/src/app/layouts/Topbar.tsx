@@ -1,4 +1,12 @@
-import { Bell, LogOut, Menu, PackageX, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import {
+  Bell,
+  HandCoins,
+  LogOut,
+  Menu,
+  PackageX,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 import { Permission } from '@divine/shared';
 import { useDashboardSummary } from '@/features/dashboard/api/dashboard';
@@ -27,8 +35,11 @@ import { findNavItem } from '../navigation-context';
  */
 function NotificationsMenu() {
   const { data } = useDashboardSummary();
+  const canSeeCredits = useHasAnyPermission([Permission.CREDITS_MANAGE]);
+  const { data: reminders } = useCreditReminders(canSeeCredits);
   const items = data?.lowStock.items ?? [];
-  const count = data?.lowStock.count ?? 0;
+  const credits = reminders ?? [];
+  const count = (data?.lowStock.count ?? 0) + credits.length;
 
   return (
     <DropdownMenu>
@@ -50,10 +61,34 @@ function NotificationsMenu() {
       <DropdownMenuContent align="end" className="w-80">
         <DropdownMenuLabel>{t.topbar.notifications}</DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {credits.length > 0 ? (
+          <>
+            <p className="px-2 pb-1 text-xs font-medium text-muted-foreground">
+              {t.topbar.creditsTitle}
+            </p>
+            {credits.map((r) => (
+              <DropdownMenuItem key={r.creditId} asChild>
+                <Link to={`/credits?q=${encodeURIComponent(r.number)}`} className="gap-3">
+                  <HandCoins className="text-warning" />
+                  <span className="min-w-0 whitespace-normal">
+                    {t.topbar.creditAlert(
+                      r.debtorName,
+                      formatDate(r.dueDate),
+                      formatMoney(r.amount),
+                    )}
+                  </span>
+                </Link>
+              </DropdownMenuItem>
+            ))}
+            {items.length > 0 ? <DropdownMenuSeparator /> : null}
+          </>
+        ) : null}
         {items.length === 0 ? (
+          credits.length > 0 ? null : (
           <p className="px-2 py-6 text-center text-sm text-muted-foreground">
             {t.topbar.noNotifications}
           </p>
+          )
         ) : (
           <>
             <p className="px-2 pb-1 text-xs font-medium text-muted-foreground">

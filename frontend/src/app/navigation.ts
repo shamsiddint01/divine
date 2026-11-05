@@ -75,6 +75,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     anyOf: [Permission.CUSTOMERS_READ_HISTORY],
   },
   {
+    key: 'credits',
+    path: '/credits',
+    label: t.nav.credits,
+    icon: HandCoins,
+    anyOf: [Permission.CREDITS_MANAGE],
+  },
+  {
     key: 'expenses',
     path: '/expenses',
     label: t.nav.expenses,
@@ -127,7 +134,7 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     title: t.nav.sectionOperations,
     shortTitle: t.nav.sectionOperations,
     icon: Wallet,
-    keys: ['expenses', 'reports'],
+    keys: ['credits', 'expenses', 'reports'],
   },
   {
     key: 'admin',

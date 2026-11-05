@@ -27,6 +27,7 @@ export const BACKEND_READY_PREFIXES = [
   '/inventory',
   '/customers',
   '/sales',
+  '/credits',
   '/expenses',
   '/expense-categories',
   '/reports',

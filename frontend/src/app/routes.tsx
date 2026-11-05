@@ -40,6 +40,7 @@ const CustomerDetailPage = page(
   () => import('@/features/customers/pages/CustomerDetailPage'),
   'CustomerDetailPage',
 );
+const CreditsPage = page(() => import('@/features/credits/pages/CreditsPage'), 'CreditsPage');
 const ExpensesPage = page(() => import('@/features/expenses/pages/ExpensesPage'), 'ExpensesPage');
 const ReportsPage = page(() => import('@/features/reports/pages/ReportsPage'), 'ReportsPage');
 const SettingsPage = page(() => import('@/features/settings/pages/SettingsPage'), 'SettingsPage');
@@ -83,6 +84,7 @@ export const routes: RouteObject[] = [
       { path: 'customers/:id', element: <CustomerDetailPage /> },
       // Sobiq "Kirim" bo'limi: qoldiq endi Mahsulotlar → "Mahsulot qo'shish" / "Qoldiq qo'shish".
       { path: 'incoming/*', element: <Navigate to="/products" replace /> },
+      { path: 'credits', element: <CreditsPage /> },
       { path: 'expenses', element: <ExpensesPage /> },
       { path: 'reports', element: <ReportsPage /> },
       { path: 'settings', element: <SettingsPage /> },
