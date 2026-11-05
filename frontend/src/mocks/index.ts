@@ -6,6 +6,7 @@ import './handlers/auth';
 import './handlers/analytics';
 import './handlers/audit';
 import './handlers/catalog';
+import './handlers/credits';
 import './handlers/operations';
 import './handlers/sales';
 import './handlers/warehouses';

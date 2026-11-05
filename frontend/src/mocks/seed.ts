@@ -666,13 +666,14 @@ export function createSeedState(now: Date = new Date()): MockState {
     incoming: [],
     expenseCategories: [],
     expenses: [],
+    credits: [],
     settings: {
       companyName: 'Divine Market',
       lowStockDefaultThreshold: '5',
       currencyLabel: 'so‘m',
     },
     audit: [],
-    counters: { sale: 0, incoming: 0, movement: 0, audit: 0 },
+    counters: { sale: 0, incoming: 0, movement: 0, audit: 0, credit: 0 },
   };
 
   // ── Lug'atlar ────────────────────────────────────────────────────────────
@@ -1068,6 +1069,50 @@ export function createSeedState(now: Date = new Date()): MockState {
         r.pick(['Bank xizmati', 'Kassa apparati xizmati', 'Internet']),
       );
   }
+
+  // ── Nasiya: ertaga to'lovi bor, muddati o'tgan va yopilgan misollar ─────
+  const addCredit = (
+    debtorName: string,
+    debtorPhone: string | null,
+    amount: string,
+    daysAgo: number,
+    firstDueInDays: number,
+    installments: number,
+    intervalDays: number,
+    paid: string[],
+  ) => {
+    state.counters.credit += 1;
+    const takenDay = addDays(today, -daysAgo);
+    const takenAt = atTashkent(takenDay, 11);
+    state.credits.push({
+      id: id(),
+      number: state.counters.credit,
+      debtorName,
+      debtorPhone,
+      amount: `${amount}.00`,
+      takenAt,
+      note: null,
+      installments: buildCreditInstallments({
+        amount,
+        firstDueDate: addDays(today, firstDueInDays),
+        installments,
+        intervalDays,
+      }),
+      payments: paid.map((value) => ({
+        id: id(),
+        date: takenDay,
+        amount: `${value}.00`,
+        note: null,
+        createdBy: admin.id,
+        createdAt: takenAt,
+      })),
+      createdBy: admin.id,
+      createdAt: takenAt,
+    });
+  };
+  addCredit('Bobur Karimov', '+998901112233', '50000', 1, 1, 4, 1, []);
+  addCredit('Dilshod Ergashev', '+998935554466', '300000', 10, -3, 3, 7, ['60000']);
+  addCredit('Madina Yusupova', null, '120000', 30, -20, 2, 7, ['120000']);
 
   for (const u of state.users) {
     if (u.status === 'ACTIVE' && u.lastLoginAt === null)

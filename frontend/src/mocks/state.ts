@@ -133,6 +133,29 @@ export interface MovementRow {
   createdAt: string;
 }
 
+export interface CreditPaymentRow {
+  id: string;
+  date: string;
+  amount: string;
+  note: string | null;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface CreditRow {
+  id: string;
+  number: number;
+  debtorName: string;
+  debtorPhone: string | null;
+  amount: string;
+  takenAt: string;
+  note: string | null;
+  installments: CreditInstallment[];
+  payments: CreditPaymentRow[];
+  createdBy: string;
+  createdAt: string;
+}
+
 export interface ExpenseCategoryRow {
   id: string;
   name: string;
@@ -200,11 +223,12 @@ export interface MockState {
   incoming: IncomingRow[];
   expenseCategories: ExpenseCategoryRow[];
   expenses: ExpenseRow[];
+  credits: CreditRow[];
   settings: SettingsRow;
   audit: AuditRow[];
-  counters: { sale: number; incoming: number; movement: number; audit: number };
+  counters: { sale: number; incoming: number; movement: number; audit: number; credit: number };
 }
 
-export const STATE_VERSION = 7;
+export const STATE_VERSION = 8;
 
 export const stockKey = (warehouseId: string, productId: string) => `${warehouseId}|${productId}`;
