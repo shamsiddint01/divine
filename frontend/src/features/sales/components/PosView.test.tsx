@@ -97,13 +97,19 @@ describe('POS — sotuv oqimi', () => {
     const { state } = renderApp('/sales');
     setMockNow(new Date());
     const user = userEvent.setup();
-    const product = state.products.find((p) => p.status === 'ACTIVE' && p.salePrice === '25000.00')!;
+    const product = state.products.find(
+      (p) => p.status === 'ACTIVE' && p.salePrice === '25000.00',
+    )!;
     await user.type(
       await screen.findByPlaceholderText(t.sales.searchPlaceholder, {}, PAGE),
       product.name,
     );
     await user.click(
-      await screen.findByRole('button', { name: new RegExp(product.name.replace(/[()]/g, '.')) }, PAGE),
+      await screen.findByRole(
+        'button',
+        { name: new RegExp(product.name.replace(/[()]/g, '.')) },
+        PAGE,
+      ),
     );
     await user.click(await screen.findByRole('button', { name: t.sales.credit.button }, PAGE));
     const dialog = await screen.findByRole('dialog', { name: t.sales.credit.title }, PAGE);
@@ -116,7 +122,9 @@ describe('POS — sotuv oqimi', () => {
     await user.type(within(dialog).getByLabelText(new RegExp(t.credits.form.name)), 'Ali');
     const creditsBefore = state.credits.length;
     await user.click(within(dialog).getByRole('button', { name: t.sales.credit.submit }));
-    expect(await within(dialog).findByText('Telefon raqamini kiriting', {}, PAGE)).toBeInTheDocument();
+    expect(
+      await within(dialog).findByText('Telefon raqamini kiriting', {}, PAGE),
+    ).toBeInTheDocument();
     expect(state.credits.length).toBe(creditsBefore);
 
     await user.type(
