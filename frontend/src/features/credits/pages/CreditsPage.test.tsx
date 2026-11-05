@@ -6,6 +6,7 @@ import { mockRequest } from '@/mocks';
 import { db } from '@/mocks/db';
 import { MOCK_DEMO_PASSWORD } from '@/mocks/handlers/auth.constants';
 import { setMockNow } from '@/mocks/lib/clock';
+import { todayInTashkent } from '@/shared/lib/format';
 import { PAGE, renderApp } from '@/test/render-app';
 
 async function loginAs(login: string) {
@@ -56,10 +57,24 @@ describe('Nasiya: admin (D-24)', () => {
   });
 
   it('to‘lov yozish: ortig‘i keyingi to‘lovdan ayriladi; qoldiqdan oshsa xato', async () => {
+    const { router } = renderApp('/');
+    await screen.findByRole('navigation', { name: t.nav.mainMenu }, PAGE);
+    // renderApp soatni qotiradi, forma esa haqiqiy bugungi sanani yuboradi — mock soati ham bugunga.
     setMockNow(new Date());
-    renderApp('/credits');
+    const today = todayInTashkent();
+    await mockRequest('/credits', {
+      method: 'POST',
+      body: {
+        debtorName: 'Tolov Sinov',
+        amount: '50000',
+        takenAt: new Date().toISOString(),
+        firstDueDate: today,
+        installments: 4,
+      },
+    });
+    await router.navigate('/credits');
     const user = userEvent.setup();
-    await user.click(await screen.findByText('Bobur Karimov', { selector: 'p' }, PAGE));
+    await user.click(await screen.findByText('Tolov Sinov', { selector: 'p' }, PAGE));
     const sheet = await screen.findByRole('dialog');
     const amount = await within(sheet).findByLabelText(
       new RegExp(t.credits.payment.amount),
@@ -72,7 +87,7 @@ describe('Nasiya: admin (D-24)', () => {
     await user.type(amount, '20000');
     await user.click(within(sheet).getByRole('button', { name: t.credits.payment.submit }));
     await waitFor(() => {
-      const c = db().credits.find((x) => x.debtorName === 'Bobur Karimov')!;
+      const c = db().credits.find((x) => x.debtorName === 'Tolov Sinov')!;
       expect(c.payments.map((p) => p.amount)).toEqual(['20000.00']);
     }, PAGE);
     await waitFor(() => expect(amount).toHaveValue('5 000'), PAGE);
