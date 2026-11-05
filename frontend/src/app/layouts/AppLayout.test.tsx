@@ -5,7 +5,7 @@ import { t } from '@/i18n/uz';
 import { PAGE, renderApp } from '@/test/render-app';
 
 describe('ilova karkasi (layout)', () => {
-  it('TZ §16 dagi 10 ta bo‘lim (Kirim — Mahsulotlar ichida)ni sidebar’da ko‘rsatadi', async () => {
+  it('TZ §16 dagi 11 ta bo‘lim (Kirim — Mahsulotlar ichida, Nasiya qo‘shilgan)ni sidebar’da ko‘rsatadi', async () => {
     renderApp('/');
     // Layout sessiya tekshirilgandan keyin chiqadi (RequireAuth, mock sessiya).
     const nav = await screen.findByRole('navigation', { name: t.nav.mainMenu }, PAGE);
@@ -17,6 +17,7 @@ describe('ilova karkasi (layout)', () => {
       'Ombor',
       'Sotuvlar',
       'Mijozlar',
+      'Nasiya',
       'Xarajatlar',
       'Hisobotlar',
       'Sozlamalar',

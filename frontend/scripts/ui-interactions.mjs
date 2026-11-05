@@ -526,9 +526,9 @@ await evaluate(
 await waitFor(`location.pathname === '/login'`);
 await submitLogin('admin', '123456');
 check(
-  'Auth: admin qayta kirdi — 10 ta bo‘lim',
+  'Auth: admin qayta kirdi — 11 ta bo‘lim',
   await waitFor(
-    `location.pathname === '/' && document.querySelectorAll('aside nav a').length === 10`,
+    `location.pathname === '/' && document.querySelectorAll('aside nav a').length === 11`,
   ),
 );
 

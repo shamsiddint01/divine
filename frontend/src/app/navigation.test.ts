@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { NAV_ITEMS } from './navigation';
 
 describe('asosiy navigatsiya (REQ-151, TZ §16)', () => {
-  it('TZ’dagi 10 ta bo‘lim (Kirim — Mahsulotlar ichida) aynan shu tartib va nomlarda', () => {
+  it('TZ’dagi 11 ta bo‘lim (Kirim — Mahsulotlar ichida, Nasiya qo‘shilgan) aynan shu tartib va nomlarda', () => {
     expect(NAV_ITEMS.map((item) => item.label)).toEqual([
       'Bosh sahifa',
       'Userlar',
@@ -12,6 +12,7 @@ describe('asosiy navigatsiya (REQ-151, TZ §16)', () => {
       'Ombor',
       'Sotuvlar',
       'Mijozlar',
+      'Nasiya',
       'Xarajatlar',
       'Hisobotlar',
       'Sozlamalar',

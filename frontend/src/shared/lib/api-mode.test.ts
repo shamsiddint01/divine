@@ -38,6 +38,7 @@ describe('transportFor: qaysi so‘rov qayerga boradi', () => {
     expect(transportFor('/products/abc/stock')).toBe('http');
     expect(transportFor('/customers')).toBe('http');
     expect(transportFor('/customers/abc/purchases')).toBe('http');
+    expect(transportFor('/credits/reminders')).toBe('http');
     expect(transportFor('/expenses')).toBe('http');
     expect(transportFor('/expenses/abc')).toBe('http');
     expect(transportFor('/expense-categories')).toBe('http');
