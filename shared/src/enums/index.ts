@@ -17,6 +17,11 @@ export const ProductStatus = { ACTIVE: 'ACTIVE', INACTIVE: 'INACTIVE' } as const
 export type ProductStatus = (typeof ProductStatus)[keyof typeof ProductStatus];
 export const PRODUCT_STATUSES = values(ProductStatus);
 
+/** Sotuv narxi turi (D-24): dona yoki optom. */
+export const SalePriceType = { RETAIL: 'RETAIL', WHOLESALE: 'WHOLESALE' } as const;
+export type SalePriceType = (typeof SalePriceType)[keyof typeof SalePriceType];
+export const SALE_PRICE_TYPES = values(SalePriceType);
+
 export const ProductUnit = { DONA: 'DONA', KG: 'KG', LITR: 'LITR', METR: 'METR' } as const;
 export type ProductUnit = (typeof ProductUnit)[keyof typeof ProductUnit];
 export const PRODUCT_UNITS = values(ProductUnit);

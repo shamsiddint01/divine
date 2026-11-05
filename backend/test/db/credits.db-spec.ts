@@ -179,8 +179,7 @@ describe('ro‘yxat va eslatma', () => {
   it('ertaga to‘lovi bor — eslatmada kim, qachon, qancha; to‘langani eslatmadan chiqadi', async () => {
     const credit = await create({ debtorName: 'Eslatma Sinov', amount: '40000' });
     const reminders = await api('get', '/credits/reminders', adminToken).expect(200);
-    const mine = () =>
-      reminders.body.find((r: { creditId: string }) => r.creditId === credit.id);
+    const mine = () => reminders.body.find((r: { creditId: string }) => r.creditId === credit.id);
     expect(mine()).toMatchObject({
       debtorName: 'Eslatma Sinov',
       dueDate: TOMORROW,
@@ -198,9 +197,7 @@ describe('ro‘yxat va eslatma', () => {
     const byNumber = await api('get', `/credits?search=${credit.number}`, adminToken).expect(200);
     expect(byNumber.body.data.map((c: { id: string }) => c.id)).toContain(credit.id);
     const overdue = await api('get', '/credits?status=OVERDUE', adminToken).expect(200);
-    expect(
-      overdue.body.data.every((c: { status: string }) => c.status === 'OVERDUE'),
-    ).toBe(true);
+    expect(overdue.body.data.every((c: { status: string }) => c.status === 'OVERDUE')).toBe(true);
     const all = await api('get', '/credits?pageSize=100', adminToken).expect(200);
     expect(all.body.summary.activeCount).toBeGreaterThan(0);
     const statuses = all.body.data.map((c: { status: string }) => c.status);
