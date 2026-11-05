@@ -9,13 +9,14 @@ import {
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 import { Permission } from '@divine/shared';
+import { useCreditReminders } from '@/features/credits/api/credits';
 import { useDashboardSummary } from '@/features/dashboard/api/dashboard';
 import { useCurrentUser } from '@/features/session/api/session';
 import { useHasAnyPermission } from '@/features/session/hooks/use-permissions';
 import { useSignOut } from '@/features/session/hooks/use-sign-out';
 import { ApiStatusBadge } from '@/features/system/components/ApiStatusBadge';
 import { t } from '@/i18n/uz';
-import { formatQuantity, initials } from '@/shared/lib/format';
+import { formatDate, formatMoney, formatQuantity, initials } from '@/shared/lib/format';
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar';
 import { Button } from '@/shared/ui/button';
 import {
@@ -85,9 +86,9 @@ function NotificationsMenu() {
         ) : null}
         {items.length === 0 ? (
           credits.length > 0 ? null : (
-          <p className="px-2 py-6 text-center text-sm text-muted-foreground">
-            {t.topbar.noNotifications}
-          </p>
+            <p className="px-2 py-6 text-center text-sm text-muted-foreground">
+              {t.topbar.noNotifications}
+            </p>
           )
         ) : (
           <>

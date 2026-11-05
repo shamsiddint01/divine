@@ -3,7 +3,12 @@ import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
-import { FORM_DIALOG_BODY_CLASS, FORM_DIALOG_CLASS, FORM_DIALOG_FOOTER_CLASS, FORM_DIALOG_HEADER_CLASS } from '@/features/products/components/StockFields';
+import {
+  FORM_DIALOG_BODY_CLASS,
+  FORM_DIALOG_CLASS,
+  FORM_DIALOG_FOOTER_CLASS,
+  FORM_DIALOG_HEADER_CLASS,
+} from '@/features/products/components/StockFields';
 import { t } from '@/i18n/uz';
 import { DatePicker } from '@/shared/components/DatePicker';
 import { FormField } from '@/shared/components/FormField';
@@ -50,8 +55,7 @@ const schema = z
 type FormValues = z.infer<typeof schema>;
 
 /** Hozirgi vaqt Toshkent bo'yicha (`HH:mm`). */
-const tashkentTime = () =>
-  new Date(Date.now() + 5 * 3_600_000).toISOString().slice(11, 16);
+const tashkentTime = () => new Date(Date.now() + 5 * 3_600_000).toISOString().slice(11, 16);
 
 const defaults = (): FormValues => ({
   debtorName: '',

@@ -1,9 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type {
-  CreditDetailDto,
-  CreditReminderDto,
-  CreditsListResponse,
-} from '@divine/shared';
+import type { CreditDetailDto, CreditReminderDto, CreditsListResponse } from '@divine/shared';
 import { apiRequest, type QueryValue } from '@/shared/lib/api-client';
 
 export const creditKeys = {
@@ -68,8 +64,7 @@ export function useAddCreditPayment() {
     }: {
       id: string;
       input: { amount: string; date: string; note?: string | null };
-    }) =>
-      apiRequest<CreditDetailDto>(`/credits/${id}/payments`, { method: 'POST', body: input }),
+    }) => apiRequest<CreditDetailDto>(`/credits/${id}/payments`, { method: 'POST', body: input }),
     onSuccess: () => qc.invalidateQueries({ queryKey: creditKeys.all }),
   });
 }

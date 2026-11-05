@@ -13,13 +13,7 @@ import { formatDate, formatDateTime, todayInTashkent } from '@/shared/lib/format
 import { applyFieldErrors, toastError } from '@/shared/lib/mutation';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/shared/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui/sheet';
 import { Skeleton } from '@/shared/ui/skeleton';
 import { useAddCreditPayment, useCredit } from '../api/credits';
 import { CreditRowBadge, CreditStatusBadge } from './CreditStatusBadge';
@@ -61,7 +55,9 @@ function PaymentForm({ creditId, suggested }: { creditId: string; suggested: str
         input: { amount: toDecimal(v.amount), date: v.date, note: v.note.trim() || null },
       });
       toast.success(t.credits.payment.saved);
-      setLastNote(updated.next ? t.credits.payment.nextHint(updated.next.dueDate) : null);
+      setLastNote(
+        updated.next ? t.credits.payment.nextHint(formatDate(updated.next.dueDate)) : null,
+      );
       reset({
         amount: updated.next ? groupDigits(updated.next.amount.replace(/\.00$/, '')) : '',
         date: todayInTashkent(),
@@ -101,12 +97,7 @@ function PaymentForm({ creditId, suggested }: { creditId: string; suggested: str
             )}
           />
         </FormField>
-        <FormField
-          id="cp-note"
-          label={t.credits.payment.note}
-          optional
-          className="sm:col-span-2"
-        >
+        <FormField id="cp-note" label={t.credits.payment.note} optional className="sm:col-span-2">
           <Input id="cp-note" {...register('note')} />
         </FormField>
       </div>
@@ -138,7 +129,7 @@ export function CreditDetailSheet({
         </SheetHeader>
         <div className="flex-1 space-y-5 overflow-y-auto px-4 pb-6">
           {error ? (
-            <ErrorState onRetry={() => refetch()} />
+            <ErrorState message={t.errors.unexpected} onRetry={() => refetch()} />
           ) : isPending || !c ? (
             <Skeleton className="h-64 w-full" />
           ) : (

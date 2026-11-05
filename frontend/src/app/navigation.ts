@@ -4,6 +4,7 @@ import {
   BarChart3,
   Boxes,
   FolderTree,
+  HandCoins,
   House,
   LayoutDashboard,
   Package,
