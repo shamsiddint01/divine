@@ -230,6 +230,6 @@ export interface MockState {
   counters: { sale: number; incoming: number; movement: number; audit: number; credit: number };
 }
 
-export const STATE_VERSION = 8;
+export const STATE_VERSION = 9;
 
 export const stockKey = (warehouseId: string, productId: string) => `${warehouseId}|${productId}`;
