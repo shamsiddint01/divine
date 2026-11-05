@@ -196,6 +196,7 @@
     height: auto !important;
     overflow: visible !important;
     background: #fff !important;
+    color-scheme: light !important;
   }
   body:has(.receipt-print) > :not(.receipt-print) {
     display: none !important;
@@ -209,6 +210,8 @@
     margin: 0 auto !important;
     padding: 0 !important;
     overflow: visible !important;
+    /* Oyna markazga `translate` xossasi bilan siljitilgan: u `transform` emas. */
+    translate: none !important;
     transform: none !important;
     animation: none !important;
     border: 0 !important;
