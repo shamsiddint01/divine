@@ -29,6 +29,7 @@ const sale: SaleRow = {
   totalCost: '90000.00',
   grossProfit: '60000.00',
   status: 'COMPLETED',
+  priceType: 'RETAIL',
   items: [
     {
       productId: 'p',

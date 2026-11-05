@@ -130,7 +130,7 @@ describe('relationlar (Prisma)', () => {
       });
       expect(product.group.id).toBe(group.id);
       // Pul qiymatlari Decimal sifatida, aniqlik yo'qolmasdan (API qatlami string qaytaradi).
-      expect(product.salePrice.toFixed(2)).toBe('11500000.00');
+      expect(product.salePrice!.toFixed(2)).toBe('11500000.00');
 
       const incoming = await tx.incoming.create({
         data: {
