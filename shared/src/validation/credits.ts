@@ -29,9 +29,12 @@ export function tashkentDateOf(iso: string): string {
   return new Date(Date.parse(iso) + TASHKENT_OFFSET_MS).toISOString().slice(0, 10);
 }
 
+/** Format xatosini `moneySchema` aytadi; bu yerdagi tekshiruvlar noto'g'ri satrda yiqilmasligi kerak. */
+const isMoneyFormat = (value: string) => /^\d+(\.\d{1,2})?$/.test(value);
+
 /** Nasiya summasi kamida `CREDIT_MIN_AMOUNT` so'm. */
 export function isCreditAmountAllowed(amount: string): boolean {
-  return moneyToCents(amount) >= moneyToCents(CREDIT_MIN_AMOUNT);
+  return !isMoneyFormat(amount) || moneyToCents(amount) >= moneyToCents(CREDIT_MIN_AMOUNT);
 }
 
 export const creditCreateSchema = z
@@ -67,7 +70,7 @@ export const creditCreateSchema = z
     path: ['firstDueDate'],
   })
   // Har bir to'lov kamida 1 tiyin bo'lishi kerak.
-  .refine((v) => moneyToCents(v.amount) >= BigInt(v.installments), {
+  .refine((v) => !isMoneyFormat(v.amount) || moneyToCents(v.amount) >= BigInt(v.installments), {
     error: M.creditInstallments,
     path: ['installments'],
   });

@@ -147,6 +147,12 @@ describe('sxemalar', () => {
     }
   });
 
+  it('noto‘g‘ri summa matni — xato emas, oddiy rad etish (server 400)', () => {
+    for (const amount of ['abc', '1.2.3', '-5', '', '12,5']) {
+      expect(creditCreateSchema.safeParse({ ...valid, amount }).success).toBe(false);
+    }
+  });
+
   it('eng kam summa — 1 000 so‘m kiradi', () => {
     expect(
       creditCreateSchema.safeParse({ ...valid, amount: '1000', installments: 1 }).success,
