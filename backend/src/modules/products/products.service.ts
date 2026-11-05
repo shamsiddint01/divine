@@ -140,7 +140,8 @@ export class ProductsService {
         groupId: input.groupId,
         barcode,
         costPrice: input.costPrice,
-        salePrice: input.salePrice,
+        salePrice: input.salePrice ?? null,
+        wholesalePrice: input.wholesalePrice ?? null,
         unit: input.unit,
         allowDecimal: input.allowDecimal,
         minStock: input.minStock ?? null,
@@ -159,7 +160,8 @@ export class ProductsService {
             groupId: input.groupId,
             unit: input.unit,
             costPrice: input.costPrice,
-            salePrice: input.salePrice,
+            salePrice: input.salePrice ?? null,
+            wholesalePrice: input.wholesalePrice ?? null,
             status: input.status,
           },
           meta,
@@ -249,6 +251,22 @@ export class ProductsService {
       }
       if (input.salePrice !== undefined) {
         track('salePrice', input.salePrice, sameDecimal(input.salePrice, current.salePrice));
+      }
+      if (input.wholesalePrice !== undefined) {
+        track(
+          'wholesalePrice',
+          input.wholesalePrice,
+          sameDecimal(input.wholesalePrice, current.wholesalePrice),
+        );
+      }
+      // Kamida bitta narx qolishi shart (D-25).
+      const nextSale = input.salePrice === undefined ? current.salePrice : input.salePrice;
+      const nextWholesale =
+        input.wholesalePrice === undefined ? current.wholesalePrice : input.wholesalePrice;
+      if (nextSale === null && nextWholesale === null) {
+        throw new AppError(ErrorCode.VALIDATION_ERROR, {
+          details: [{ field: 'salePrice', message: VALIDATION_MESSAGES_UZ.productPriceRequired }],
+        });
       }
       if (input.minStock !== undefined) {
         track('minStock', input.minStock, sameDecimal(input.minStock, current.minStock));

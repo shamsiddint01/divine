@@ -3,6 +3,7 @@ import type { ReportColumn, ReportGroupItem, ReportSummaryItem } from '../report
 import type { CreditScheduleRow, CreditStatus } from '../validation/credits.js';
 import type { Paginated } from '../validation/pagination.js';
 import type {
+  SalePriceType,
   AuditAction,
   AuditEntityType,
   ProductStatus,
@@ -99,7 +100,10 @@ export interface ProductDto {
   groupId: string;
   groupName: string;
   barcode: string | null;
-  salePrice: MoneyString;
+  /** Dona narxi (D-25): `null` — faqat optom sotiladi. */
+  salePrice: MoneyString | null;
+  /** Optom narxi: `null` — faqat dona sotiladi. */
+  wholesalePrice: MoneyString | null;
   costPrice?: MoneyString;
   unit: ProductUnit;
   allowDecimal: boolean;
@@ -179,7 +183,7 @@ export interface StockRowDto {
   /** Mahsulotning `min_stock`i, bo'lmasa global chegara. */
   minStock: QuantityString;
   costPrice?: MoneyString;
-  salePrice: MoneyString;
+  salePrice: MoneyString | null;
   stockValue?: MoneyString;
   isLowStock: boolean;
   /** Qoldiq oxirgi marta o'zgargan vaqt. */
@@ -283,6 +287,8 @@ export interface SaleDto {
   totalCost?: MoneyString;
   grossProfit?: MoneyString;
   status: 'COMPLETED';
+  /** Dona yoki optom narxda sotilgan (D-25). */
+  priceType: SalePriceType;
   items?: SaleItemDto[];
 }
 

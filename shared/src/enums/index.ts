@@ -25,6 +25,11 @@ export const WarehouseStatus = { ACTIVE: 'ACTIVE', INACTIVE: 'INACTIVE' } as con
 export type WarehouseStatus = (typeof WarehouseStatus)[keyof typeof WarehouseStatus];
 export const WAREHOUSE_STATUSES = values(WarehouseStatus);
 
+/** Sotuv narxi turi (D-25): dona yoki optom. */
+export const SalePriceType = { RETAIL: 'RETAIL', WHOLESALE: 'WHOLESALE' } as const;
+export type SalePriceType = (typeof SalePriceType)[keyof typeof SalePriceType];
+export const SALE_PRICE_TYPES = values(SalePriceType);
+
 export const IncomingStatus = {
   DRAFT: 'DRAFT',
   CONFIRMED: 'CONFIRMED',

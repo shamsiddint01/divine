@@ -69,6 +69,14 @@ enum IncomingStatus {
   @@map("incoming_status")
 }
 
+/// Sotuv narxi turi (D-25): dona yoki optom.
+enum SalePriceType {
+  RETAIL
+  WHOLESALE
+
+  @@map("sale_price_type")
+}
+
 /// Kelajakda CANCELLED / RETURNED qo'shiladi (D-03).
 enum SaleStatus {
   COMPLETED
@@ -245,7 +253,9 @@ model Product {
   /// Ixtiyoriy, berilsa barcha mahsulotlar (arxivlanganlar ham) orasida unique (D-05, D-09).
   barcode      String?       @unique @db.VarChar(64)
   costPrice    Decimal       @map("cost_price") @db.Decimal(18, 2)
-  salePrice    Decimal       @map("sale_price") @db.Decimal(18, 2)
+  salePrice    Decimal?       @map("sale_price") @db.Decimal(18, 2)
+  /// Optom narxi (D-25). Kamida bittasi bo\'lishi shart: `products_price_required`.
+  wholesalePrice Decimal? @map("wholesale_price") @db.Decimal(18, 2)
   unit         ProductUnit   @default(DONA)
   allowDecimal Boolean       @default(false) @map("allow_decimal")
   /// NULL — global sozlama (`low_stock_default_threshold`).
@@ -452,6 +462,7 @@ model Sale {
   totalAmount           Decimal    @map("total_amount") @db.Decimal(18, 2)
   totalCost             Decimal    @map("total_cost") @db.Decimal(18, 2)
   status                SaleStatus @default(COMPLETED)
+  priceType             SalePriceType @default(RETAIL) @map("price_type")
   /// `Idempotency-Key` header (REQ-145).
   idempotencyKey        String     @unique @map("idempotency_key") @db.Uuid
   /// Kanonik payload SHA-256 — kalitni boshqa payload bilan qayta ishlatishni aniqlash uchun.

@@ -53,7 +53,8 @@ export interface ProductForSale {
   unit: ProductUnit;
   status: ProductStatus;
   allowDecimal: boolean;
-  salePrice: string;
+  salePrice: string | null;
+  wholesalePrice: string | null;
   costPrice: string;
 }
 
@@ -74,6 +75,10 @@ type RawSale = Omit<SaleRow, 'items' | 'user' | 'warehouse' | 'customer' | 'stat
   customerPhone: string | null;
 };
 
+/** Qator narxi (D-25): narx turi bo'yicha kartochkadan; yo'q narx sotuvdan oldin rad etiladi. */
+const unitPriceSql = (priceType: SalePriceType) =>
+  priceType === 'WHOLESALE' ? Prisma.sql`p.wholesale_price` : Prisma.sql`p.sale_price`;
+
 const SELECT = Prisma.sql`
   SELECT s.id, 'S-' || lpad(s.number::text, 6, '0') AS number, s.sold_at AS "soldAt",
          u.id AS "userId", u.login AS "userLogin", u.full_name AS "userFullName",
@@ -82,7 +87,8 @@ const SELECT = Prisma.sql`
          s.customer_phone_snapshot AS "customerPhone",
          (SELECT count(*)::int FROM sale_items i WHERE i.sale_id = s.id) AS "itemsCount",
          s.total_quantity::text AS "totalQuantity", s.total_amount::text AS "totalAmount",
-         s.total_cost::text AS "totalCost", (s.total_amount - s.total_cost)::text AS "grossProfit"`;
+         s.total_cost::text AS "totalCost", (s.total_amount - s.total_cost)::text AS "grossProfit",
+         s.price_type::text AS "priceType"`;
 
 const FROM = Prisma.sql`
   FROM sales s
@@ -200,6 +206,7 @@ export class SalesRepository {
     const rows = await tx.$queryRaw<ProductForSale[]>`
       SELECT id, name, barcode, unit::text AS unit, status::text AS status,
              allow_decimal AS "allowDecimal", sale_price::text AS "salePrice",
+             wholesale_price::text AS "wholesalePrice",
              cost_price::text AS "costPrice"
         FROM products WHERE id = ANY(${ids}::uuid[]) ORDER BY id FOR SHARE`;
     return new Map(rows.map((row) => [row.id, row]));
@@ -253,8 +260,8 @@ export class SalesRepository {
   }
 
   /**
-   * Sotuv hujjati: narx va tannarx snapshot'i mahsulot kartochkasidan (`sale_price`, `cost_price` — D-02,
-   * D-16), totallar shu qatorlardan DB yaxlitlashi bilan. Client narxi hech qachon ishlatilmaydi (BR-15).
+   * Sotuv hujjati: narx va tannarx snapshot'i mahsulot kartochkasidan (dona yoki optom narx — D-25,
+   * `cost_price` — D-02, D-16), totallar shu qatorlardan DB yaxlitlashi bilan. Client narxi hech qachon ishlatilmaydi (BR-15).
    */
   async insertSale(
     tx: Tx,
@@ -264,6 +271,7 @@ export class SalesRepository {
       customer: { id: string; name: string; phone: string | null };
       idempotencyKey: string;
       requestHash: string;
+      priceType: SalePriceType;
       lines: SaleLine[];
     },
   ): Promise<{ id: string }> {
@@ -274,11 +282,13 @@ export class SalesRepository {
         SELECT l.product_id, l.quantity FROM unnest(${ids}::uuid[], ${quantities}::numeric[]) AS l(product_id, quantity)
       )
       INSERT INTO sales (user_id, warehouse_id, customer_id, customer_name_snapshot, customer_phone_snapshot,
-                         total_quantity, total_amount, total_cost, idempotency_key, request_hash)
+                         total_quantity, total_amount, total_cost, idempotency_key, request_hash,
+                         price_type)
       SELECT ${data.userId}::uuid, ${data.warehouseId}::uuid, ${data.customer.id}::uuid,
              ${data.customer.name}, ${data.customer.phone},
-             sum(l.quantity), sum(round(l.quantity * p.sale_price, 2)), sum(round(l.quantity * p.cost_price, 2)),
-             ${data.idempotencyKey}::uuid, ${data.requestHash}
+             sum(l.quantity), sum(round(l.quantity * ${unitPriceSql(data.priceType)}, 2)),
+             sum(round(l.quantity * p.cost_price, 2)),
+             ${data.idempotencyKey}::uuid, ${data.requestHash}, ${data.priceType}::sale_price_type
         FROM lines l JOIN products p ON p.id = l.product_id
       RETURNING id`;
     if (!row) throw new Error('sales INSERT qator qaytarmadi');
@@ -289,12 +299,13 @@ export class SalesRepository {
     tx: Tx,
     saleId: string,
     lines: SaleLine[],
+    priceType: SalePriceType,
   ): Promise<{ id: string; productId: string; quantity: string; unitCost: string }[]> {
     const ids = lines.map((line) => line.productId);
     const quantities = lines.map((line) => line.quantity);
     return tx.$queryRaw`
       INSERT INTO sale_items (sale_id, product_id, product_name, barcode, quantity, unit_price, unit_cost)
-      SELECT ${saleId}::uuid, p.id, p.name, p.barcode, l.quantity, p.sale_price, p.cost_price
+      SELECT ${saleId}::uuid, p.id, p.name, p.barcode, l.quantity, ${unitPriceSql(priceType)}, p.cost_price
         FROM unnest(${ids}::uuid[], ${quantities}::numeric[]) AS l(product_id, quantity)
         JOIN products p ON p.id = l.product_id
       RETURNING id, product_id AS "productId", quantity::text AS quantity, unit_cost::text AS "unitCost"`;

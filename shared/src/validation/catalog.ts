@@ -7,6 +7,7 @@ import {
   dateOnlySchema,
   entityNameSchema,
   moneySchema,
+  positiveMoneySchema,
   quantitySchema,
   uuidSchema,
 } from './primitives.js';
@@ -34,6 +35,15 @@ export const nullableBarcodeSchema = z.preprocess(emptyToNull, barcodeSchema.nul
 /** Minimal qoldiq: ixtiyoriy musbat miqdor; bo'sh → null (global sozlama ishlatiladi). */
 export const nullableMinStockSchema = z.preprocess(emptyToNull, quantitySchema.nullable());
 
+/** Dona narxi: ixtiyoriy, ≥ 0; bo'sh → null. Kamida bitta narx bo'lishi shart (D-25). */
+export const nullableSalePriceSchema = z.preprocess(emptyToNull, moneySchema.nullable());
+
+/** Optom narxi: ixtiyoriy, > 0; bo'sh → null. */
+export const nullableWholesalePriceSchema = z.preprocess(
+  emptyToNull,
+  positiveMoneySchema.nullable(),
+);
+
 export const productGroupCreateSchema = z.strictObject({
   name: entityNameSchema,
   description: nullableDescriptionSchema.optional(),
@@ -55,7 +65,8 @@ const productFields = {
   groupId: z.uuid({ error: M.groupRequired }),
   barcode: nullableBarcodeSchema.optional(),
   costPrice: moneySchema,
-  salePrice: moneySchema,
+  salePrice: nullableSalePriceSchema.optional(),
+  wholesalePrice: nullableWholesalePriceSchema.optional(),
   unit: z.enum(PRODUCT_UNITS),
   allowDecimal: z.boolean(),
   minStock: nullableMinStockSchema.optional(),
@@ -91,6 +102,10 @@ export const productCreateSchema = z
     initialStock: initialStockSchema.optional(),
   })
   .refine(unitAllowsDecimal, { error: M.unitDecimalConflict, path: ['allowDecimal'] })
+  .refine((input) => (input.salePrice ?? input.wholesalePrice ?? null) !== null, {
+    error: M.productPriceRequired,
+    path: ['salePrice'],
+  })
   .refine((input) => !input.initialStock || input.status === 'ACTIVE', {
     error: M.initialStockInactive,
     path: ['initialStock'],

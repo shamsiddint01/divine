@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { VALIDATION_MESSAGES_UZ as M } from './messages.uz.js';
+import { SALE_PRICE_TYPES } from '../enums/index.js';
 import { nullablePhoneSchema } from './customers.js';
 import { customerNameSchema, quantitySchema, uuidSchema } from './primitives.js';
 
@@ -62,6 +63,8 @@ export const saleItemInputSchema = z.strictObject({
 export const saleCreateSchema = z.strictObject({
   warehouseId: uuidSchema,
   customer: saleCustomerSchema,
+  /** Client faqat narx TURINI aytadi; narxning o'zini server kartochkadan oladi (BR-15, D-25). */
+  priceType: z.enum(SALE_PRICE_TYPES).default('RETAIL'),
   items: z
     .array(saleItemInputSchema, { error: M.saleItemsRequired })
     .min(1, { error: M.saleItemsRequired })

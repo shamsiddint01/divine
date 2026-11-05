@@ -49,6 +49,7 @@ export const VALIDATION_MESSAGES_UZ = {
   creditInterval: 'Oraliq 1 dan 365 kungacha butun son bo‘lishi kerak',
   creditDueBeforeTaken: 'To‘lov sanasi nasiya olingan kundan oldin bo‘lishi mumkin emas',
   creditPaymentFuture: 'To‘lov sanasi bugundan keyin bo‘lishi mumkin emas',
+  productPriceRequired: 'Dona yoki optom narxidan kamida bittasini kiriting',
   initialStockInactive: 'Nofaol mahsulotga qoldiq qo‘shib bo‘lmaydi',
   notesForbidden: 'Izohni faqat administrator kiritadi',
   saleItemsRequired: 'Sotuvda kamida bitta mahsulot bo‘lishi kerak',

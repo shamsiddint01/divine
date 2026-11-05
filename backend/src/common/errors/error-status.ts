@@ -35,6 +35,7 @@ const STATUS: Readonly<Record<ErrorCode, number>> = {
 
   [ErrorCode.INVALID_QUANTITY]: 422,
   [ErrorCode.PRODUCT_INACTIVE]: 422,
+  [ErrorCode.PRODUCT_PRICE_MISSING]: 422,
   [ErrorCode.PRODUCT_GROUP_INACTIVE]: 422,
   [ErrorCode.WAREHOUSE_INACTIVE]: 422,
   [ErrorCode.EXPENSE_CATEGORY_INACTIVE]: 422,
