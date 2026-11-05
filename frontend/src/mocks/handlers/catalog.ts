@@ -298,7 +298,8 @@ route('PATCH', '/products/:id', ({ params, body }) => {
   }
   // Kamida bitta narx qolishi shart (D-25).
   const nextSale = input.salePrice === undefined ? p.salePrice : input.salePrice;
-  const nextWholesale = input.wholesalePrice === undefined ? p.wholesalePrice : input.wholesalePrice;
+  const nextWholesale =
+    input.wholesalePrice === undefined ? p.wholesalePrice : input.wholesalePrice;
   if (nextSale === null && nextWholesale === null) {
     fail(400, 'VALIDATION_ERROR', [
       { field: 'salePrice', message: VALIDATION_MESSAGES_UZ.productPriceRequired },
