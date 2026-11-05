@@ -46,6 +46,18 @@ export function SaleDetailSheet({
                 <dd className="text-right">{sale.warehouse.name}</dd>
                 <dt className="text-muted-foreground">{t.sales.priceType.label}</dt>
                 <dd className="text-right">{t.sales.priceType[sale.priceType]}</dd>
+                {sale.credit ? (
+                  <>
+                    <dt className="text-muted-foreground">{t.sales.credit.receiptPaid}</dt>
+                    <dd className="text-right">
+                      <MoneyText value={sale.credit.paidAmount} />
+                    </dd>
+                    <dt className="text-muted-foreground">{t.sales.credit.receiptDebt}</dt>
+                    <dd className="text-right font-medium">
+                      <MoneyText value={sale.credit.amount} />
+                    </dd>
+                  </>
+                ) : null}
                 <dt className="text-muted-foreground">{t.common.status}</dt>
                 <dd className="text-right">
                   <StatusBadge status={sale.status} />

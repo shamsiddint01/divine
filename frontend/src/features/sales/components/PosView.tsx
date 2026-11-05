@@ -1,6 +1,11 @@
-import { type SalePriceType, customerNameSchema, optionalPhoneSchema } from '@divine/shared';
+import {
+  type SaleCreditInput,
+  type SalePriceType,
+  customerNameSchema,
+  optionalPhoneSchema,
+} from '@divine/shared';
 import { useQueryClient } from '@tanstack/react-query';
-import { ChevronUp, Loader2, RotateCcw, ShoppingCart, Warehouse } from 'lucide-react';
+import { ChevronUp, HandCoins, Loader2, RotateCcw, ShoppingCart, Warehouse } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { lookupByBarcode } from '@/features/products/api/products';
@@ -24,7 +29,7 @@ import { Label } from '@/shared/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
 import { Separator } from '@/shared/ui/separator';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui/sheet';
-import type { ProductDto, SaleDto } from '@/shared/types/api';
+import type { CreateSaleInput, ProductDto, SaleDto } from '@/shared/types/api';
 import { useCreateSale } from '../api/sales';
 import {
   type CartLine,
@@ -37,6 +42,7 @@ import {
 import { CartPanel } from './CartPanel';
 import { type CustomerDraft, CustomerFields } from './CustomerFields';
 import { ProductPicker } from './ProductPicker';
+import { SaleCreditDialog } from './SaleCreditDialog';
 import { SaleReceiptDialog } from './SaleReceiptDialog';
 
 const emptyCustomer: CustomerDraft = { id: null, name: '', phone: '' };
@@ -97,6 +103,7 @@ export function PosView() {
   const [idempotencyKey, setIdempotencyKey] = useState(newKey);
   const [receipt, setReceipt] = useState<SaleDto | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [creditOpen, setCreditOpen] = useState(false);
   const [pendingWarehouse, setPendingWarehouse] = useState<string | null>(null);
   // xl dan kichik ekranda savat yon ustunda emas — pastki panel orqali ochiladigan oynada.
   const compact = useMediaQuery(BELOW_XL_QUERY);
@@ -154,6 +161,36 @@ export function PosView() {
     else setChosenWarehouse(id);
   };
 
+  /** Sotuvni yaratadi va chekni ko'rsatadi; xato chaqiruvchiga qaytadi. */
+  const finishSale = async (saleCustomer: CreateSaleInput['customer'], credit?: SaleCreditInput) => {
+    const sale = await createSale.mutateAsync({
+      idempotencyKey,
+      input: {
+        warehouseId,
+        priceType,
+        customer: saleCustomer,
+        ...(credit ? { credit } : {}),
+        items: lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
+      },
+    });
+    setCreditOpen(false);
+    setCartOpen(false);
+    setReceipt(sale);
+    toast.success(
+      sale.credit ? t.sales.credit.success(sale.credit.number) : t.sales.success(sale.number),
+    );
+    reset();
+  };
+
+  const showSaleError = async (error: unknown) => {
+    if (error instanceof ApiError && error.code === 'INSUFFICIENT_STOCK') {
+      toast.error(error.message, { description: error.details.map((d) => d.message).join('\n') });
+      await qc.invalidateQueries({ queryKey: ['products'] });
+    } else {
+      toastError(error);
+    }
+  };
+
   const submit = async () => {
     // Ism ixtiyoriy: bo'sh bo'lsa server umumiy mijozga yozadi; kiritilgan bo'lsa — tekshiriladi.
     const name = customer.name.trim() ? customerNameSchema.safeParse(customer.name) : null;
@@ -169,28 +206,28 @@ export function PosView() {
     }
     if (lines.length === 0) return;
     try {
-      const sale = await createSale.mutateAsync({
-        idempotencyKey,
-        input: {
-          warehouseId,
-          priceType,
-          customer: customer.id
-            ? { id: customer.id }
-            : { name: name?.data ?? null, phone: phone.data ?? null },
-          items: lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
-        },
-      });
-      setCartOpen(false);
-      setReceipt(sale);
-      toast.success(t.sales.success(sale.number));
-      reset();
+      await finishSale(
+        customer.id ? { id: customer.id } : { name: name?.data ?? null, phone: phone.data ?? null },
+      );
+    } catch (error) {
+      await showSaleError(error);
+    }
+  };
+
+  /** Nasiya: qarzdor — sotuv mijozi ham. Xato oynada ko'rsatiladi (maydon ostida). */
+  const submitCredit = async (credit: SaleCreditInput) => {
+    try {
+      await finishSale(
+        customer.id
+          ? { id: customer.id }
+          : { name: credit.debtorName, phone: credit.debtorPhone },
+        credit,
+      );
     } catch (error) {
       if (error instanceof ApiError && error.code === 'INSUFFICIENT_STOCK') {
-        toast.error(error.message, { description: error.details.map((d) => d.message).join('\n') });
-        await qc.invalidateQueries({ queryKey: ['products'] });
-      } else {
-        toastError(error);
-      }
+        setCreditOpen(false);
+        await showSaleError(error);
+      } else throw error;
     }
   };
 
@@ -214,7 +251,7 @@ export function PosView() {
           errors={errors}
         />
       </div>
-      <div className="grid grid-cols-[auto_1fr] gap-2 pt-1">
+      <div className="grid grid-cols-[auto_auto_1fr] gap-2 pt-1">
         {/* Ikonka: asosiy tugma summa bilan birga sig'ishi uchun (nomi aria-label va title'da). */}
         <Button
           variant="outline"
@@ -228,13 +265,24 @@ export function PosView() {
           <RotateCcw />
         </Button>
         <Button
+          variant="outline"
           size="lg"
-          className="min-w-0 px-4"
-          onClick={submit}
+          className="px-3"
+          onClick={() => setCreditOpen(true)}
           disabled={lines.length === 0 || createSale.isPending || !warehouseId}
         >
+          <HandCoins />
+          {t.sales.credit.button}
+        </Button>
+        <Button
+          size="lg"
+          className="min-w-0 px-3"
+          onClick={submit}
+          disabled={lines.length === 0 || createSale.isPending || !warehouseId}
+          aria-label={t.sales.confirm}
+        >
           {createSale.isPending ? <Loader2 className="animate-spin" /> : null}
-          {createSale.isPending ? t.sales.processing : t.sales.confirm}
+          {createSale.isPending ? t.sales.processing : t.sales.close}
           {/* Jami summa savat ostida yozilgan; tugmada — ko'z bilan tekshirish uchun takror (o'qilmaydi). */}
           {lines.length > 0 && !createSale.isPending ? (
             <span aria-hidden className="tabular-nums opacity-80">
@@ -374,6 +422,13 @@ export function PosView() {
       )}
 
       <SaleReceiptDialog sale={receipt} onClose={() => setReceipt(null)} />
+      <SaleCreditDialog
+        open={creditOpen}
+        onOpenChange={setCreditOpen}
+        totalAmount={totals.totalAmount}
+        customer={{ name: customer.name, phone: customer.phone }}
+        onSubmit={submitCredit}
+      />
       <ConfirmDialog
         open={confirmClear || pendingWarehouse !== null}
         onOpenChange={(open) => {

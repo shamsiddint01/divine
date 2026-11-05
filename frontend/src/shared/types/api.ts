@@ -105,7 +105,7 @@ export interface CustomerInput {
 // ─── Sotuvlar ───────────────────────────────────────────────────────────────
 
 export type { SaleDto, SaleItemDto } from '@divine/shared';
-import type { SalePriceType } from '@divine/shared';
+import type { SaleCreditInput, SalePriceType } from '@divine/shared';
 
 export type { SalesListResponse, SalesSummary } from '@divine/shared';
 
@@ -115,6 +115,8 @@ export interface CreateSaleInput {
   customer: { id: string } | { name?: string | null; phone?: string | null };
   /** Dona yoki optom (D-25); narxning o'zini server kartochkadan oladi. */
   priceType: SalePriceType;
+  /** Mijoz puli yetmasa: qolgani nasiyaga (D-26). */
+  credit?: SaleCreditInput;
   items: { productId: string; quantity: Quantity }[];
 }
 

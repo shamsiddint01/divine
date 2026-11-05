@@ -9,7 +9,13 @@ import { FormField } from '@/shared/components/FormField';
 import { MoneyText } from '@/shared/components/MoneyText';
 import { groupDigits, positiveMoneyField, toDecimal } from '@/shared/forms/fields';
 import { z, zodResolver } from '@/shared/forms/zod';
-import { formatDate, formatDateTime, todayInTashkent } from '@/shared/lib/format';
+import {
+  formatDate,
+  formatDateTime,
+  formatMoney,
+  formatQuantity,
+  todayInTashkent,
+} from '@/shared/lib/format';
 import { applyFieldErrors, toastError } from '@/shared/lib/mutation';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
@@ -150,6 +156,48 @@ export function CreditDetailSheet({
                 <Metric label={t.credits.col.remaining} value={c.remainingAmount} />
               </div>
               {c.note ? <p className="text-sm text-muted-foreground">{c.note}</p> : null}
+
+              {c.sale ? (
+                <section className="space-y-2">
+                  <h3 className="text-sm font-semibold">{t.credits.detail.sale}</h3>
+                  <div className="space-y-3 rounded-lg border p-3 text-sm">
+                    <dl className="grid grid-cols-2 gap-y-1">
+                      <dt className="text-muted-foreground">{t.credits.detail.saleNumber}</dt>
+                      <dd className="text-right font-mono">{c.sale.number}</dd>
+                      <dt className="text-muted-foreground">{t.credits.detail.saleDate}</dt>
+                      <dd className="text-right tabular-nums">{formatDateTime(c.sale.soldAt)}</dd>
+                    </dl>
+                    <ul className="space-y-1.5 border-t pt-2">
+                      {c.sale.items.map((i) => (
+                        <li key={i.productId} className="flex justify-between gap-3">
+                          <span className="min-w-0">
+                            <span className="block">{i.productName}</span>
+                            <span className="text-xs text-muted-foreground tabular-nums">
+                              {formatQuantity(i.quantity)} {t.units[i.unit]} ×{' '}
+                              {formatMoney(i.unitPrice)}
+                            </span>
+                          </span>
+                          <MoneyText value={i.lineTotal} className="shrink-0" />
+                        </li>
+                      ))}
+                    </ul>
+                    <dl className="grid grid-cols-2 gap-y-1 border-t pt-2">
+                      <dt>{t.credits.detail.saleTotal}</dt>
+                      <dd className="text-right font-semibold">
+                        <MoneyText value={c.sale.totalAmount} />
+                      </dd>
+                      <dt className="text-muted-foreground">{t.credits.detail.salePaid}</dt>
+                      <dd className="text-right">
+                        <MoneyText value={c.sale.paidAmount} />
+                      </dd>
+                      <dt className="text-muted-foreground">{t.credits.detail.saleDebt}</dt>
+                      <dd className="text-right">
+                        <MoneyText value={c.amount} />
+                      </dd>
+                    </dl>
+                  </div>
+                </section>
+              ) : null}
 
               {c.status !== 'PAID' ? (
                 <PaymentForm key={c.id} creditId={c.id} suggested={c.next?.amount ?? null} />

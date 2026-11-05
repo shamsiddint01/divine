@@ -7,6 +7,7 @@ import {
   formatIssuePath,
   idempotencyKeySchema,
   saleCreateSchema,
+  saleCreditIssue,
   WALK_IN_CUSTOMER_NAME,
 } from '@divine/shared';
 import { addQty, compareQty, lineTotal, subMoney, sumMoney, sumQty } from '@/shared/lib/decimal';
@@ -14,10 +15,12 @@ import { formatQuantity } from '@/shared/lib/format';
 import type { CustomerPurchasesResponse, SaleDto, SalesListResponse } from '@/shared/types/api';
 import { t } from '@/i18n/uz';
 import { diffChanges, hasChanges, recordAudit } from '../audit';
+import { createCreditForSale } from '../credits';
 import { db } from '../db';
 import { MockInsufficientStock, formatDocNumber, getStock, postMovement } from '../inventory';
 import { fail, includesText, notFound, num, paginate, route, sortBy, validate } from '../lib/http';
 import { mockUuid } from '../lib/random';
+import { mockToday } from '../lib/clock';
 import { inDateRange } from '../lib/time';
 import { currentCan, customerAggregates, toCustomerDto, toSaleDto } from '../mappers';
 import type { CustomerRow, SaleItemRow, SaleRow } from '../state';

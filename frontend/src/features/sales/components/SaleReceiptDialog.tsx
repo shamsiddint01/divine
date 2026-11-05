@@ -74,6 +74,18 @@ export function SaleReceiptDialog({
                 {formatMoney(sale.totalAmount)}
               </span>
             </div>
+            {sale.credit ? (
+              <div className="grid grid-cols-2 gap-y-1">
+                <span className="text-muted-foreground">{t.sales.credit.receiptPaid}</span>
+                <span className="text-right tabular-nums">
+                  {formatMoney(sale.credit.paidAmount)}
+                </span>
+                <span className="font-medium">{t.sales.credit.receiptDebt}</span>
+                <span className="text-right font-semibold tabular-nums">
+                  {formatMoney(sale.credit.amount)}
+                </span>
+              </div>
+            ) : null}
           </div>
         ) : null}
         <DialogFooter className="sm:justify-between print:hidden">

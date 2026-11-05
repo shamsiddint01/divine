@@ -98,7 +98,7 @@ const clickText = (t, selector = 'button, a, [role=tab], [role=option], [role=me
 // Tasdiqlash tugmasida jami summa ham yoziladi ("Savdoni tasdiqlash · 25 000 so'm") — boshlanishi bo'yicha.
 const clickConfirmSale = () =>
   evaluate(
-    `(() => { const el = [...document.querySelectorAll('button')].find((b) => b.offsetParent !== null && b.innerText.trim().startsWith('Savdoni tasdiqlash')); if (!el) return false; el.click(); return true; })()`,
+    `(() => { const el = [...document.querySelectorAll('button')].find((b) => b.offsetParent !== null && b.getAttribute('aria-label') === 'Savdoni yopish'); if (!el) return false; el.click(); return true; })()`,
   );
 const typeInto = async (selector, text) => {
   await evaluate(

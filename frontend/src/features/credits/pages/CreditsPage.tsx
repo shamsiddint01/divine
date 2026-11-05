@@ -39,6 +39,7 @@ export function CreditsPage() {
           <p className="truncate font-medium">{c.debtorName}</p>
           <p className="text-xs text-muted-foreground">
             {c.number} · {c.debtorPhone}
+            {c.saleNumber ? ` · ${c.saleNumber}` : ''}
           </p>
         </div>
       ),
