@@ -1,4 +1,5 @@
 import {
+  VALIDATION_MESSAGES_UZ,
   isWholeQuantity,
   productCreateSchema,
   productGroupCreateSchema,
@@ -293,6 +294,14 @@ route('PATCH', '/products/:id', ({ params, body }) => {
   if ((input.unit ?? p.unit) === 'DONA' && (input.allowDecimal ?? p.allowDecimal)) {
     fail(400, 'VALIDATION_ERROR', [
       { field: 'allowDecimal', message: 'Dona bilan sotiladigan mahsulot kasr miqdorda bo‘lmaydi' },
+    ]);
+  }
+  // Kamida bitta narx qolishi shart (D-25).
+  const nextSale = input.salePrice === undefined ? p.salePrice : input.salePrice;
+  const nextWholesale = input.wholesalePrice === undefined ? p.wholesalePrice : input.wholesalePrice;
+  if (nextSale === null && nextWholesale === null) {
+    fail(400, 'VALIDATION_ERROR', [
+      { field: 'salePrice', message: VALIDATION_MESSAGES_UZ.productPriceRequired },
     ]);
   }
   if (input.groupId !== undefined) assertGroupAssignable(input.groupId, p.groupId);

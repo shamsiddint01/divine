@@ -142,6 +142,8 @@ export function ProductPicker({
             const left = inCart[p.id] ? subQty(p.stock, inCart[p.id] ?? '0') : p.stock;
             const out = compareQty(left, '0') <= 0;
             const taken = inCart[p.id];
+            const price = priceType === 'WHOLESALE' ? p.wholesalePrice : p.salePrice;
+            const blocked = out || price === null;
             return (
               <button
                 key={p.id}

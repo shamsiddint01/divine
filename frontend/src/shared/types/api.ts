@@ -105,6 +105,7 @@ export interface CustomerInput {
 // ─── Sotuvlar ───────────────────────────────────────────────────────────────
 
 export type { SaleDto, SaleItemDto } from '@divine/shared';
+import type { SalePriceType } from '@divine/shared';
 
 export type { SalesListResponse, SalesSummary } from '@divine/shared';
 
