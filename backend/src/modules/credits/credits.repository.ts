@@ -100,12 +100,10 @@ export class CreditsRepository {
         JOIN users u ON u.id = p.created_by
        WHERE p.credit_id = ${id}::uuid
        ORDER BY p.payment_date DESC, p.created_at DESC`;
-    return rows.map(
-      ({ createdById, createdLogin, createdName, ...row }): CreditPaymentRow => ({
-        ...row,
-        createdBy: { id: createdById, login: createdLogin, fullName: createdName },
-      }),
-    );
+    return rows.map(({ createdById, createdLogin, createdName, ...row }): CreditPaymentRow => ({
+      ...row,
+      createdBy: { id: createdById, login: createdLogin, fullName: createdName },
+    }));
   }
 
   async create(
