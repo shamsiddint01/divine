@@ -148,9 +148,9 @@ describe('sxemalar', () => {
   });
 
   it('eng kam summa — 1 000 so‘m kiradi', () => {
-    expect(creditCreateSchema.safeParse({ ...valid, amount: '1000', installments: 1 }).success).toBe(
-      true,
-    );
+    expect(
+      creditCreateSchema.safeParse({ ...valid, amount: '1000', installments: 1 }).success,
+    ).toBe(true);
   });
 
   it('Toshkent sanasi: kechasi UTC boshqa kun', () => {

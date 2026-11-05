@@ -74,7 +74,9 @@ describe('Nasiya: admin (D-24)', () => {
     await user.type(time, '1300');
     expect(time).toHaveValue('13:00');
     await user.click(within(dialog).getByRole('button', { name: t.common.add }));
-    expect(await within(dialog).findByText('Telefon raqamini kiriting', {}, PAGE)).toBeInTheDocument();
+    expect(
+      await within(dialog).findByText('Telefon raqamini kiriting', {}, PAGE),
+    ).toBeInTheDocument();
     expect(
       within(dialog).getByText('Nasiya summasi kamida 1 000 so‘m bo‘lishi kerak'),
     ).toBeInTheDocument();
@@ -82,7 +84,9 @@ describe('Nasiya: admin (D-24)', () => {
     await user.clear(time);
     await user.type(time, '2530');
     await user.click(within(dialog).getByRole('button', { name: t.common.add }));
-    expect(await within(dialog).findByText(t.credits.form.timeInvalid, {}, PAGE)).toBeInTheDocument();
+    expect(
+      await within(dialog).findByText(t.credits.form.timeInvalid, {}, PAGE),
+    ).toBeInTheDocument();
     expect(db().credits.length).toBe(before);
   });
 
