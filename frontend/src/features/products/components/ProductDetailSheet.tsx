@@ -61,7 +61,8 @@ export function ProductDetailSheet({
   const { data } = summary;
   const { isPending, error, refetch } = canReadCost ? summary : basic;
   const p = canReadCost ? data?.product : basic.data;
-  const profitPerUnit = p?.costPrice ? subMoney(p.salePrice, p.costPrice) : null;
+  const unitPrice = p?.salePrice ?? p?.wholesalePrice;
+  const profitPerUnit = p?.costPrice && unitPrice ? subMoney(unitPrice, p.costPrice) : null;
   const margin = p?.costPrice && profitPerUnit ? percent(profitPerUnit, p.costPrice) : null;
 
   return (
@@ -143,7 +144,19 @@ export function ProductDetailSheet({
                 <div className="grid gap-y-2.5 rounded-lg border p-4 text-sm sm:grid-cols-2 sm:gap-x-6 sm:gap-y-3">
                   <div className="flex justify-between gap-2">
                     <span className="text-muted-foreground">{t.products.col.salePrice}</span>
-                    <MoneyText value={p.salePrice} className="font-medium" />
+                    {p.salePrice ? (
+                      <MoneyText value={p.salePrice} className="font-medium" />
+                    ) : (
+                      <span className="text-muted-foreground">{t.common.notSet}</span>
+                    )}
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-muted-foreground">{t.products.col.wholesalePrice}</span>
+                    {p.wholesalePrice ? (
+                      <MoneyText value={p.wholesalePrice} className="font-medium" />
+                    ) : (
+                      <span className="text-muted-foreground">{t.common.notSet}</span>
+                    )}
                   </div>
                   {data ? (
                     <>

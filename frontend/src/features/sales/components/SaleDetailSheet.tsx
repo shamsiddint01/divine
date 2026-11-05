@@ -44,6 +44,8 @@ export function SaleDetailSheet({
                 <dd className="text-right">{sale.user.fullName ?? sale.user.login}</dd>
                 <dt className="text-muted-foreground">{t.sales.warehouse}</dt>
                 <dd className="text-right">{sale.warehouse.name}</dd>
+                <dt className="text-muted-foreground">{t.sales.priceType.label}</dt>
+                <dd className="text-right">{t.sales.priceType[sale.priceType]}</dd>
                 <dt className="text-muted-foreground">{t.common.status}</dt>
                 <dd className="text-right">
                   <StatusBadge status={sale.status} />

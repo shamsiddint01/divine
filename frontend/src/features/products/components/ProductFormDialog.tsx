@@ -16,7 +16,13 @@ import { z, zodResolver } from '@/shared/forms/zod';
 import { t } from '@/i18n/uz';
 import { FormField } from '@/shared/components/FormField';
 import { OptionsLoadError } from '@/shared/components/OptionsLoadError';
-import { groupDigits, moneyField, optionalQuantityField, toDecimal } from '@/shared/forms/fields';
+import {
+  groupDigits,
+  moneyField,
+  optionalMoneyField,
+  optionalQuantityField,
+  toDecimal,
+} from '@/shared/forms/fields';
 import { compareMoney, normalizeNumberInput } from '@/shared/lib/decimal';
 import { formatQuantity } from '@/shared/lib/format';
 import { applyFieldErrors, toastError } from '@/shared/lib/mutation';
@@ -58,11 +64,16 @@ const schema = z
     unit: z.enum(PRODUCT_UNITS),
     allowDecimal: z.boolean(),
     costPrice: moneyField(),
-    salePrice: moneyField(),
+    salePrice: optionalMoneyField(),
+    wholesalePrice: optionalMoneyField(),
     minStock: optionalQuantityField(),
     active: z.boolean(),
     /** Boshlang'ich qoldiq (faqat yangi mahsulotda): miqdor bo'sh bo'lsa — hech narsa yozilmaydi. */
     stock: z.object(stockShape),
+  })
+  .refine((v) => v.salePrice.trim() !== '' || v.wholesalePrice.trim() !== '', {
+    error: VALIDATION_MESSAGES_UZ.productPriceRequired,
+    path: ['salePrice'],
   })
   .refine((v) => v.unit !== 'DONA' || !v.allowDecimal, {
     error: t.validation.donaNoDecimal,
@@ -107,6 +118,7 @@ const empty: FormValues = {
   allowDecimal: false,
   costPrice: '',
   salePrice: '',
+  wholesalePrice: '',
   minStock: DEFAULT_MIN_STOCK,
   active: true,
   stock: emptyStock(),
@@ -120,7 +132,8 @@ function toForm(p: ProductDto): FormValues {
     unit: p.unit,
     allowDecimal: p.allowDecimal,
     costPrice: groupDigits(p.costPrice?.replace(/\.00$/, '') ?? ''),
-    salePrice: groupDigits(p.salePrice.replace(/\.00$/, '')),
+    salePrice: groupDigits(p.salePrice?.replace(/\.00$/, '') ?? ''),
+    wholesalePrice: groupDigits(p.wholesalePrice?.replace(/\.00$/, '') ?? ''),
     minStock: p.minStock ? formatQuantity(p.minStock) : DEFAULT_MIN_STOCK,
     active: p.status === 'ACTIVE',
     stock: emptyStock(),
@@ -154,10 +167,15 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     }
   }, [open, product, reset, singleWarehouse]);
 
-  const [cost, sale, unit] = useWatch({ control, name: ['costPrice', 'salePrice', 'unit'] });
+  const [cost, sale, wholesale, unit] = useWatch({
+    control,
+    name: ['costPrice', 'salePrice', 'wholesalePrice', 'unit'],
+  });
   const costN = normalizeNumberInput(cost);
   const saleN = normalizeNumberInput(sale);
-  const priceWarning = costN && saleN && compareMoney(saleN, costN) < 0;
+  const wholesaleN = normalizeNumberInput(wholesale);
+  const belowCost = (price: string | null) => costN && price && compareMoney(price, costN) < 0;
+  const priceWarning = belowCost(saleN) || belowCost(wholesaleN);
 
   const onSubmit = handleSubmit(async (v) => {
     const qty = withStock ? normalizeNumberInput(v.stock.quantity.trim()) : null;
@@ -171,7 +189,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
           unit: v.unit,
           allowDecimal: v.allowDecimal,
           costPrice: toDecimal(v.costPrice),
-          salePrice: toDecimal(v.salePrice),
+          salePrice: v.salePrice.trim() ? toDecimal(v.salePrice) : null,
+          wholesalePrice: v.wholesalePrice.trim() ? toDecimal(v.wholesalePrice) : null,
           minStock: toDecimal(v.minStock.trim() || DEFAULT_MIN_STOCK),
           status: v.active ? 'ACTIVE' : 'INACTIVE',
           ...(qty
@@ -383,16 +402,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
             <FormField
               id="p-sale"
               label={t.products.form.salePrice}
-              required
               error={e.salePrice?.message}
-              hint={
-                priceWarning ? (
-                  <span className="inline-flex items-center gap-1 text-warning">
-                    <AlertTriangle className="size-3.5" />
-                    {t.products.form.priceWarning}
-                  </span>
-                ) : undefined
-              }
+              hint={t.products.form.priceHint}
             >
               <Input
                 id="p-sale"
@@ -403,6 +414,26 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                 })}
               />
             </FormField>
+            <FormField
+              id="p-wholesale"
+              label={t.products.form.wholesalePrice}
+              error={e.wholesalePrice?.message}
+            >
+              <Input
+                id="p-wholesale"
+                inputMode="decimal"
+                aria-invalid={!!e.wholesalePrice}
+                {...register('wholesalePrice', {
+                  onBlur: (ev) => setValue('wholesalePrice', groupDigits(ev.target.value)),
+                })}
+              />
+            </FormField>
+            {priceWarning ? (
+              <p className="inline-flex items-center gap-1 text-xs text-warning sm:col-span-2">
+                <AlertTriangle className="size-3.5" aria-hidden />
+                {t.products.form.priceWarning}
+              </p>
+            ) : null}
           </FormSection>
           {withStock ? (
             <FormSection

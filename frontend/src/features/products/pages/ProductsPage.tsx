@@ -188,7 +188,7 @@ export function ProductsPage() {
           <QtyText value={p.stock} unit={p.unit} />
           {/* Telefonda sotuv narxi shu yerda (alohida ustun sig'maydi) */}
           <MoneyText
-            value={p.salePrice}
+            value={p.salePrice ?? p.wholesalePrice ?? '0'}
             className="block text-xs font-normal text-foreground sm:hidden"
           />
         </span>
@@ -208,7 +208,24 @@ export function ProductsPage() {
       sortKey: 'salePrice',
       align: 'right',
       hideBelow: 'sm',
-      cell: (p) => <MoneyText value={p.salePrice} className="font-medium" />,
+      cell: (p) =>
+        p.salePrice ? (
+          <MoneyText value={p.salePrice} className="font-medium" />
+        ) : (
+          <span className="text-muted-foreground">{t.common.notSet}</span>
+        ),
+    },
+    {
+      key: 'wholesalePrice',
+      header: t.products.col.wholesalePrice,
+      align: 'right',
+      hideBelow: 'xl',
+      cell: (p) =>
+        p.wholesalePrice ? (
+          <MoneyText value={p.wholesalePrice} className="font-medium" />
+        ) : (
+          <span className="text-muted-foreground">{t.common.notSet}</span>
+        ),
     },
     {
       key: 'status',

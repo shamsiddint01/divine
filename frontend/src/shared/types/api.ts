@@ -112,6 +112,8 @@ export interface CreateSaleInput {
   warehouseId: string;
   /** Ism ixtiyoriy: bo'sh yoki `null` — server umumiy "Noma’lum mijoz"ga yozadi. */
   customer: { id: string } | { name?: string | null; phone?: string | null };
+  /** Dona yoki optom (D-25); narxning o'zini server kartochkadan oladi. */
+  priceType: SalePriceType;
   items: { productId: string; quantity: Quantity }[];
 }
 

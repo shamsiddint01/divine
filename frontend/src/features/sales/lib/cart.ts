@@ -1,4 +1,4 @@
-import type { ProductUnit } from '@divine/shared';
+import type { ProductUnit, SalePriceType } from '@divine/shared';
 import { addQty, compareQty, lineTotal, sumMoney, sumQty } from '@/shared/lib/decimal';
 
 // Savat mantig'i — sof funksiyalar (UI'dan alohida, testlanadi). Hisob decimal-safe.
@@ -10,6 +10,9 @@ export interface CartLine {
   unit: ProductUnit;
   allowDecimal: boolean;
   unitPrice: string;
+  /** Dona/optom almashganda narxni qayta tanlash uchun (D-25). */
+  retailPrice: string | null;
+  wholesalePrice: string | null;
   /** Tanlangan ombordagi mavjud qoldiq. */
   stock: string;
   quantity: string;
@@ -65,5 +68,20 @@ export function cartTotals(lines: CartLine[]) {
     positions: lines.length,
     totalQuantity: sumQty(lines.map((l) => l.quantity)),
     totalAmount: sumMoney(lines.map(lineSubtotal)),
+  };
+}
+
+/** Dona/optom almashganda: narxlar yangilanadi, shu turda narxi yo'q qatorlar alohida qaytadi. */
+export function repriceCart(
+  lines: CartLine[],
+  priceType: SalePriceType,
+): { lines: CartLine[]; removed: CartLine[] } {
+  const priceOf = (l: CartLine) => (priceType === 'WHOLESALE' ? l.wholesalePrice : l.retailPrice);
+  return {
+    lines: lines.flatMap((l) => {
+      const unitPrice = priceOf(l);
+      return unitPrice === null ? [] : [{ ...l, unitPrice }];
+    }),
+    removed: lines.filter((l) => priceOf(l) === null),
   };
 }

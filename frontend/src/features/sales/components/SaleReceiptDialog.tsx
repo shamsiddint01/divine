@@ -23,9 +23,9 @@ export function SaleReceiptDialog({
 }) {
   return (
     <Dialog open={Boolean(sale)} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="receipt-print sm:max-w-md">
         <DialogHeader className="items-center text-center">
-          <span className="mb-1 flex size-12 items-center justify-center rounded-full bg-success/12 text-success">
+          <span className="mb-1 flex size-12 items-center justify-center rounded-full bg-success/12 text-success print:hidden">
             <CheckCircle2 className="size-6" />
           </span>
           <DialogTitle>{t.sales.receipt.title}</DialogTitle>
@@ -50,13 +50,15 @@ export function SaleReceiptDialog({
               <span className="text-right">{sale.user.fullName ?? sale.user.login}</span>
               <span className="text-muted-foreground">{t.sales.warehouse}</span>
               <span className="text-right">{sale.warehouse.name}</span>
+              <span className="text-muted-foreground">{t.sales.priceType.label}</span>
+              <span className="text-right">{t.sales.priceType[sale.priceType]}</span>
             </div>
             <Separator />
             <ul className="space-y-1.5">
               {sale.items?.map((i) => (
                 <li key={i.productId} className="flex justify-between gap-3">
                   <span className="min-w-0">
-                    <span className="block truncate">{i.productName}</span>
+                    <span className="block truncate print:whitespace-normal">{i.productName}</span>
                     <span className="text-xs text-muted-foreground tabular-nums">
                       {formatQuantity(i.quantity)} {t.units[i.unit]} × {formatMoney(i.unitPrice)}
                     </span>
@@ -74,7 +76,7 @@ export function SaleReceiptDialog({
             </div>
           </div>
         ) : null}
-        <DialogFooter className="sm:justify-between">
+        <DialogFooter className="sm:justify-between print:hidden">
           <Button variant="outline" onClick={() => window.print()}>
             <Printer />
             {t.sales.receipt.print}

@@ -1,3 +1,4 @@
+import type { SalePriceType } from '@divine/shared';
 import { Barcode, PackageSearch, Plus } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useGroupOptions } from '@/features/product-groups/api/groups';
@@ -18,6 +19,8 @@ import type { ProductDto } from '@/shared/types/api';
 
 interface ProductPickerProps {
   warehouseId: string;
+  /** Kartochkalardagi narx shu turda (D-25). */
+  priceType: SalePriceType;
   onPick: (product: ProductDto) => void;
   onBarcode: (code: string) => Promise<void>;
   /** Savatdagi miqdorlar — kartochkada qolgan qoldiqni ko'rsatish uchun. */
@@ -30,7 +33,13 @@ const PRODUCT_GRID =
   'grid grid-cols-1 gap-3 @min-[400px]:grid-cols-2 @min-[620px]:grid-cols-3 @min-[880px]:grid-cols-4';
 
 /** POS'ning chap qismi: shtrix-kod skaneri, qidiruv va mahsulot kartochkalari. */
-export function ProductPicker({ warehouseId, onPick, onBarcode, inCart }: ProductPickerProps) {
+export function ProductPicker({
+  warehouseId,
+  priceType,
+  onPick,
+  onBarcode,
+  inCart,
+}: ProductPickerProps) {
   const [search, setSearch] = useState('');
   const [groupId, setGroupId] = useState('');
   const [barcode, setBarcode] = useState('');
@@ -137,12 +146,12 @@ export function ProductPicker({ warehouseId, onPick, onBarcode, inCart }: Produc
               <button
                 key={p.id}
                 type="button"
-                disabled={out}
+                disabled={blocked}
                 onClick={() => onPick(p)}
                 className={cn(
                   'group relative flex flex-col justify-between gap-2 rounded-lg border bg-card p-3 text-left transition-all',
                   taken && 'border-primary/60 bg-primary/[0.04] ring-1 ring-primary/20',
-                  out
+                  blocked
                     ? 'cursor-not-allowed opacity-60'
                     : 'hover:border-primary/50 hover:shadow-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none active:scale-[0.98]',
                 )}
@@ -172,8 +181,12 @@ export function ProductPicker({ warehouseId, onPick, onBarcode, inCart }: Produc
                   </div>
                 </div>
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold tabular-nums">{formatMoney(p.salePrice)}</span>
-                  {out ? null : (
+                  {price === null ? (
+                    <span className="text-xs text-muted-foreground">{t.sales.noPrice}</span>
+                  ) : (
+                    <span className="font-semibold tabular-nums">{formatMoney(price)}</span>
+                  )}
+                  {blocked ? null : (
                     // Sensorli ekranda hover yo'q — "qo'shish" belgisi doim ko'rinadi.
                     <span
                       className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground"

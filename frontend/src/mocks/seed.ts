@@ -952,6 +952,7 @@ export function createSeedState(now: Date = new Date()): MockState {
         customerPhone: customer.phone,
         items,
         totalQuantity: sumQty(items.map((i) => i.quantity)),
+        priceType: 'RETAIL',
         totalAmount: sumMoney(items.map((i) => lineTotal(i.quantity, i.unitPrice))),
         totalCost: sumMoney(items.map((i) => lineTotal(i.quantity, i.unitCost))),
         idempotencyKey: null,

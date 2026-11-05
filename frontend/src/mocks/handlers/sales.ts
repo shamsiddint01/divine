@@ -260,7 +260,13 @@ route('POST', '/sales', ({ body, headers }) => {
       });
     }
     // Narx va tannarx — kartochkadan (BR-15, D-16); client narx yubora olmaydi.
-    items.push({ productId: p.id, quantity, unitPrice: p.salePrice, unitCost: p.costPrice });
+    const unitPrice = input.priceType === 'WHOLESALE' ? p.wholesalePrice : p.salePrice;
+    if (unitPrice === null) {
+      fail(422, 'PRODUCT_PRICE_MISSING', [
+        { field: field('productId'), message: 'Mahsulotning tanlangan narxi kiritilmagan' },
+      ]);
+    }
+    items.push({ productId: p.id, quantity, unitPrice, unitCost: p.costPrice });
   });
   if (stockErrors.length > 0) fail(409, 'INSUFFICIENT_STOCK', stockErrors);
 
@@ -308,6 +314,7 @@ route('POST', '/sales', ({ body, headers }) => {
     customerId,
     customerName,
     customerPhone,
+    priceType: input.priceType,
     items,
     totalQuantity: sumQty(items.map((i) => i.quantity)),
     totalAmount: sumMoney(items.map((i) => lineTotal(i.quantity, i.unitPrice))),

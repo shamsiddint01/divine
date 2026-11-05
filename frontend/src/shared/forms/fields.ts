@@ -19,6 +19,13 @@ const decimalField = (schema: z.ZodType, message: string) =>
 
 export const moneyField = () => decimalField(moneySchema, M.moneyFormat);
 export const positiveMoneyField = () => decimalField(positiveMoneySchema, M.moneyPositive);
+export const optionalMoneyField = () =>
+  z
+    .string()
+    .refine(
+      (v) => v.trim() === '' || moneySchema.safeParse(normalizeNumberInput(v) ?? '').success,
+      { error: M.moneyFormat },
+    );
 export const quantityField = () => decimalField(quantitySchema, M.quantityFormat);
 export const optionalQuantityField = () =>
   z

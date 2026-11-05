@@ -1,4 +1,4 @@
-import { customerNameSchema, optionalPhoneSchema } from '@divine/shared';
+import { type SalePriceType, customerNameSchema, optionalPhoneSchema } from '@divine/shared';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChevronUp, Loader2, RotateCcw, ShoppingCart, Warehouse } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
@@ -11,6 +11,7 @@ import { ApiError } from '@/shared/lib/api-client';
 import { BELOW_XL_QUERY, useMediaQuery } from '@/shared/hooks/use-media-query';
 import { formatMoney, formatQuantity } from '@/shared/lib/format';
 import { toastError } from '@/shared/lib/mutation';
+import { cn } from '@/shared/lib/utils';
 // Mijoz maydonlari shared sxemalar bilan shu yerda tekshiriladi — o'zbekcha xabarlar uchun.
 import '@/shared/forms/zod';
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
@@ -25,7 +26,14 @@ import { Separator } from '@/shared/ui/separator';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui/sheet';
 import type { ProductDto, SaleDto } from '@/shared/types/api';
 import { useCreateSale } from '../api/sales';
-import { type CartLine, addToCart, cartTotals, removeLine, setLineQuantity } from '../lib/cart';
+import {
+  type CartLine,
+  addToCart,
+  cartTotals,
+  removeLine,
+  repriceCart,
+  setLineQuantity,
+} from '../lib/cart';
 import { CartPanel } from './CartPanel';
 import { type CustomerDraft, CustomerFields } from './CustomerFields';
 import { ProductPicker } from './ProductPicker';
@@ -35,14 +43,21 @@ const emptyCustomer: CustomerDraft = { id: null, name: '', phone: '' };
 
 const newKey = () => crypto.randomUUID();
 
-const toCartProduct = (p: ProductDto) => ({
+const priceOf = (p: ProductDto, priceType: SalePriceType) =>
+  priceType === 'WHOLESALE' ? p.wholesalePrice : p.salePrice;
+
+const toCartProduct = (p: ProductDto, unitPrice: string) => ({
   productId: p.id,
   name: p.name,
   unit: p.unit,
   allowDecimal: p.allowDecimal,
-  unitPrice: p.salePrice,
+  unitPrice,
+  retailPrice: p.salePrice,
+  wholesalePrice: p.wholesalePrice,
   stock: p.stock,
 });
+
+const PRICE_TYPES = ['RETAIL', 'WHOLESALE'] as const;
 
 export function PosView() {
   const qc = useQueryClient();
@@ -75,6 +90,7 @@ export function PosView() {
     linesRef.current = value;
     setLinesState(value);
   };
+  const [priceType, setPriceType] = useState<SalePriceType>('RETAIL');
   const [customer, setCustomer] = useState<CustomerDraft>(emptyCustomer);
   const [errors, setErrors] = useState<{ name?: string; phone?: string }>({});
   // Idempotency kaliti: shu savat uchun bitta; tarmoq xatosidan keyingi qayta bosish takroriy sotuv yaratmaydi.
@@ -89,17 +105,36 @@ export function PosView() {
   const inCart = Object.fromEntries(lines.map((l) => [l.productId, l.quantity]));
 
   const add = (p: ProductDto) => {
-    const result = addToCart(linesRef.current, toCartProduct(p));
+    const unitPrice = priceOf(p, priceType);
+    if (unitPrice === null) {
+      toast.error(t.sales.noPriceFor(p.name, t.sales.priceType[priceType].toLowerCase()));
+      return false;
+    }
+    const result = addToCart(linesRef.current, toCartProduct(p, unitPrice));
     setLines(result.lines);
     if (result.limited)
       toast.warning(t.sales.stockLimit(`${formatQuantity(p.stock)} ${t.units[p.unit]}`));
+    return true;
+  };
+
+  /** Dona/optom: savatdagi narxlar shu turga o'tadi; bir sotuv — bitta narx turi. */
+  const changePriceType = (next: SalePriceType) => {
+    if (next === priceType) return;
+    const { lines: repriced, removed } = repriceCart(linesRef.current, next);
+    setPriceType(next);
+    setLines(repriced);
+    setIdempotencyKey(newKey());
+    if (removed.length > 0) {
+      toast.warning(
+        t.sales.removedNoPrice(t.sales.priceType[next], removed.map((l) => l.name).join(', ')),
+      );
+    }
   };
 
   const handleBarcode = async (code: string) => {
     try {
       const p = await lookupByBarcode(code, warehouseId);
-      add(p);
-      toast.success(t.sales.added(p.name), { duration: 1500 });
+      if (add(p)) toast.success(t.sales.added(p.name), { duration: 1500 });
     } catch (error) {
       if (error instanceof ApiError && error.status === 404)
         toast.error(t.sales.barcodeNotFound(code));
@@ -138,6 +173,7 @@ export function PosView() {
         idempotencyKey,
         input: {
           warehouseId,
+          priceType,
           customer: customer.id
             ? { id: customer.id }
             : { name: name?.data ?? null, phone: phone.data ?? null },
@@ -239,12 +275,38 @@ export function PosView() {
             // Omborlar yuklanmasa "ombor biriktirilmagan" deb ko'rsatilmaydi.
             <ErrorState message={warehousesError.message} onRetry={() => refetchWarehouses()} />
           ) : warehouseId ? (
-            <ProductPicker
-              warehouseId={warehouseId}
-              onPick={add}
-              onBarcode={handleBarcode}
-              inCart={inCart}
-            />
+            <div className="space-y-3">
+              <div
+                role="radiogroup"
+                aria-label={t.sales.priceType.label}
+                className="grid grid-cols-2 gap-1 rounded-lg border bg-muted/40 p-1 sm:max-w-72"
+              >
+                {PRICE_TYPES.map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    role="radio"
+                    aria-checked={priceType === type}
+                    onClick={() => changePriceType(type)}
+                    className={cn(
+                      'h-9 rounded-md text-sm font-medium transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                      priceType === type
+                        ? 'bg-primary text-primary-foreground shadow-xs'
+                        : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    {t.sales.priceType[type]}
+                  </button>
+                ))}
+              </div>
+              <ProductPicker
+                warehouseId={warehouseId}
+                priceType={priceType}
+                onPick={add}
+                onBarcode={handleBarcode}
+                inCart={inCart}
+              />
+            </div>
           ) : warehousesPending ? null : (
             <EmptyState
               icon={Warehouse}

@@ -184,3 +184,45 @@
     animation: none;
   }
 }
+
+/* Chekni chop etish: faqat chek, oq qog'ozda, bitta sahifada. Orqadagi sahifa (#root) va tugmalar
+   chiqmaydi — aks holda ular ham chop etiladi va qog'oz bir necha sahifaga cho'ziladi. */
+@media print {
+  @page {
+    margin: 6mm;
+  }
+  html:has(.receipt-print),
+  html:has(.receipt-print) body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  body:has(.receipt-print) > :not(.receipt-print) {
+    display: none !important;
+  }
+  .receipt-print {
+    position: static !important;
+    display: block !important;
+    width: 72mm !important;
+    max-width: 72mm !important;
+    max-height: none !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    transform: none !important;
+    animation: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+  .receipt-print,
+  .receipt-print * {
+    color: #000 !important;
+  }
+  .receipt-print > button {
+    display: none !important;
+  }
+  .receipt-print > * + * {
+    margin-top: 8px;
+  }
+}
