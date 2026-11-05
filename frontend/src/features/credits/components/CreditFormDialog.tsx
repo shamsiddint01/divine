@@ -230,6 +230,7 @@ export function CreditFormDialog({
                   value={field.value}
                   onChange={field.onChange}
                   invalid={!!e.firstDueDate}
+                  disableFuture={false}
                 />
               )}
             />
