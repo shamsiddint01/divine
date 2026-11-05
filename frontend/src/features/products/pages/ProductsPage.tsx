@@ -7,6 +7,7 @@ import {
   Plus,
   Power,
   PowerOff,
+  ScanBarcode,
   SearchX,
 } from 'lucide-react';
 import { Permission } from '@divine/shared';
@@ -67,6 +68,7 @@ export function ProductsPage() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [deactivating, setDeactivating] = useState<ProductDto | null>(null);
   const [receiving, setReceiving] = useState<ProductDto | null>(null);
+  const [scanning, setScanning] = useState(false);
 
   const openCreate = () => {
     setEditing(null);
@@ -76,6 +78,16 @@ export function ProductsPage() {
     setDetailId(null);
     setEditing(p);
     setFormOpen(true);
+  };
+  /** Skanerlangan kod — mahsulot ma'lumotlari oynasi. */
+  const showScanned = async (code: string) => {
+    try {
+      setDetailId((await lookupByBarcode(code)).id);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        toast.error(t.sales.barcodeNotFound(code));
+      } else toastError(error);
+    }
   };
   const openReceive = (p: ProductDto) => {
     setDetailId(null);
@@ -301,12 +313,18 @@ export function ProductsPage() {
         title={t.nav.products}
         description={t.products.description}
         actions={
-          canManage ? (
-            <Button onClick={openCreate}>
-              <Plus />
-              {t.products.add}
+          <>
+            <Button variant="outline" onClick={() => setScanning(true)}>
+              <ScanBarcode />
+              {t.scanner.open}
             </Button>
-          ) : null
+            {canManage ? (
+              <Button onClick={openCreate}>
+                <Plus />
+                {t.products.add}
+              </Button>
+            ) : null}
+          </>
         }
       />
 
@@ -410,6 +428,11 @@ export function ProductsPage() {
         }
       />
 
+      <BarcodeScannerDialog
+        open={scanning}
+        onOpenChange={setScanning}
+        onDetected={(code) => void showScanned(code)}
+      />
       <ProductFormDialog open={formOpen} onOpenChange={setFormOpen} product={editing} />
       <ProductDetailSheet
         productId={detailId}

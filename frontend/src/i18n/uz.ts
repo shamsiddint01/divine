@@ -711,6 +711,17 @@ export const uz = {
     never: 'Xarid yo‘q',
   },
 
+  scanner: {
+    open: 'Kamera bilan skanerlash',
+    title: 'Shtrix-kodni skanerlash',
+    hint: 'Kamerani shtrix-kodga tuting, o‘qilishi bilan oyna yopiladi.',
+    errors: {
+      unsupported: 'Bu manzilda kamera ochilmaydi. Saytni https yoki localhost orqali oching.',
+      denied: 'Kameraga ruxsat berilmagan. Brauzer sozlamalaridan ruxsat bering.',
+      noCamera: 'Kamera topilmadi.',
+      failed: 'Kamerani ishga tushirib bo‘lmadi. Qayta urinib ko‘ring.',
+    },
+  },
   credits: {
     description: 'Kim, qachon va qancha nasiya olgani, to‘lov jadvali va qoldiq',
     add: 'Nasiya qo‘shish',
