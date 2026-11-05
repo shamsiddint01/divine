@@ -46,6 +46,52 @@ describe('POS — sotuv oqimi', () => {
     await waitFor(() => expect(state.sales.length).toBe(salesBefore + 2));
   });
 
+  it('Dona/Optom: tugma mahsulotlar sarlavhasi ostida, shtrix-koddan tepada; sotuv optom narxda', async () => {
+    const { state } = renderApp('/sales');
+    const user = userEvent.setup();
+    const product = state.products.find((p) => p.status === 'ACTIVE' && p.wholesalePrice)!;
+    const group = await screen.findByRole('radiogroup', { name: t.sales.priceType.label }, PAGE);
+    const retail = within(group).getByRole('radio', { name: t.sales.priceType.RETAIL });
+    const wholesale = within(group).getByRole('radio', { name: t.sales.priceType.WHOLESALE });
+    expect(retail).toHaveAttribute('aria-checked', 'true');
+    const barcode = await screen.findByLabelText(new RegExp(t.sales.barcode), {}, PAGE);
+    expect(group.compareDocumentPosition(barcode) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    await user.click(wholesale);
+    expect(wholesale).toHaveAttribute('aria-checked', 'true');
+    await user.type(screen.getByPlaceholderText(t.sales.searchPlaceholder), product.name);
+    const card = await screen.findByRole(
+      'button',
+      { name: new RegExp(product.name.replace(/[()]/g, '.')) },
+      PAGE,
+    );
+    await user.click(card);
+    const salesBefore = state.sales.length;
+    await user.click(await screen.findByRole('button', { name: t.sales.confirm }, PAGE));
+    const dialog = await screen.findByRole('dialog', {}, PAGE);
+    expect(within(dialog).getByText(t.sales.priceType.WHOLESALE)).toBeInTheDocument();
+    await waitFor(() => expect(state.sales.length).toBe(salesBefore + 1));
+    const sale = state.sales.at(-1)!;
+    expect(sale.priceType).toBe('WHOLESALE');
+    expect(sale.items[0]?.unitPrice).toBe(product.wholesalePrice);
+  });
+
+  it('tanlangan turda narxi yo‘q mahsulot sotilmaydi: kartada "Narx yo‘q"', async () => {
+    const { state } = renderApp('/sales');
+    const user = userEvent.setup();
+    const product = state.products.find((p) => p.status === 'ACTIVE')!;
+    product.wholesalePrice = null;
+    const group = await screen.findByRole('radiogroup', { name: t.sales.priceType.label }, PAGE);
+    await user.click(within(group).getByRole('radio', { name: t.sales.priceType.WHOLESALE }));
+    await user.type(screen.getByPlaceholderText(t.sales.searchPlaceholder), product.name);
+    const name = new RegExp(product.name.replace(/[()]/g, '.'));
+    await waitFor(async () => {
+      const card = await screen.findByRole('button', { name });
+      expect(card).toHaveTextContent(t.sales.noPrice);
+      expect(card).toBeDisabled();
+    }, PAGE);
+  });
+
   it('savat ostida jami mahsulot soni ko‘rsatiladi', async () => {
     renderApp('/sales');
     const user = userEvent.setup();

@@ -106,6 +106,40 @@ describe('Mahsulotlar jadvali: server-side qidiruv, saralash, pagination (REQ-15
   const serverNames = async (query: Record<string, string | number>) =>
     (await mockRequest<Paginated<ProductDto>>('/products', { query })).data.map((p) => p.name);
 
+  it('narx: dona va optomdan kamida bittasi; faqat optom bilan ham saqlanadi', async () => {
+    renderApp('/products');
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: t.products.add }, PAGE));
+    const dialog = await screen.findByRole('dialog');
+    const name = 'Faqat optom mahsulot';
+    await user.type(within(dialog).getByLabelText(new RegExp(t.products.form.name)), name);
+    await user.click(within(dialog).getByRole('combobox', { name: /Guruh/ }));
+    await user.click(
+      await screen.findByRole('option', { name: db().groups.find((g) => g.isActive)!.name }),
+    );
+    await user.type(within(dialog).getByLabelText(new RegExp(t.products.form.costPrice)), '700');
+    await user.click(within(dialog).getByRole('button', { name: t.common.create }));
+    expect(
+      await within(dialog).findByText(
+        'Dona yoki optom narxidan kamida bittasini kiriting',
+        {},
+        PAGE,
+      ),
+    ).toBeInTheDocument();
+    expect(db().products.some((p) => p.name === name)).toBe(false);
+
+    await user.type(
+      within(dialog).getByLabelText(new RegExp(t.products.form.wholesalePrice)),
+      '900',
+    );
+    await user.click(within(dialog).getByRole('button', { name: t.common.create }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull(), PAGE);
+    expect(db().products.find((p) => p.name === name)).toMatchObject({
+      salePrice: null,
+      wholesalePrice: '900',
+    });
+  });
+
   it('sahifa, saralash va qidiruv URL’da va server so‘rovida; jadval aynan server javobini ko‘rsatadi', async () => {
     const { router } = renderApp('/products?pageSize=10');
     const user = userEvent.setup();
