@@ -137,7 +137,7 @@ const BUILDERS: Record<ReportType, (q: ReportQuery) => ReportSql> = {
         SELECT ws.warehouse_id::text || ws.product_id::text AS _k, w.name AS warehouse, p.name AS product,
                g.name AS "group", ws.quantity AS stock,
                round(ws.quantity * p.cost_price, 2) AS "stockValue",
-               round(ws.quantity * p.sale_price, 2) AS "saleValue",
+               round(ws.quantity * coalesce(p.sale_price, p.wholesale_price), 2) AS "saleValue",
                CASE WHEN ws.quantity <= 0 THEN 'outOfStock'
                     WHEN ws.quantity <= coalesce(p.min_stock, ${THRESHOLD}) THEN 'lowStock'
                     ELSE 'inStock' END AS status

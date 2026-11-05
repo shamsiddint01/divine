@@ -12,6 +12,7 @@ import {
   QUANTITY_MAX_INTEGER_DIGITS,
   type SaleCreateInput,
   type SaleDto,
+  type SalePriceType,
   type SalesListResponse,
   VALIDATION_MESSAGES_UZ,
   WALK_IN_CUSTOMER_NAME,
@@ -90,6 +91,8 @@ function requestHash(input: SaleCreateInput, lines: SaleLine[]): string {
   const canonical = JSON.stringify({
     warehouseId: input.warehouseId,
     customer: 'id' in input.customer ? { id: input.customer.id } : input.customer,
+    // Dona sotuvda kalit yo'q: D-25 dan oldingi so'rovlarning xeshi o'zgarmaydi.
+    ...(input.priceType === 'WHOLESALE' ? { priceType: input.priceType } : {}),
     items: [...lines].sort((a, b) => a.productId.localeCompare(b.productId)),
   });
   return createHash('sha256').update(canonical).digest('hex');
@@ -215,7 +218,7 @@ export class SalesService {
       lines.map((line) => line.productId),
     );
     const resolved = lines.map((line, index) =>
-      this.assertSellable(products.get(line.productId), line, index),
+      this.assertSellable(products.get(line.productId), line, index, input.priceType),
     );
 
     // 3. Qoldiq — barcha yetmayotgan qatorlar bitta javobda (BR-07). Kafolat — 6-qadamdagi shartli UPDATE.
@@ -248,9 +251,10 @@ export class SalesService {
       customer,
       idempotencyKey,
       requestHash: hash,
+      priceType: input.priceType,
       lines,
     });
-    const items = await this.repository.insertItems(tx, sale.id, lines);
+    const items = await this.repository.insertItems(tx, sale.id, lines, input.priceType);
 
     // 6. Qoldiq ↓ + ledger (`product_id` tartibida, shartli UPDATE — overselling yo'q, REQ-077).
     try {
@@ -305,7 +309,12 @@ export class SalesService {
     return sale.id;
   }
 
-  private assertSellable(product: ProductForSale | undefined, line: SaleLine, index: number) {
+  private assertSellable(
+    product: ProductForSale | undefined,
+    line: SaleLine,
+    index: number,
+    priceType: SalePriceType,
+  ) {
     const field = (name: string) => formatIssuePath(['items', index, name]);
     if (!product) {
       throw new AppError(ErrorCode.NOT_FOUND, {
@@ -316,6 +325,13 @@ export class SalesService {
       throw new AppError(ErrorCode.PRODUCT_INACTIVE, {
         message: `«${product.name}» mahsuloti faol emas`,
         details: [{ field: field('productId'), message: ERROR_MESSAGES_UZ.PRODUCT_INACTIVE }],
+      });
+    }
+    // Tanlangan turda narx yo'q — boshqa narx bilan sotilmaydi (D-25).
+    if ((priceType === 'WHOLESALE' ? product.wholesalePrice : product.salePrice) === null) {
+      throw new AppError(ErrorCode.PRODUCT_PRICE_MISSING, {
+        message: `«${product.name}» uchun ${priceType === 'WHOLESALE' ? 'optom' : 'dona'} narxi kiritilmagan`,
+        details: [{ field: field('productId'), message: ERROR_MESSAGES_UZ.PRODUCT_PRICE_MISSING }],
       });
     }
     if (
