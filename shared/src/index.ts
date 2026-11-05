@@ -7,6 +7,7 @@ export * from './types/index.js';
 export * from './validation/audit.js';
 export * from './validation/auth.js';
 export * from './validation/catalog.js';
+export * from './validation/credits.js';
 export * from './validation/customers.js';
 export * from './validation/error-map.js';
 export * from './validation/expenses.js';

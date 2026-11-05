@@ -42,6 +42,9 @@ export const Permission = {
   EXPENSES_CREATE: 'expenses.create',
   EXPENSES_MANAGE: 'expenses.manage',
 
+  /** Nasiya bo'limi: ko'rish, qo'shish, to'lov yozish (faqat ADMIN, D-24). */
+  CREDITS_MANAGE: 'credits.manage',
+
   REPORTS_READ: 'reports.read',
 
   DASHBOARD_ADMIN: 'dashboard.admin',

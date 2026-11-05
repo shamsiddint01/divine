@@ -455,3 +455,49 @@ export interface HealthResponse {
   version: string;
   timestamp: IsoDateTimeString;
 }
+
+/** Nasiya ro'yxati qatori (D-24): qoldiq va holat jadvaldan hisoblanadi. */
+export interface CreditDto {
+  id: string;
+  /** `N-000123`. */
+  number: string;
+  debtorName: string;
+  debtorPhone: string | null;
+  amount: MoneyString;
+  paidAmount: MoneyString;
+  remainingAmount: MoneyString;
+  takenAt: IsoDateTimeString;
+  installmentsCount: number;
+  status: CreditStatus;
+  next: { dueDate: DateOnlyString; amount: MoneyString } | null;
+  note: string | null;
+  createdBy: UserRefDto;
+}
+
+export interface CreditPaymentDto {
+  id: string;
+  date: DateOnlyString;
+  amount: MoneyString;
+  note: string | null;
+  createdBy: UserRefDto;
+  createdAt: IsoDateTimeString;
+}
+
+export interface CreditDetailDto extends CreditDto {
+  schedule: CreditScheduleRow[];
+  payments: CreditPaymentDto[];
+}
+
+export interface CreditsListResponse extends Paginated<CreditDto> {
+  summary: { remainingAmount: MoneyString; activeCount: number; overdueCount: number };
+}
+
+/** Ertangi to'lov eslatmasi. */
+export interface CreditReminderDto {
+  creditId: string;
+  number: string;
+  debtorName: string;
+  debtorPhone: string | null;
+  dueDate: DateOnlyString;
+  amount: MoneyString;
+}

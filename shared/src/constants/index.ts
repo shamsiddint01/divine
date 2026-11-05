@@ -38,3 +38,7 @@ export const IDEMPOTENCY_HEADER = 'Idempotency-Key';
 
 /** UI'da valyuta belgisi. */
 export const CURRENCY_LABEL = 'so‘m';
+
+/** Nasiyani bo'lib to'lash chegaralari (D-24). */
+export const CREDIT_INSTALLMENTS_MAX = 365;
+export const CREDIT_INTERVAL_DAYS_MAX = 365;
