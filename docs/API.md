@@ -522,6 +522,22 @@ Modul: `backend/src/modules/inventory`. Qoldiq **faqat** `InventoryService` orqa
 
 ---
 
+## 9a. Credits — nasiya (D-24) ✅
+
+Modul: `backend/src/modules/credits`. Barcha endpointlar — `credits.manage` (faqat ADMIN). Jadval va qoldiq — `@divine/shared` (`buildCreditInstallments`, `computeCreditSchedule`); qoldiq bazada saqlanmaydi.
+
+| Endpoint | Request | Javob | Xatolar |
+|---|---|---|---|
+| `GET /credits` | `page`, `pageSize`, `search` (ism, telefon, `N-000123`), `status` ∈ {`ACTIVE`, `OVERDUE`, `PAID`}, `sort` ∈ {`next`, `takenAt`, `remainingAmount`} (standart `next:asc`) | `CreditsListResponse` = `Paginated<CreditDto>` + `summary: { remainingAmount, activeCount, overdueCount }` | `400` |
+| `GET /credits/reminders` | — | `CreditReminderDto[]` — ertaga to‘lovi borlar (summa: shu kungacha jami qoldiq) | — |
+| `GET /credits/:id` | — | `CreditDetailDto` (`schedule`, `payments`) | `404` |
+| `POST /credits` | `{ debtorName, debtorPhone?, amount, takenAt, firstDueDate, installments, intervalDays?, note? }` | `201 CreditDetailDto` | `400` (to‘lov olingan kundan oldin, noma’lum maydon) |
+| `POST /credits/:id/payments` | `{ amount, date, note? }` | `201 CreditDetailDto` | `400` (kelajak sana), `404`, `422 CREDIT_OVERPAID` |
+
+**Audit** (ism, telefon va izoh yozilmaydi): `CREDIT_CREATED` — `{ amount, installments, intervalDays, firstDueDate, hasPhone }`; `CREDIT_PAYMENT_ADDED` — `{ paymentId, amount, date }`.
+
+---
+
 ## 10. Customers — mijozlar (Phase 9) ✅
 
 Modul: `backend/src/modules/customers`. Sxemalar — `@divine/shared` (`customerCreateSchema`, `customerUpdateSchema`); body `strictObject` (noma’lum maydon, masalan client yuborgan `totalSpent` → `400`). Ism va telefon **unique emas** (A-23 — oila a’zolarida bitta raqam bo‘lishi mumkin): takroriy mijoz rad etilmaydi. **O‘chirish va arxivlash yo‘q** (BR-30; sxemada holat ustuni yo‘q, sotuvlar FK RESTRICT). Qoidalar — D-17 (tasdiqlangan).
