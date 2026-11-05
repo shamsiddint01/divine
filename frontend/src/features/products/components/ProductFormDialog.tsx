@@ -403,16 +403,6 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                 })}
               />
             </FormField>
-            <FormField id="p-sale" label={t.products.form.salePrice} error={e.salePrice?.message}>
-              <Input
-                id="p-sale"
-                inputMode="decimal"
-                aria-invalid={!!e.salePrice}
-                {...register('salePrice', {
-                  onBlur: (ev) => setValue('salePrice', groupDigits(ev.target.value)),
-                })}
-              />
-            </FormField>
             <FormField
               id="p-wholesale"
               label={t.products.form.wholesalePrice}
@@ -424,6 +414,16 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                 aria-invalid={!!e.wholesalePrice}
                 {...register('wholesalePrice', {
                   onBlur: (ev) => setValue('wholesalePrice', groupDigits(ev.target.value)),
+                })}
+              />
+            </FormField>
+            <FormField id="p-sale" label={t.products.form.salePrice} error={e.salePrice?.message}>
+              <Input
+                id="p-sale"
+                inputMode="decimal"
+                aria-invalid={!!e.salePrice}
+                {...register('salePrice', {
+                  onBlur: (ev) => setValue('salePrice', groupDigits(ev.target.value)),
                 })}
               />
             </FormField>

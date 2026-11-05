@@ -143,17 +143,17 @@ export function ProductDetailSheet({
                 {/* Telefonda bitta ustun: ikki ustunda "Hisoblangan foyda 391 000 so'm" sig'maydi */}
                 <div className="grid gap-y-2.5 rounded-lg border p-4 text-sm sm:grid-cols-2 sm:gap-x-6 sm:gap-y-3">
                   <div className="flex justify-between gap-2">
-                    <span className="text-muted-foreground">{t.products.col.salePrice}</span>
-                    {p.salePrice ? (
-                      <MoneyText value={p.salePrice} className="font-medium" />
+                    <span className="text-muted-foreground">{t.products.col.wholesalePrice}</span>
+                    {p.wholesalePrice ? (
+                      <MoneyText value={p.wholesalePrice} className="font-medium" />
                     ) : (
                       <span className="text-muted-foreground">{t.common.notSet}</span>
                     )}
                   </div>
                   <div className="flex justify-between gap-2">
-                    <span className="text-muted-foreground">{t.products.col.wholesalePrice}</span>
-                    {p.wholesalePrice ? (
-                      <MoneyText value={p.wholesalePrice} className="font-medium" />
+                    <span className="text-muted-foreground">{t.products.col.salePrice}</span>
+                    {p.salePrice ? (
+                      <MoneyText value={p.salePrice} className="font-medium" />
                     ) : (
                       <span className="text-muted-foreground">{t.common.notSet}</span>
                     )}
