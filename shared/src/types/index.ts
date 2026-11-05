@@ -1,5 +1,6 @@
 import type { Permission } from '../permissions/index.js';
 import type { ReportColumn, ReportGroupItem, ReportSummaryItem } from '../reports/index.js';
+import type { CreditScheduleRow, CreditStatus } from '../validation/credits.js';
 import type { Paginated } from '../validation/pagination.js';
 import type {
   AuditAction,

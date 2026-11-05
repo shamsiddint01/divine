@@ -14,6 +14,11 @@ import {
 
 const TASHKENT_OFFSET_MS = 5 * 60 * 60 * 1000;
 
+const toCents = (value: string): bigint => {
+  const [int = '0', frac = ''] = value.split('.');
+  return BigInt(int) * 100n + BigInt(frac.padEnd(2, '0').slice(0, 2));
+};
+
 /** ISO vaqtning Toshkent sanasi (`YYYY-MM-DD`). */
 export function tashkentDateOf(iso: string): string {
   return new Date(Date.parse(iso) + TASHKENT_OFFSET_MS).toISOString().slice(0, 10);
@@ -46,6 +51,11 @@ export const creditCreateSchema = z
   .refine((v) => v.firstDueDate >= tashkentDateOf(v.takenAt), {
     error: M.creditDueBeforeTaken,
     path: ['firstDueDate'],
+  })
+  // Har bir to'lov kamida 1 tiyin bo'lishi kerak.
+  .refine((v) => toCents(v.amount) >= BigInt(v.installments), {
+    error: M.creditInstallments,
+    path: ['installments'],
   });
 
 export const creditPaymentSchema = z.strictObject({
@@ -91,11 +101,6 @@ export interface CreditSchedule {
   /** Eng yaqin to'lov (bugun yoki keyin; hammasi o'tgan bo'lsa — oxirgisi). Yopilgan nasiyada `null`. */
   next: { dueDate: string; amount: string } | null;
 }
-
-const toCents = (value: string): bigint => {
-  const [int = '0', frac = ''] = value.split('.');
-  return BigInt(int) * 100n + BigInt(frac.padEnd(2, '0').slice(0, 2));
-};
 
 const fromCents = (cents: bigint): string =>
   `${cents / 100n}.${String(cents % 100n).padStart(2, '0')}`;
@@ -160,9 +165,6 @@ export function computeCreditSchedule(
         carry = 0n;
         state = row.dueDate < today ? 'OVERDUE' : paid > 0n ? 'PARTIAL' : 'PENDING';
       }
-    } else if (carry > 0n) {
-      // Oldingi qoldiq to'liq to'langan qatordan o'tib ketmaydi: taqsimlash tartibli, bu holat bo'lmaydi.
-      carry = 0n;
     }
     return {
       ...row,
