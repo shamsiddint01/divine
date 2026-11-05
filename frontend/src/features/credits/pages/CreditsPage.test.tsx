@@ -56,6 +56,24 @@ describe('Nasiya: admin (D-24)', () => {
     ]);
   });
 
+  it('to‘lash sanasi kelajakda bo‘lishi mumkin: kalendarda keyingi oy tanlanadi', async () => {
+    renderApp('/credits');
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: t.credits.add }, PAGE));
+    const dialog = await screen.findByRole('dialog');
+    const due = within(dialog).getByRole('button', { name: new RegExp(t.credits.form.firstDue) });
+    await user.click(due);
+    const grid = await screen.findByRole('grid');
+    const calendar = grid.closest('[data-slot=popover-content]') as HTMLElement;
+    const [, next] = within(calendar).getAllByRole('button');
+    await user.click(next as HTMLElement);
+    await user.click(await within(calendar).findByText('15'));
+
+    const [year = 0, month = 0] = todayInTashkent().split('-').map(Number);
+    const expected = `15.${String((month % 12) + 1).padStart(2, '0')}.${month === 12 ? year + 1 : year}`;
+    await waitFor(() => expect(due).toHaveTextContent(expected), PAGE);
+  });
+
   it('to‘lov yozish: ortig‘i keyingi to‘lovdan ayriladi; qoldiqdan oshsa xato', async () => {
     const { router } = renderApp('/');
     await screen.findByRole('navigation', { name: t.nav.mainMenu }, PAGE);
