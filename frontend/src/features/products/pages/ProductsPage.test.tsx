@@ -119,13 +119,9 @@ describe('Mahsulotlar jadvali: server-side qidiruv, saralash, pagination (REQ-15
     );
     await user.type(within(dialog).getByLabelText(new RegExp(t.products.form.costPrice)), '700');
     await user.click(within(dialog).getByRole('button', { name: t.common.create }));
-    expect(
-      await within(dialog).findByText(
-        'Dona yoki optom narxidan kamida bittasini kiriting',
-        {},
-        PAGE,
-      ),
-    ).toBeInTheDocument();
+    expect(await within(dialog).findByRole('alert', {}, PAGE)).toHaveTextContent(
+      'Dona yoki optom narxidan kamida bittasini kiriting',
+    );
     expect(db().products.some((p) => p.name === name)).toBe(false);
 
     await user.type(
