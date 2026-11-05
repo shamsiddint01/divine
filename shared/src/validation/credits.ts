@@ -128,9 +128,7 @@ export function buildCreditInstallments(input: {
   return Array.from({ length: input.installments }, (_, index) => ({
     seq: index + 1,
     dueDate: addDays(input.firstDueDate, index * input.intervalDays),
-    amount: fromCents(
-      index === input.installments - 1 ? total - base * (count - 1n) : base,
-    ),
+    amount: fromCents(index === input.installments - 1 ? total - base * (count - 1n) : base),
   }));
 }
 
