@@ -165,7 +165,7 @@ export class CreditsService {
         tx,
         {
           debtorName: input.debtorName,
-          debtorPhone: input.debtorPhone ?? null,
+          debtorPhone: input.debtorPhone,
           amount: input.amount,
           takenAt: new Date(input.takenAt),
           note: input.note ?? null,
@@ -185,7 +185,6 @@ export class CreditsService {
             installments: input.installments,
             intervalDays: input.intervalDays,
             firstDueDate: input.firstDueDate,
-            hasPhone: Boolean(input.debtorPhone),
           },
           meta,
         },

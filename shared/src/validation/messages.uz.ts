@@ -43,6 +43,8 @@ export const VALIDATION_MESSAGES_UZ = {
   controlChars: 'Matnda ruxsat etilmagan boshqaruv belgilari bor',
   updateEmpty: 'O‘zgartirish uchun kamida bitta maydon yuboring',
   groupRequired: 'Guruhni tanlang',
+  creditAmountMin: 'Nasiya summasi kamida 1 000 so‘m bo‘lishi kerak',
+  creditPhoneRequired: 'Telefon raqamini kiriting',
   creditInstallments: 'To‘lovlar soni 1 dan 365 gacha butun son bo‘lishi kerak',
   creditInterval: 'Oraliq 1 dan 365 kungacha butun son bo‘lishi kerak',
   creditDueBeforeTaken: 'To‘lov sanasi nasiya olingan kundan oldin bo‘lishi mumkin emas',

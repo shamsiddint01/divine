@@ -463,7 +463,7 @@ export interface CreditDto {
   /** `N-000123`. */
   number: string;
   debtorName: string;
-  debtorPhone: string | null;
+  debtorPhone: string;
   amount: MoneyString;
   paidAmount: MoneyString;
   remainingAmount: MoneyString;
@@ -498,7 +498,7 @@ export interface CreditReminderDto {
   creditId: string;
   number: string;
   debtorName: string;
-  debtorPhone: string | null;
+  debtorPhone: string;
   dueDate: DateOnlyString;
   amount: MoneyString;
 }

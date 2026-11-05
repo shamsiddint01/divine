@@ -269,6 +269,7 @@ describe('audit qamrovi (AC-21, REQ-120, BR-24)', () => {
       await expectAudited('POST /credits', 'post', '/credits', {
         body: {
           debtorName: 'AC21 Qarzdor',
+          debtorPhone: '+998901234567',
           amount: '40000',
           takenAt: '2026-10-09T10:00:00+05:00',
           firstDueDate: '2026-10-10',

@@ -1,11 +1,15 @@
 import { z } from 'zod';
-import { CREDIT_INSTALLMENTS_MAX, CREDIT_INTERVAL_DAYS_MAX } from '../constants/index.js';
+import {
+  CREDIT_INSTALLMENTS_MAX,
+  CREDIT_INTERVAL_DAYS_MAX,
+  CREDIT_MIN_AMOUNT,
+} from '../constants/index.js';
 import { VALIDATION_MESSAGES_UZ as M } from './messages.uz.js';
 import { nullableDescriptionSchema } from './catalog.js';
 import {
   customerNameSchema,
   dateOnlySchema,
-  optionalPhoneSchema,
+  phoneSchema,
   positiveMoneySchema,
 } from './primitives.js';
 
@@ -25,11 +29,20 @@ export function tashkentDateOf(iso: string): string {
   return new Date(Date.parse(iso) + TASHKENT_OFFSET_MS).toISOString().slice(0, 10);
 }
 
+/** Nasiya summasi kamida `CREDIT_MIN_AMOUNT` so'm. */
+export function isCreditAmountAllowed(amount: string): boolean {
+  return moneyToCents(amount) >= moneyToCents(CREDIT_MIN_AMOUNT);
+}
+
 export const creditCreateSchema = z
   .strictObject({
     debtorName: customerNameSchema,
-    debtorPhone: optionalPhoneSchema,
-    amount: positiveMoneySchema,
+    debtorPhone: z
+      .string({ error: M.creditPhoneRequired })
+      .trim()
+      .min(1, { error: M.creditPhoneRequired })
+      .pipe(phoneSchema),
+    amount: positiveMoneySchema.refine(isCreditAmountAllowed, { error: M.creditAmountMin }),
     /** Nasiya berilgan sana va vaqt. */
     takenAt: z.iso.datetime({ offset: true, error: M.invalidDate }),
     /** Birinchi (yoki yagona) to'lov sanasi. */

@@ -1,4 +1,10 @@
-import { buildCreditInstallments, CREDIT_INSTALLMENTS_MAX, phoneSchema } from '@divine/shared';
+import {
+  buildCreditInstallments,
+  CREDIT_INSTALLMENTS_MAX,
+  isCreditAmountAllowed,
+  phoneSchema,
+  VALIDATION_MESSAGES_UZ,
+} from '@divine/shared';
 import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
@@ -12,6 +18,7 @@ import {
 import { t } from '@/i18n/uz';
 import { DatePicker } from '@/shared/components/DatePicker';
 import { FormField } from '@/shared/components/FormField';
+import { TIME_24H, TimeInput } from '@/shared/components/TimeInput';
 import { groupDigits, positiveMoneyField, toDecimal } from '@/shared/forms/fields';
 import { z, zodResolver } from '@/shared/forms/zod';
 import { normalizeNumberInput } from '@/shared/lib/decimal';
@@ -36,16 +43,22 @@ const wholeNumber = (max: number, error: string) =>
 const schema = z
   .object({
     debtorName: z.string().trim().min(1, { error: t.credits.form.nameRequired }),
-    debtorPhone: z.string().refine((v) => !v.trim() || phoneSchema.safeParse(v).success, {
-      error: t.credits.form.phoneInvalid,
-    }),
+    debtorPhone: z
+      .string()
+      .trim()
+      .min(1, { error: VALIDATION_MESSAGES_UZ.creditPhoneRequired })
+      .refine((v) => phoneSchema.safeParse(v).success, { error: t.credits.form.phoneInvalid }),
     amount: positiveMoneyField(),
     takenDate: z.string().min(1, { error: t.validation.dateRequired }),
-    takenTime: z.string().regex(/^\d{2}:\d{2}$/, { error: t.credits.form.timeRequired }),
+    takenTime: z.string().regex(TIME_24H, { error: t.credits.form.timeInvalid }),
     firstDueDate: z.string().min(1, { error: t.validation.dateRequired }),
     installments: wholeNumber(CREDIT_INSTALLMENTS_MAX, t.credits.form.installmentsInvalid),
     intervalDays: wholeNumber(365, t.credits.form.intervalInvalid),
     note: z.string().max(1000),
+  })
+  .refine((v) => isCreditAmountAllowed(toDecimal(v.amount)), {
+    error: VALIDATION_MESSAGES_UZ.creditAmountMin,
+    path: ['amount'],
   })
   .refine((v) => v.firstDueDate >= v.takenDate, {
     error: t.credits.form.dueBeforeTaken,
@@ -113,7 +126,7 @@ export function CreditFormDialog({
     try {
       await create.mutateAsync({
         debtorName: v.debtorName.trim(),
-        ...(v.debtorPhone.trim() ? { debtorPhone: v.debtorPhone.trim() } : {}),
+        debtorPhone: v.debtorPhone,
         amount: toDecimal(v.amount),
         takenAt: `${v.takenDate}T${v.takenTime}:00+05:00`,
         firstDueDate: v.firstDueDate,
@@ -159,7 +172,7 @@ export function CreditFormDialog({
           <FormField
             id="c-phone"
             label={t.credits.form.phone}
-            optional
+            required
             error={e.debtorPhone?.message}
           >
             <Input
@@ -207,11 +220,19 @@ export function CreditFormDialog({
             required
             error={e.takenTime?.message}
           >
-            <Input
-              id="c-taken-time"
-              type="time"
-              aria-invalid={!!e.takenTime}
-              {...register('takenTime')}
+            <Controller
+              control={control}
+              name="takenTime"
+              render={({ field }) => (
+                <TimeInput
+                  id="c-taken-time"
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  placeholder={t.credits.form.timePlaceholder}
+                  aria-invalid={!!e.takenTime}
+                />
+              )}
             />
           </FormField>
           <FormField

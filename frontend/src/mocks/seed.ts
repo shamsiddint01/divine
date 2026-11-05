@@ -1073,7 +1073,7 @@ export function createSeedState(now: Date = new Date()): MockState {
   // ── Nasiya: ertaga to'lovi bor, muddati o'tgan va yopilgan misollar ─────
   const addCredit = (
     debtorName: string,
-    debtorPhone: string | null,
+    debtorPhone: string,
     amount: string,
     daysAgo: number,
     firstDueInDays: number,
@@ -1112,7 +1112,7 @@ export function createSeedState(now: Date = new Date()): MockState {
   };
   addCredit('Bobur Karimov', '+998901112233', '50000', 1, 1, 4, 1, []);
   addCredit('Dilshod Ergashev', '+998935554466', '300000', 10, -3, 3, 7, ['60000']);
-  addCredit('Madina Yusupova', null, '120000', 30, -20, 2, 7, ['120000']);
+  addCredit('Madina Yusupova', '+998977778899', '120000', 30, -20, 2, 7, ['120000']);
 
   for (const u of state.users) {
     if (u.status === 'ACTIVE' && u.lastLoginAt === null)

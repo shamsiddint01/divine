@@ -9,7 +9,7 @@ export interface CreditRow {
   id: string;
   number: string;
   debtorName: string;
-  debtorPhone: string | null;
+  debtorPhone: string;
   amount: string;
   paidAmount: string;
   takenAt: Date;
@@ -110,7 +110,7 @@ export class CreditsRepository {
     tx: Tx,
     data: {
       debtorName: string;
-      debtorPhone: string | null;
+      debtorPhone: string;
       amount: string;
       takenAt: Date;
       note: string | null;

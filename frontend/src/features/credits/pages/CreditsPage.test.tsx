@@ -38,6 +38,10 @@ describe('Nasiya: admin (D-24)', () => {
     await user.click(await screen.findByRole('button', { name: t.credits.add }, PAGE));
     const dialog = await screen.findByRole('dialog');
     await user.type(within(dialog).getByLabelText(new RegExp(t.credits.form.name)), 'Ali Valiyev');
+    await user.type(
+      within(dialog).getByLabelText(new RegExp(t.credits.form.phone)),
+      '+998901234567',
+    );
     await user.type(within(dialog).getByLabelText(new RegExp(t.credits.form.amount)), '50000');
     const count = within(dialog).getByLabelText(new RegExp(t.credits.form.installments));
     await user.clear(count);
@@ -56,12 +60,38 @@ describe('Nasiya: admin (D-24)', () => {
     ]);
   });
 
+  it('forma: telefon majburiy, summa kamida 1 000; vaqt 24 soatlik (13:00, AM/PM yo‘q)', async () => {
+    renderApp('/credits');
+    const user = userEvent.setup();
+    const before = db().credits.length;
+    await user.click(await screen.findByRole('button', { name: t.credits.add }, PAGE));
+    const dialog = await screen.findByRole('dialog');
+    await user.type(within(dialog).getByLabelText(new RegExp(t.credits.form.name)), 'Vali');
+    await user.type(within(dialog).getByLabelText(new RegExp(t.credits.form.amount)), '999');
+    const time = within(dialog).getByLabelText(new RegExp(t.credits.form.takenTime));
+    expect(time).toHaveAttribute('type', 'text');
+    await user.clear(time);
+    await user.type(time, '1300');
+    expect(time).toHaveValue('13:00');
+    await user.click(within(dialog).getByRole('button', { name: t.common.add }));
+    expect(await within(dialog).findByText('Telefon raqamini kiriting', {}, PAGE)).toBeInTheDocument();
+    expect(
+      within(dialog).getByText('Nasiya summasi kamida 1 000 so‘m bo‘lishi kerak'),
+    ).toBeInTheDocument();
+
+    await user.clear(time);
+    await user.type(time, '2530');
+    await user.click(within(dialog).getByRole('button', { name: t.common.add }));
+    expect(await within(dialog).findByText(t.credits.form.timeInvalid, {}, PAGE)).toBeInTheDocument();
+    expect(db().credits.length).toBe(before);
+  });
+
   it('to‘lash sanasi kelajakda bo‘lishi mumkin: kalendarda keyingi oy tanlanadi', async () => {
     renderApp('/credits');
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: t.credits.add }, PAGE));
     const dialog = await screen.findByRole('dialog');
-    const due = within(dialog).getByRole('button', { name: new RegExp(t.credits.form.firstDue) });
+    const due = within(dialog).getByLabelText(t.credits.form.firstDue, { exact: false });
     await user.click(due);
     const grid = await screen.findByRole('grid');
     const calendar = grid.closest('[data-slot=popover-content]') as HTMLElement;
@@ -84,6 +114,7 @@ describe('Nasiya: admin (D-24)', () => {
       method: 'POST',
       body: {
         debtorName: 'Tolov Sinov',
+        debtorPhone: '+998901234567',
         amount: '50000',
         takenAt: new Date().toISOString(),
         firstDueDate: today,

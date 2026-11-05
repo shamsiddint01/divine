@@ -123,6 +123,20 @@ describe('nasiya qo‘shish', () => {
       .send(body({ remainingAmount: '1' }))
       .expect(400);
   });
+
+  it('summa kamida 1 000 so‘m; telefon majburiy → 400 maydon bilan', async () => {
+    const low = await api('post', '/credits', adminToken)
+      .send(body({ amount: '999.99', installments: 1 }))
+      .expect(400);
+    expect(low.body.error.details[0].field).toBe('amount');
+    await create({ amount: '1000', installments: 1 });
+    const { debtorPhone: _phone, ...noPhone } = body();
+    const missing = await api('post', '/credits', adminToken).send(noPhone).expect(400);
+    expect(missing.body.error.details[0].field).toBe('debtorPhone');
+    await api('post', '/credits', adminToken)
+      .send(body({ debtorPhone: '123' }))
+      .expect(400);
+  });
 });
 
 describe('to‘lov: yetmagani keyingisiga, ortig‘i keyingisidan', () => {

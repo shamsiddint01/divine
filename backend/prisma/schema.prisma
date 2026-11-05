@@ -547,7 +547,7 @@ model Credit {
   /// IDENTITY; UI'da `N-000123`.
   number      BigInt   @unique @default(autoincrement())
   debtorName  String   @map("debtor_name") @db.VarChar(150)
-  debtorPhone String?  @map("debtor_phone") @db.VarChar(13)
+  debtorPhone String   @map("debtor_phone") @db.VarChar(13)
   amount      Decimal  @db.Decimal(18, 2)
   takenAt     DateTime @map("taken_at") @db.Timestamptz(3)
   note        String?  @db.VarChar(1000)

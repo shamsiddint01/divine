@@ -136,15 +136,13 @@ export function CreditDetailSheet({
             <>
               <div className="flex flex-wrap items-center gap-3">
                 <CreditStatusBadge status={c.status} />
-                {c.debtorPhone ? (
-                  <a
-                    href={`tel:${c.debtorPhone}`}
-                    className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-                  >
-                    <Phone className="size-3.5" aria-hidden />
-                    {c.debtorPhone}
-                  </a>
-                ) : null}
+                <a
+                  href={`tel:${c.debtorPhone}`}
+                  className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                >
+                  <Phone className="size-3.5" aria-hidden />
+                  {c.debtorPhone}
+                </a>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <Metric label={t.credits.col.amount} value={c.amount} />

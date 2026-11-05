@@ -147,7 +147,7 @@ export interface CreditRow {
   id: string;
   number: number;
   debtorName: string;
-  debtorPhone: string | null;
+  debtorPhone: string;
   amount: string;
   takenAt: string;
   note: string | null;

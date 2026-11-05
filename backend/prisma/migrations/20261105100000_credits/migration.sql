@@ -4,7 +4,7 @@ CREATE TABLE "credits" (
     "id" UUID NOT NULL DEFAULT uuidv7(),
     "number" BIGINT GENERATED ALWAYS AS IDENTITY,
     "debtor_name" VARCHAR(150) NOT NULL,
-    "debtor_phone" VARCHAR(13),
+    "debtor_phone" VARCHAR(13) NOT NULL,
     "amount" DECIMAL(18,2) NOT NULL,
     "taken_at" TIMESTAMPTZ(3) NOT NULL,
     "note" VARCHAR(1000),
@@ -14,7 +14,7 @@ CREATE TABLE "credits" (
 
     CONSTRAINT "credits_pkey" PRIMARY KEY ("id"),
     CONSTRAINT "credits_debtor_name_not_blank" CHECK (btrim("debtor_name") <> ''),
-    CONSTRAINT "credits_amount_positive" CHECK ("amount" > 0 AND "amount" <> 'NaN')
+    CONSTRAINT "credits_amount_min" CHECK ("amount" >= 1000 AND "amount" <> 'NaN')
 );
 
 CREATE TABLE "credit_installments" (

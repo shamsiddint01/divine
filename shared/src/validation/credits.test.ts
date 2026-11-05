@@ -13,6 +13,7 @@ const plan = (amount: string, installments: number, intervalDays = 1) =>
 
 const valid = {
   debtorName: 'Ali Valiyev',
+  debtorPhone: '+998901234567',
   amount: '50000',
   takenAt: '2026-11-05T10:00:00+05:00',
   firstDueDate: '2026-11-06',
@@ -135,11 +136,21 @@ describe('sxemalar', () => {
       { ...valid, amount: '0' },
       { ...valid, installments: 0 },
       { ...valid, installments: 1.5 },
-      { ...valid, amount: '0.01', installments: 2 },
+      { ...valid, amount: '999.99', installments: 1 },
+      { ...valid, amount: '1000', installments: 200000 },
+      { ...valid, debtorPhone: '' },
+      { ...valid, debtorPhone: '123' },
+      { ...valid, debtorPhone: undefined },
       { ...valid, remainingAmount: '1' },
     ]) {
       expect(creditCreateSchema.safeParse(bad).success).toBe(false);
     }
+  });
+
+  it('eng kam summa — 1 000 so‘m kiradi', () => {
+    expect(creditCreateSchema.safeParse({ ...valid, amount: '1000', installments: 1 }).success).toBe(
+      true,
+    );
   });
 
   it('Toshkent sanasi: kechasi UTC boshqa kun', () => {

@@ -127,7 +127,7 @@ route('POST', '/credits', ({ body }) => {
     id: mockUuid(),
     number: s.counters.credit,
     debtorName: input.debtorName,
-    debtorPhone: input.debtorPhone ?? null,
+    debtorPhone: input.debtorPhone,
     amount: centsToMoney(moneyToCents(input.amount)),
     takenAt: new Date(input.takenAt).toISOString(),
     note: input.note ?? null,
@@ -146,7 +146,6 @@ route('POST', '/credits', ({ body }) => {
       installments: input.installments,
       intervalDays: input.intervalDays,
       firstDueDate: input.firstDueDate,
-      hasPhone: Boolean(input.debtorPhone),
     },
   });
   return toDetail(s, row);

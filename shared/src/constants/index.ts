@@ -40,5 +40,6 @@ export const IDEMPOTENCY_HEADER = 'Idempotency-Key';
 export const CURRENCY_LABEL = 'so‘m';
 
 /** Nasiyani bo'lib to'lash chegaralari (D-24). */
+export const CREDIT_MIN_AMOUNT = '1000';
 export const CREDIT_INSTALLMENTS_MAX = 365;
 export const CREDIT_INTERVAL_DAYS_MAX = 365;

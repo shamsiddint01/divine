@@ -11,7 +11,7 @@ export const creditKeys = {
 
 export interface CreditInput {
   debtorName: string;
-  debtorPhone?: string;
+  debtorPhone: string;
   amount: string;
   takenAt: string;
   firstDueDate: string;
