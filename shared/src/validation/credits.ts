@@ -37,33 +37,38 @@ export function isCreditAmountAllowed(amount: string): boolean {
   return !isMoneyFormat(amount) || moneyToCents(amount) >= moneyToCents(CREDIT_MIN_AMOUNT);
 }
 
+/** Nasiya shartlari: qo'lda qo'shishda ham, kassadan yozishda ham bir xil. */
+const creditPlanFields = {
+  debtorName: customerNameSchema,
+  debtorPhone: z
+    .string({ error: M.creditPhoneRequired })
+    .trim()
+    .min(1, { error: M.creditPhoneRequired })
+    .pipe(phoneSchema),
+  /** Birinchi (yoki yagona) to'lov sanasi. */
+  firstDueDate: dateOnlySchema,
+  /** Necha marta bo'lib to'lanadi (1 — bir yo'la). */
+  installments: z
+    .number({ error: M.creditInstallments })
+    .int({ error: M.creditInstallments })
+    .min(1, { error: M.creditInstallments })
+    .max(CREDIT_INSTALLMENTS_MAX, { error: M.creditInstallments }),
+  /** To'lovlar orasidagi kun (1 — har kuni). */
+  intervalDays: z
+    .number({ error: M.creditInterval })
+    .int({ error: M.creditInterval })
+    .min(1, { error: M.creditInterval })
+    .max(CREDIT_INTERVAL_DAYS_MAX, { error: M.creditInterval })
+    .default(1),
+  note: nullableDescriptionSchema.optional(),
+};
+
 export const creditCreateSchema = z
   .strictObject({
-    debtorName: customerNameSchema,
-    debtorPhone: z
-      .string({ error: M.creditPhoneRequired })
-      .trim()
-      .min(1, { error: M.creditPhoneRequired })
-      .pipe(phoneSchema),
+    ...creditPlanFields,
     amount: positiveMoneySchema.refine(isCreditAmountAllowed, { error: M.creditAmountMin }),
     /** Nasiya berilgan sana va vaqt. */
     takenAt: z.iso.datetime({ offset: true, error: M.invalidDate }),
-    /** Birinchi (yoki yagona) to'lov sanasi. */
-    firstDueDate: dateOnlySchema,
-    /** Necha marta bo'lib to'lanadi (1 — bir yo'la). */
-    installments: z
-      .number({ error: M.creditInstallments })
-      .int({ error: M.creditInstallments })
-      .min(1, { error: M.creditInstallments })
-      .max(CREDIT_INSTALLMENTS_MAX, { error: M.creditInstallments }),
-    /** To'lovlar orasidagi kun (1 — har kuni). */
-    intervalDays: z
-      .number({ error: M.creditInterval })
-      .int({ error: M.creditInterval })
-      .min(1, { error: M.creditInterval })
-      .max(CREDIT_INTERVAL_DAYS_MAX, { error: M.creditInterval })
-      .default(1),
-    note: nullableDescriptionSchema.optional(),
   })
   .refine((v) => v.firstDueDate >= tashkentDateOf(v.takenAt), {
     error: M.creditDueBeforeTaken,
@@ -75,6 +80,15 @@ export const creditCreateSchema = z
     path: ['installments'],
   });
 
+/**
+ * Kassadan nasiya (D-26): `POST /sales` ichida. Mijoz `paidAmount` berdi, qolgani nasiyaga yoziladi.
+ * Nasiya summasini client yubormaydi — server sotuv jami summasidan hisoblaydi.
+ */
+export const saleCreditSchema = z.strictObject({
+  ...creditPlanFields,
+  paidAmount: moneySchema,
+});
+
 export const creditPaymentSchema = z.strictObject({
   amount: positiveMoneySchema,
   /** To'lov sanasi (Toshkent kuni, bugundan keyin emas). */
@@ -84,6 +98,7 @@ export const creditPaymentSchema = z.strictObject({
 
 export type CreditCreateInput = z.infer<typeof creditCreateSchema>;
 export type CreditPaymentInput = z.infer<typeof creditPaymentSchema>;
+export type SaleCreditInput = z.infer<typeof saleCreditSchema>;
 
 // ─── To'lov jadvali ─────────────────────────────────────────────────────────
 
@@ -213,4 +228,24 @@ export function creditAmountDueOn(schedule: CreditSchedule, date: string): strin
     .slice(0, index + 1)
     .reduce((acc, row) => acc + moneyToCents(row.remaining), 0n);
   return centsToMoney(sum);
+}
+
+/** Kassadan nasiya shartlari: backend va mock bir xil tekshiradi. Xato bo'lmasa — `null`. */
+export function saleCreditIssue(
+  totalAmount: string,
+  credit: SaleCreditInput,
+  today: string,
+): { field: string; message: string } | null {
+  const remaining = moneyToCents(totalAmount) - moneyToCents(credit.paidAmount);
+  if (remaining <= 0n) return { field: 'credit.paidAmount', message: M.creditPaidFull };
+  if (!isCreditAmountAllowed(centsToMoney(remaining))) {
+    return { field: 'credit.paidAmount', message: M.creditAmountMin };
+  }
+  if (remaining < BigInt(credit.installments)) {
+    return { field: 'credit.installments', message: M.creditInstallments };
+  }
+  if (credit.firstDueDate < today) {
+    return { field: 'credit.firstDueDate', message: M.creditDueBeforeTaken };
+  }
+  return null;
 }

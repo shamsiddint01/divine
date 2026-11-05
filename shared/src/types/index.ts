@@ -289,6 +289,8 @@ export interface SaleDto {
   status: 'COMPLETED';
   /** Dona yoki optom narxda sotilgan (D-25). */
   priceType: SalePriceType;
+  /** Puli yetmagan sotuv: qancha to'landi va qancha nasiyaga yozildi (D-26). */
+  credit: { number: string; paidAmount: MoneyString; amount: MoneyString } | null;
   items?: SaleItemDto[];
 }
 
@@ -479,6 +481,8 @@ export interface CreditDto {
   next: { dueDate: DateOnlyString; amount: MoneyString } | null;
   note: string | null;
   createdBy: UserRefDto;
+  /** Kassadan yozilgan bo'lsa — sotuv raqami. */
+  saleNumber: string | null;
 }
 
 export interface CreditPaymentDto {
@@ -490,9 +494,27 @@ export interface CreditPaymentDto {
   createdAt: IsoDateTimeString;
 }
 
+/** Nasiya qaysi sotuvdan kelgani: sana, jami, to'langan va mahsulotlar cheki. */
+export interface CreditSaleDto {
+  id: string;
+  number: string;
+  soldAt: IsoDateTimeString;
+  totalAmount: MoneyString;
+  paidAmount: MoneyString;
+  items: {
+    productId: string;
+    productName: string;
+    unit: ProductUnit;
+    quantity: QuantityString;
+    unitPrice: MoneyString;
+    lineTotal: MoneyString;
+  }[];
+}
+
 export interface CreditDetailDto extends CreditDto {
   schedule: CreditScheduleRow[];
   payments: CreditPaymentDto[];
+  sale: CreditSaleDto | null;
 }
 
 export interface CreditsListResponse extends Paginated<CreditDto> {

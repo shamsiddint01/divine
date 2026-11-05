@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CreditsModule } from '../credits/credits.module.js';
 import { InventoryModule } from '../inventory/inventory.module.js';
 import { SalesController } from './sales.controller.js';
 import { SalesRepository } from './sales.repository.js';
@@ -6,7 +7,7 @@ import { SalesService } from './sales.service.js';
 
 /** Sotuvlar (Phase 10). Qoldiq faqat `InventoryService` orqali; `SalesRepository` mijoz xarid tarixida ham. */
 @Module({
-  imports: [InventoryModule],
+  imports: [InventoryModule, CreditsModule],
   controllers: [SalesController],
   providers: [SalesService, SalesRepository],
   exports: [SalesRepository],

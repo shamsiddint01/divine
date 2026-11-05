@@ -45,6 +45,7 @@ export const VALIDATION_MESSAGES_UZ = {
   groupRequired: 'Guruhni tanlang',
   creditAmountMin: 'Nasiya summasi kamida 1 000 so‘m bo‘lishi kerak',
   creditPhoneRequired: 'Telefon raqamini kiriting',
+  creditPaidFull: 'To‘lov sotuv summasidan kam bo‘lishi kerak. To‘liq to‘lansa, “Yopish” ni bosing',
   creditInstallments: 'To‘lovlar soni 1 dan 365 gacha butun son bo‘lishi kerak',
   creditInterval: 'Oraliq 1 dan 365 kungacha butun son bo‘lishi kerak',
   creditDueBeforeTaken: 'To‘lov sanasi nasiya olingan kundan oldin bo‘lishi mumkin emas',

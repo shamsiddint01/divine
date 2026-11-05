@@ -65,7 +65,10 @@ export interface SaleLine {
   quantity: string;
 }
 
-type RawSale = Omit<SaleRow, 'items' | 'user' | 'warehouse' | 'customer' | 'status'> & {
+type RawSale = Omit<SaleRow, 'items' | 'user' | 'warehouse' | 'customer' | 'status' | 'credit'> & {
+  creditNumber: string | null;
+  creditAmount: string | null;
+  creditPaid: string | null;
   userId: string;
   userLogin: string;
   userFullName: string | null;
@@ -89,12 +92,15 @@ const SELECT = Prisma.sql`
          (SELECT count(*)::int FROM sale_items i WHERE i.sale_id = s.id) AS "itemsCount",
          s.total_quantity::text AS "totalQuantity", s.total_amount::text AS "totalAmount",
          s.total_cost::text AS "totalCost", (s.total_amount - s.total_cost)::text AS "grossProfit",
-         s.price_type::text AS "priceType"`;
+         s.price_type::text AS "priceType",
+         CASE WHEN c.id IS NULL THEN NULL ELSE 'N-' || lpad(c.number::text, 6, '0') END AS "creditNumber",
+         c.amount::text AS "creditAmount", (s.total_amount - c.amount)::text AS "creditPaid"`;
 
 const FROM = Prisma.sql`
   FROM sales s
   JOIN users u ON u.id = s.user_id
-  JOIN warehouses w ON w.id = s.warehouse_id`;
+  JOIN warehouses w ON w.id = s.warehouse_id
+  LEFT JOIN credits c ON c.sale_id = s.id`;
 
 const SORT_COLUMNS: Readonly<Record<SaleSortField, Prisma.Sql>> = {
   soldAt: Prisma.sql`s.sold_at`,
@@ -349,9 +355,16 @@ export class SalesRepository {
         customerId,
         customerName,
         customerPhone,
+        creditNumber,
+        creditAmount,
+        creditPaid,
         ...sale
       }): SaleRow => ({
         ...sale,
+        credit:
+          creditNumber && creditAmount && creditPaid
+            ? { number: creditNumber, amount: creditAmount, paidAmount: creditPaid }
+            : null,
         user: { id: userId, login: userLogin, fullName: userFullName },
         warehouse: { id: warehouseId, name: warehouseName },
         customer: { id: customerId, name: customerName, phone: customerPhone },

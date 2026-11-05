@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { CreditInstallment, UserRefDto } from '@divine/shared';
+import type { CreditInstallment, CreditSaleDto, ProductUnit, UserRefDto } from '@divine/shared';
 import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import type { Tx } from '../../infrastructure/prisma/transaction-runner.js';
@@ -15,6 +15,8 @@ export interface CreditRow {
   takenAt: Date;
   note: string | null;
   createdBy: UserRefDto;
+  saleId: string | null;
+  saleNumber: string | null;
 }
 
 export interface CreditPaymentRow {
@@ -44,9 +46,12 @@ const SELECT = Prisma.sql`
          c.amount::text AS amount, c.taken_at AS "takenAt", c.note,
          coalesce((SELECT sum(p.amount) FROM credit_payments p WHERE p.credit_id = c.id), 0)::text
            AS "paidAmount",
-         u.id AS "createdById", u.login AS "createdLogin", u.full_name AS "createdName"
+         u.id AS "createdById", u.login AS "createdLogin", u.full_name AS "createdName",
+         c.sale_id AS "saleId",
+         CASE WHEN s.id IS NULL THEN NULL ELSE 'S-' || lpad(s.number::text, 6, '0') END AS "saleNumber"
     FROM credits c
-    JOIN users u ON u.id = c.created_by`;
+    JOIN users u ON u.id = c.created_by
+    LEFT JOIN sales s ON s.id = c.sale_id`;
 
 const toCreditRow = ({ createdById, createdLogin, createdName, ...row }: RawCredit): CreditRow => ({
   ...row,
@@ -106,6 +111,34 @@ export class CreditsRepository {
     }));
   }
 
+  /** Nasiya sotuvi: sana, jami va mahsulotlar (narx va nomlar sotuv paytidagi snapshot). */
+  async saleOf(
+    saleId: string,
+    creditAmount: string,
+  ): Promise<CreditSaleDto | null> {
+    const [sale] = await this.prisma.$queryRaw<
+      { id: string; number: string; soldAt: Date; totalAmount: string; paidAmount: string }[]
+    >`
+      SELECT id, 'S-' || lpad(number::text, 6, '0') AS number, sold_at AS "soldAt",
+             total_amount::text AS "totalAmount",
+             (total_amount - ${creditAmount}::numeric)::text AS "paidAmount"
+        FROM sales WHERE id = ${saleId}::uuid`;
+    if (!sale) return null;
+    const items = await this.prisma.$queryRaw<
+      (Omit<CreditSaleDto['items'][number], 'unit'> & { unit: string })[]
+    >`
+      SELECT i.product_id AS "productId", i.product_name AS "productName", p.unit::text AS unit,
+             i.quantity::text AS quantity, i.unit_price::text AS "unitPrice",
+             i.line_total::text AS "lineTotal"
+        FROM sale_items i JOIN products p ON p.id = i.product_id
+       WHERE i.sale_id = ${saleId}::uuid ORDER BY i.id`;
+    return {
+      ...sale,
+      soldAt: sale.soldAt.toISOString(),
+      items: items.map((item) => ({ ...item, unit: item.unit as ProductUnit })),
+    };
+  }
+
   async create(
     tx: Tx,
     data: {
@@ -115,6 +148,7 @@ export class CreditsRepository {
       takenAt: Date;
       note: string | null;
       createdById: string;
+      saleId?: string;
     },
     installments: CreditInstallment[],
   ): Promise<string> {

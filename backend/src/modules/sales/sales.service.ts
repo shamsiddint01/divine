@@ -23,6 +23,7 @@ import { extractDbError } from '../../common/errors/database-errors.js';
 import { toPaginated } from '../../common/query/prisma-query.js';
 import { type Tx, TransactionRunner } from '../../infrastructure/prisma/transaction-runner.js';
 import { AuditService, type RequestMeta } from '../audit/audit.service.js';
+import { CreditsService } from '../credits/credits.service.js';
 import { InventoryService } from '../inventory/inventory.service.js';
 import {
   type ProductForSale,
@@ -93,6 +94,7 @@ function requestHash(input: SaleCreateInput, lines: SaleLine[]): string {
     customer: 'id' in input.customer ? { id: input.customer.id } : input.customer,
     // Dona sotuvda kalit yo'q: D-25 dan oldingi so'rovlarning xeshi o'zgarmaydi.
     ...(input.priceType === 'WHOLESALE' ? { priceType: input.priceType } : {}),
+    ...(input.credit ? { credit: input.credit } : {}),
     items: [...lines].sort((a, b) => a.productId.localeCompare(b.productId)),
   });
   return createHash('sha256').update(canonical).digest('hex');
@@ -114,6 +116,7 @@ export class SalesService {
     private readonly inventory: InventoryService,
     private readonly transactions: TransactionRunner,
     private readonly audit: AuditService,
+    private readonly credits: CreditsService,
   ) {}
 
   /** `created: false` — shu kalit va payload bilan avval yaratilgan sotuv (takroriy so'rov, 200). */
@@ -306,6 +309,17 @@ export class SalesService {
       },
       tx,
     );
+
+    // 9. Puli yetmagan bo'lsa — qolgani nasiyaga (D-26), shu tranzaksiyada: xato bo'lsa sotuv ham yo'q.
+    if (input.credit) {
+      await this.credits.createForSale(
+        tx,
+        ctx,
+        { id: sale.id, totalAmount: saved?.totalAmount ?? '0' },
+        input.credit,
+        meta,
+      );
+    }
     return sale.id;
   }
 

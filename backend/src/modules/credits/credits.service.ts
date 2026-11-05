@@ -17,6 +17,8 @@ import {
   type CreditStatus,
   ErrorCode,
   moneyToCents,
+  saleCreditIssue,
+  type SaleCreditInput,
   type SortSpec,
   VALIDATION_MESSAGES_UZ,
 } from '@divine/shared';
@@ -25,7 +27,7 @@ import { AppError } from '../../common/errors/app-error.js';
 import { toPaginated } from '../../common/query/prisma-query.js';
 import { Clock } from '../../common/time/clock.js';
 import { tashkentToday } from '../../common/time/tashkent-time.js';
-import { TransactionRunner } from '../../infrastructure/prisma/transaction-runner.js';
+import { type Tx, TransactionRunner } from '../../infrastructure/prisma/transaction-runner.js';
 import { AuditService, type RequestMeta } from '../audit/audit.service.js';
 import { type CreditRow, CreditsRepository } from './credits.repository.js';
 
@@ -60,6 +62,7 @@ function toCreditDto(
     next: schedule.next,
     note: row.note,
     createdBy: row.createdBy,
+    saleNumber: row.saleNumber,
   };
 }
 
@@ -151,7 +154,56 @@ export class CreditsService {
       ...toCreditDto(row, plan, schedule),
       schedule: schedule.rows,
       payments: payments.map((p) => ({ ...p, createdAt: p.createdAt.toISOString() })),
+      sale: row.saleId ? await this.repository.saleOf(row.saleId, row.amount) : null,
     };
+  }
+
+  /**
+   * Kassadan nasiya (D-26): sotuv tranzaksiyasi ichida. Qarz = sotuv jami − to'langan; xato bo'lsa sotuv
+   * ham saqlanmaydi. Ruxsat — `sales.create`: sotuvchi nasiya yoza oladi, lekin bo'limni ko'rmaydi.
+   */
+  async createForSale(
+    tx: Tx,
+    ctx: AccessContext,
+    sale: { id: string; totalAmount: string },
+    input: SaleCreditInput,
+    meta: RequestMeta,
+  ): Promise<void> {
+    const now = this.clock.now();
+    const issue = saleCreditIssue(sale.totalAmount, input, tashkentToday(now));
+    if (issue) throw new AppError(ErrorCode.VALIDATION_ERROR, { details: [issue] });
+    const amount = centsToMoney(moneyToCents(sale.totalAmount) - moneyToCents(input.paidAmount));
+    const creditId = await this.repository.create(
+      tx,
+      {
+        debtorName: input.debtorName,
+        debtorPhone: input.debtorPhone,
+        amount,
+        takenAt: now,
+        note: input.note ?? null,
+        createdById: ctx.userId,
+        saleId: sale.id,
+      },
+      buildCreditInstallments({ ...input, amount }),
+    );
+    await this.audit.record(
+      {
+        actorId: ctx.userId,
+        action: AuditAction.CREDIT_CREATED,
+        entityType: AuditEntityType.CREDIT,
+        entityId: creditId,
+        metadata: {
+          amount,
+          paidAmount: input.paidAmount,
+          saleId: sale.id,
+          installments: input.installments,
+          intervalDays: input.intervalDays,
+          firstDueDate: input.firstDueDate,
+        },
+        meta,
+      },
+      tx,
+    );
   }
 
   async create(

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { VALIDATION_MESSAGES_UZ as M } from './messages.uz.js';
 import { SALE_PRICE_TYPES } from '../enums/index.js';
+import { saleCreditSchema } from './credits.js';
 import { nullablePhoneSchema } from './customers.js';
 import { customerNameSchema, quantitySchema, uuidSchema } from './primitives.js';
 
@@ -65,6 +66,8 @@ export const saleCreateSchema = z.strictObject({
   customer: saleCustomerSchema,
   /** Client faqat narx TURINI aytadi; narxning o'zini server kartochkadan oladi (BR-15, D-25). */
   priceType: z.enum(SALE_PRICE_TYPES).default('RETAIL'),
+  /** Mijoz puli yetmasa: to'langan summa va qolgani uchun nasiya shartlari (D-26). */
+  credit: saleCreditSchema.optional(),
   items: z
     .array(saleItemInputSchema, { error: M.saleItemsRequired })
     .min(1, { error: M.saleItemsRequired })

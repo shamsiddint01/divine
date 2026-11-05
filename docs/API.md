@@ -534,6 +534,8 @@ Modul: `backend/src/modules/credits`. Barcha endpointlar — `credits.manage` (f
 | `POST /credits` | `{ debtorName, debtorPhone, amount (≥ 1 000), takenAt, firstDueDate, installments, intervalDays?, note? }` | `201 CreditDetailDto` | `400` (to‘lov olingan kundan oldin, noma’lum maydon) |
 | `POST /credits/:id/payments` | `{ amount, date, note? }` | `201 CreditDetailDto` | `400` (kelajak sana), `404`, `422 CREDIT_OVERPAID` |
 
+**Kassadan nasiya (D-26):** `POST /sales` da ixtiyoriy `credit: { paidAmount, debtorName, debtorPhone, firstDueDate, installments, intervalDays?, note? }`. Qarz = sotuv jami − `paidAmount`, kamida 1 000 so‘m; sotuv va nasiya bitta tranzaksiyada. Ruxsat — `sales.create`.
+
 **Audit** (ism, telefon va izoh yozilmaydi): `CREDIT_CREATED` — `{ amount, installments, intervalDays, firstDueDate }`; `CREDIT_PAYMENT_ADDED` — `{ paymentId, amount, date }`.
 
 ---
