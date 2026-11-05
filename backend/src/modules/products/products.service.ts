@@ -141,7 +141,6 @@ export class ProductsService {
         barcode,
         costPrice: input.costPrice,
         salePrice: input.salePrice,
-        wholesalePrice: input.wholesalePrice ?? null,
         unit: input.unit,
         allowDecimal: input.allowDecimal,
         minStock: input.minStock ?? null,
@@ -161,7 +160,6 @@ export class ProductsService {
             unit: input.unit,
             costPrice: input.costPrice,
             salePrice: input.salePrice,
-            wholesalePrice: input.wholesalePrice ?? null,
             status: input.status,
           },
           meta,
@@ -251,13 +249,6 @@ export class ProductsService {
       }
       if (input.salePrice !== undefined) {
         track('salePrice', input.salePrice, sameDecimal(input.salePrice, current.salePrice));
-      }
-      if (input.wholesalePrice !== undefined) {
-        track(
-          'wholesalePrice',
-          input.wholesalePrice,
-          sameDecimal(input.wholesalePrice, current.wholesalePrice),
-        );
       }
       if (input.minStock !== undefined) {
         track('minStock', input.minStock, sameDecimal(input.minStock, current.minStock));

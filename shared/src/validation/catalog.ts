@@ -7,7 +7,6 @@ import {
   dateOnlySchema,
   entityNameSchema,
   moneySchema,
-  positiveMoneySchema,
   quantitySchema,
   uuidSchema,
 } from './primitives.js';
@@ -35,12 +34,6 @@ export const nullableBarcodeSchema = z.preprocess(emptyToNull, barcodeSchema.nul
 /** Minimal qoldiq: ixtiyoriy musbat miqdor; bo'sh → null (global sozlama ishlatiladi). */
 export const nullableMinStockSchema = z.preprocess(emptyToNull, quantitySchema.nullable());
 
-/** Optom narxi (D-24): ixtiyoriy, > 0; bo'sh → null (optom sotuvda ham sotuv narxi). */
-export const nullableWholesalePriceSchema = z.preprocess(
-  emptyToNull,
-  positiveMoneySchema.nullable(),
-);
-
 export const productGroupCreateSchema = z.strictObject({
   name: entityNameSchema,
   description: nullableDescriptionSchema.optional(),
@@ -63,7 +56,6 @@ const productFields = {
   barcode: nullableBarcodeSchema.optional(),
   costPrice: moneySchema,
   salePrice: moneySchema,
-  wholesalePrice: nullableWholesalePriceSchema.optional(),
   unit: z.enum(PRODUCT_UNITS),
   allowDecimal: z.boolean(),
   minStock: nullableMinStockSchema.optional(),

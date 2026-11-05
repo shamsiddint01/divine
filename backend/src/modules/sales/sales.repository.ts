@@ -4,7 +4,6 @@ import {
   type ProductUnit,
   type SaleDto,
   type SaleItemDto,
-  type SalePriceType,
   type SortSpec,
   WALK_IN_CUSTOMER_NAME,
 } from '@divine/shared';
@@ -14,12 +13,6 @@ import type { Tx } from '../../infrastructure/prisma/transaction-runner.js';
 import { toPrismaPagination, toSqlOrderBy } from '../../common/query/prisma-query.js';
 import { tashkentDateRangeToUtc } from '../../common/time/tashkent-time.js';
 import { escapeLike } from '../product-groups/product-groups.repository.js';
-
-/** Qator narxi (D-24): optomda `wholesale_price`, u yo'q mahsulotda — oddiy sotuv narxi. */
-const unitPriceSql = (priceType: SalePriceType) =>
-  priceType === 'WHOLESALE'
-    ? Prisma.sql`coalesce(p.wholesale_price, p.sale_price)`
-    : Prisma.sql`p.sale_price`;
 
 /** Umumiy (ismsiz) mijozni yaratishni ketma-ketlashtirish (`lockWalkInCustomer`). */
 const WALK_IN_LOCK_KEY = 'divine.uz:walk-in-customer';
@@ -89,7 +82,6 @@ const SELECT = Prisma.sql`
          s.customer_phone_snapshot AS "customerPhone",
          (SELECT count(*)::int FROM sale_items i WHERE i.sale_id = s.id) AS "itemsCount",
          s.total_quantity::text AS "totalQuantity", s.total_amount::text AS "totalAmount",
-         s.price_type::text AS "priceType",
          s.total_cost::text AS "totalCost", (s.total_amount - s.total_cost)::text AS "grossProfit"`;
 
 const FROM = Prisma.sql`
@@ -261,9 +253,8 @@ export class SalesRepository {
   }
 
   /**
-   * Sotuv hujjati: narx va tannarx snapshot'i mahsulot kartochkasidan (`sale_price` yoki optomda
-   * `wholesale_price` — D-24, `cost_price` — D-02, D-16), totallar shu qatorlardan DB yaxlitlashi bilan.
-   * Client narxi hech qachon ishlatilmaydi (BR-15).
+   * Sotuv hujjati: narx va tannarx snapshot'i mahsulot kartochkasidan (`sale_price`, `cost_price` — D-02,
+   * D-16), totallar shu qatorlardan DB yaxlitlashi bilan. Client narxi hech qachon ishlatilmaydi (BR-15).
    */
   async insertSale(
     tx: Tx,
@@ -273,7 +264,6 @@ export class SalesRepository {
       customer: { id: string; name: string; phone: string | null };
       idempotencyKey: string;
       requestHash: string;
-      priceType: SalePriceType;
       lines: SaleLine[];
     },
   ): Promise<{ id: string }> {
@@ -284,13 +274,11 @@ export class SalesRepository {
         SELECT l.product_id, l.quantity FROM unnest(${ids}::uuid[], ${quantities}::numeric[]) AS l(product_id, quantity)
       )
       INSERT INTO sales (user_id, warehouse_id, customer_id, customer_name_snapshot, customer_phone_snapshot,
-                         total_quantity, total_amount, total_cost, idempotency_key, request_hash,
-                         price_type)
+                         total_quantity, total_amount, total_cost, idempotency_key, request_hash)
       SELECT ${data.userId}::uuid, ${data.warehouseId}::uuid, ${data.customer.id}::uuid,
              ${data.customer.name}, ${data.customer.phone},
-             sum(l.quantity), sum(round(l.quantity * ${unitPriceSql(data.priceType)}, 2)),
-             sum(round(l.quantity * p.cost_price, 2)),
-             ${data.idempotencyKey}::uuid, ${data.requestHash}, ${data.priceType}::sale_price_type
+             sum(l.quantity), sum(round(l.quantity * p.sale_price, 2)), sum(round(l.quantity * p.cost_price, 2)),
+             ${data.idempotencyKey}::uuid, ${data.requestHash}
         FROM lines l JOIN products p ON p.id = l.product_id
       RETURNING id`;
     if (!row) throw new Error('sales INSERT qator qaytarmadi');
@@ -301,13 +289,12 @@ export class SalesRepository {
     tx: Tx,
     saleId: string,
     lines: SaleLine[],
-    priceType: SalePriceType,
   ): Promise<{ id: string; productId: string; quantity: string; unitCost: string }[]> {
     const ids = lines.map((line) => line.productId);
     const quantities = lines.map((line) => line.quantity);
     return tx.$queryRaw`
       INSERT INTO sale_items (sale_id, product_id, product_name, barcode, quantity, unit_price, unit_cost)
-      SELECT ${saleId}::uuid, p.id, p.name, p.barcode, l.quantity, ${unitPriceSql(priceType)}, p.cost_price
+      SELECT ${saleId}::uuid, p.id, p.name, p.barcode, l.quantity, p.sale_price, p.cost_price
         FROM unnest(${ids}::uuid[], ${quantities}::numeric[]) AS l(product_id, quantity)
         JOIN products p ON p.id = l.product_id
       RETURNING id, product_id AS "productId", quantity::text AS quantity, unit_cost::text AS "unitCost"`;

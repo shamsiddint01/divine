@@ -90,8 +90,6 @@ function requestHash(input: SaleCreateInput, lines: SaleLine[]): string {
   const canonical = JSON.stringify({
     warehouseId: input.warehouseId,
     customer: 'id' in input.customer ? { id: input.customer.id } : input.customer,
-    // Dona sotuvda kalit yo'q: D-24 dan oldingi so'rovlarning xeshi o'zgarmaydi
-    ...(input.priceType === 'WHOLESALE' ? { priceType: input.priceType } : {}),
     items: [...lines].sort((a, b) => a.productId.localeCompare(b.productId)),
   });
   return createHash('sha256').update(canonical).digest('hex');
@@ -250,10 +248,9 @@ export class SalesService {
       customer,
       idempotencyKey,
       requestHash: hash,
-      priceType: input.priceType,
       lines,
     });
-    const items = await this.repository.insertItems(tx, sale.id, lines, input.priceType);
+    const items = await this.repository.insertItems(tx, sale.id, lines);
 
     // 6. Qoldiq ↓ + ledger (`product_id` tartibida, shartli UPDATE — overselling yo'q, REQ-077).
     try {

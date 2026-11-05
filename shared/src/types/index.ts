@@ -100,8 +100,6 @@ export interface ProductDto {
   groupName: string;
   barcode: string | null;
   salePrice: MoneyString;
-  /** Optom narxi (D-24); `null` — optom sotuvda ham `salePrice`. */
-  wholesalePrice: MoneyString | null;
   costPrice?: MoneyString;
   unit: ProductUnit;
   allowDecimal: boolean;
@@ -285,8 +283,6 @@ export interface SaleDto {
   totalCost?: MoneyString;
   grossProfit?: MoneyString;
   status: 'COMPLETED';
-  /** D-24: dona yoki optom narxda sotilgan. */
-  priceType: SalePriceType;
   items?: SaleItemDto[];
 }
 

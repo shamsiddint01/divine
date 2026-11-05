@@ -49,7 +49,6 @@ export interface ProductRow {
   groupName: string;
   barcode: string | null;
   salePrice: string;
-  wholesalePrice: string | null;
   costPrice: string;
   unit: ProductUnit;
   allowDecimal: boolean;
@@ -186,8 +185,7 @@ export class ProductsRepository {
                           WHERE key = 'low_stock_default_threshold'), 0) AS v
       )
       SELECT p.id, p.name, p.group_id AS "groupId", g.name AS "groupName", p.barcode,
-             p.sale_price::text AS "salePrice", p.wholesale_price::text AS "wholesalePrice",
-             p.cost_price::text AS "costPrice",
+             p.sale_price::text AS "salePrice", p.cost_price::text AS "costPrice",
              p.unit::text AS unit, p.allow_decimal AS "allowDecimal", p.min_stock::text AS "minStock",
              p.status::text AS status,
              coalesce(st.qty, 0)::numeric(14, 3)::text AS stock,
@@ -281,7 +279,6 @@ export class ProductsRepository {
         barcode: string | null;
         costPrice: string;
         salePrice: string;
-        wholesalePrice: string | null;
         unit: ProductUnit;
         allowDecimal: boolean;
         minStock: string | null;
@@ -289,8 +286,7 @@ export class ProductsRepository {
       }[]
     >`
       SELECT id, name, group_id AS "groupId", barcode, cost_price::text AS "costPrice",
-             sale_price::text AS "salePrice", wholesale_price::text AS "wholesalePrice",
-             unit::text AS unit, allow_decimal AS "allowDecimal",
+             sale_price::text AS "salePrice", unit::text AS unit, allow_decimal AS "allowDecimal",
              min_stock::text AS "minStock", status::text AS status
         FROM products WHERE id = ${id}::uuid FOR UPDATE`;
     return rows[0] ?? null;
