@@ -4,6 +4,7 @@ import {
   type ProductUnit,
   type SaleDto,
   type SaleItemDto,
+  type SalePriceType,
   type SortSpec,
   WALK_IN_CUSTOMER_NAME,
 } from '@divine/shared';
