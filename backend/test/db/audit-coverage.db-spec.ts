@@ -53,6 +53,8 @@ const EXPECTED: Record<string, AuditAction | { exempt: string }> = {
   'POST /expenses': 'EXPENSE_CREATED',
   'PATCH /expenses/:id': 'EXPENSE_UPDATED',
   'DELETE /expenses/:id': 'EXPENSE_DELETED',
+  'POST /credits': 'CREDIT_CREATED',
+  'POST /credits/:id/payments': 'CREDIT_PAYMENT_ADDED',
   'PATCH /settings': 'SETTINGS_UPDATED',
 };
 
@@ -260,6 +262,25 @@ describe('audit qamrovi (AC-21, REQ-120, BR-24)', () => {
     await expectAudited('POST /products/:id/stock', 'post', `/products/${product}/stock`, {
       body: { date: '2026-10-09', warehouseId: wh, quantity: '10', costPrice: '600' },
       status: 201,
+    });
+
+    // ── Nasiya ──
+    const credit = id(
+      await expectAudited('POST /credits', 'post', '/credits', {
+        body: {
+          debtorName: 'AC21 Qarzdor',
+          amount: '40000',
+          takenAt: '2026-10-09T10:00:00+05:00',
+          firstDueDate: '2026-10-10',
+          installments: 2,
+        },
+        status: 201,
+      }),
+    );
+    await expectAudited('POST /credits/:id/payments', 'post', `/credits/${credit}/payments`, {
+      body: { amount: '1000', date: '2026-10-09' },
+      status: 201,
+      entityId: credit,
     });
 
     // ── Mijoz va sotuv ──
