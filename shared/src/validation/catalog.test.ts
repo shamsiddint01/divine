@@ -55,3 +55,22 @@ describe('katalog sxemalari (API §5–6, BR-13)', () => {
     expect(productGroupUpdateSchema.safeParse({}).success).toBe(false);
   });
 });
+
+describe('mahsulot narxi (D-25): dona va optomdan kamida bittasi', () => {
+  const { salePrice: _sale, ...noPrice } = base as typeof base & { salePrice?: string };
+
+  it('faqat dona yoki faqat optom — to‘g‘ri; bo‘sh satr null bo‘ladi', () => {
+    expect(productCreateSchema.safeParse({ ...noPrice, salePrice: '1000' }).success).toBe(true);
+    expect(
+      productCreateSchema.parse({ ...noPrice, salePrice: '', wholesalePrice: '900' }),
+    ).toMatchObject({ salePrice: null, wholesalePrice: '900' });
+  });
+
+  it('ikkalasi ham yo‘q → rad etiladi; optom narxi 0 bo‘lmaydi', () => {
+    expect(productCreateSchema.safeParse(noPrice).success).toBe(false);
+    expect(
+      productCreateSchema.safeParse({ ...noPrice, salePrice: null, wholesalePrice: null }).success,
+    ).toBe(false);
+    expect(productCreateSchema.safeParse({ ...noPrice, wholesalePrice: '0' }).success).toBe(false);
+  });
+});
