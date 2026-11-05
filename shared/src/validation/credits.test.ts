@@ -5,6 +5,8 @@ import {
   creditAmountDueOn,
   creditCreateSchema,
   creditPaymentSchema,
+  saleCreditIssue,
+  saleCreditSchema,
   tashkentDateOf,
 } from './credits.js';
 
@@ -167,5 +169,33 @@ describe('sxemalar', () => {
     expect(creditPaymentSchema.safeParse({ amount: '100', date: '2026-11-05' }).success).toBe(true);
     expect(creditPaymentSchema.safeParse({ amount: '0', date: '2026-11-05' }).success).toBe(false);
     expect(creditPaymentSchema.safeParse({ amount: '100' }).success).toBe(false);
+  });
+});
+
+describe('kassadan nasiya (saleCreditIssue)', () => {
+  const credit = saleCreditSchema.parse({
+    paidAmount: '20000',
+    debtorName: 'Ali',
+    debtorPhone: '+998901234567',
+    firstDueDate: '2026-11-06',
+    installments: 2,
+  });
+  const today = '2026-11-05';
+
+  it('to‘g‘ri: 62 000 dan 20 000 to‘landi', () => {
+    expect(saleCreditIssue('62000.00', credit, today)).toBeNull();
+  });
+
+  it('to‘liq yoki ortiq to‘lansa, qarz 1 000 dan kam bo‘lsa, sana o‘tgan bo‘lsa — maydon bilan xato', () => {
+    expect(saleCreditIssue('20000.00', credit, today)?.field).toBe('credit.paidAmount');
+    expect(saleCreditIssue('10000.00', credit, today)?.field).toBe('credit.paidAmount');
+    expect(saleCreditIssue('20999.00', credit, today)?.field).toBe('credit.paidAmount');
+    expect(saleCreditIssue('62000.00', credit, '2026-11-07')?.field).toBe('credit.firstDueDate');
+  });
+
+  it('client qarz summasini yubora olmaydi; to‘lamagan ham bo‘lishi mumkin (0)', () => {
+    expect(saleCreditSchema.safeParse({ ...credit, amount: '1' }).success).toBe(false);
+    expect(saleCreditSchema.safeParse({ ...credit, paidAmount: '0' }).success).toBe(true);
+    expect(saleCreditSchema.safeParse({ ...credit, debtorPhone: '' }).success).toBe(false);
   });
 });

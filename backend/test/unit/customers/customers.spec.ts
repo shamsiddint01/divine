@@ -30,6 +30,7 @@ const sale: SaleRow = {
   grossProfit: '60000.00',
   status: 'COMPLETED',
   priceType: 'RETAIL',
+  credit: null,
   items: [
     {
       productId: 'p',

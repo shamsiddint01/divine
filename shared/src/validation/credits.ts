@@ -9,6 +9,7 @@ import { nullableDescriptionSchema } from './catalog.js';
 import {
   customerNameSchema,
   dateOnlySchema,
+  moneySchema,
   phoneSchema,
   positiveMoneySchema,
 } from './primitives.js';
