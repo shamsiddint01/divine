@@ -87,40 +87,40 @@ export function ProductPicker({
       <div className="grid gap-1.5">
         <Label htmlFor="pos-barcode">{t.sales.barcodeLabel}</Label>
         <div className="flex gap-2">
-        <div className="relative min-w-0 flex-1">
-          <Barcode
-            className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-primary"
-            aria-hidden
-          />
-          <Input
-            id="pos-barcode"
-            ref={barcodeRef}
-            value={barcode}
-            onChange={(e) => setBarcode(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                void submitBarcode();
-              }
-            }}
-            placeholder={t.sales.barcodePlaceholder}
-            className="h-11 border-primary/40 bg-primary/[0.03] pl-10 font-mono text-base focus-visible:border-primary"
-            autoFocus
-            aria-busy={scanning}
-            autoComplete="off"
-          />
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          className="size-11 shrink-0"
-          onClick={() => setCameraOpen(true)}
-          aria-label={t.scanner.open}
-          title={t.scanner.open}
-        >
-          <ScanBarcode className="size-5" />
-        </Button>
+          <div className="relative min-w-0 flex-1">
+            <Barcode
+              className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-primary"
+              aria-hidden
+            />
+            <Input
+              id="pos-barcode"
+              ref={barcodeRef}
+              value={barcode}
+              onChange={(e) => setBarcode(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void submitBarcode();
+                }
+              }}
+              placeholder={t.sales.barcodePlaceholder}
+              className="h-11 border-primary/40 bg-primary/[0.03] pl-10 font-mono text-base focus-visible:border-primary"
+              autoFocus
+              aria-busy={scanning}
+              autoComplete="off"
+            />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="size-11 shrink-0"
+            onClick={() => setCameraOpen(true)}
+            aria-label={t.scanner.open}
+            title={t.scanner.open}
+          >
+            <ScanBarcode className="size-5" />
+          </Button>
         </div>
       </div>
       <BarcodeScannerDialog
