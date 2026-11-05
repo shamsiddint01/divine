@@ -76,7 +76,7 @@ function toDetail(s: MockState, c: CreditRow): CreditDetailDto {
             const p = s.products.find((x) => x.id === i.productId);
             return {
               productId: i.productId,
-              productName: i.productName ?? p?.name ?? '—',
+              productName: p?.name ?? '—',
               unit: p?.unit ?? 'DONA',
               quantity: i.quantity,
               unitPrice: i.unitPrice,

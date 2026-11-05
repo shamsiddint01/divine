@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { t } from '@/i18n/uz';
 import { setMockLatency } from '@/mocks';
 import { db } from '@/mocks/db';
+import { setMockNow } from '@/mocks/lib/clock';
 import { FAIL_MESSAGE, failRoutes, restoreRoutes } from '@/test/fail-routes';
 import { PAGE, renderApp } from '@/test/render-app';
 
@@ -90,6 +91,71 @@ describe('POS — sotuv oqimi', () => {
       expect(card).toHaveTextContent(t.sales.noPrice);
       expect(card).toBeDisabled();
     }, PAGE);
+  });
+
+  it('Nasiya: to‘lagan summasi ayiriladi, qolgani sotuvga bog‘langan nasiyaga yoziladi, chekda ko‘rinadi', async () => {
+    const { state } = renderApp('/sales');
+    setMockNow(new Date());
+    const user = userEvent.setup();
+    const product = state.products.find((p) => p.status === 'ACTIVE' && p.salePrice === '25000.00')!;
+    await user.type(
+      await screen.findByPlaceholderText(t.sales.searchPlaceholder, {}, PAGE),
+      product.name,
+    );
+    await user.click(
+      await screen.findByRole('button', { name: new RegExp(product.name.replace(/[()]/g, '.')) }, PAGE),
+    );
+    await user.click(await screen.findByRole('button', { name: t.sales.credit.button }, PAGE));
+    const dialog = await screen.findByRole('dialog', { name: t.sales.credit.title }, PAGE);
+    const paid = within(dialog).getByLabelText(new RegExp(t.sales.credit.paidInput));
+    await user.clear(paid);
+    await user.type(paid, '10000');
+    expect(within(dialog).getByTestId('sale-credit-summary')).toHaveTextContent(/15.000/);
+
+    // Telefon majburiy.
+    await user.type(within(dialog).getByLabelText(new RegExp(t.credits.form.name)), 'Ali');
+    const creditsBefore = state.credits.length;
+    await user.click(within(dialog).getByRole('button', { name: t.sales.credit.submit }));
+    expect(await within(dialog).findByText('Telefon raqamini kiriting', {}, PAGE)).toBeInTheDocument();
+    expect(state.credits.length).toBe(creditsBefore);
+
+    await user.type(
+      within(dialog).getByLabelText(new RegExp(t.credits.form.phone)),
+      '+998901234567',
+    );
+    await user.click(within(dialog).getByRole('button', { name: t.sales.credit.submit }));
+    const receipt = await screen.findByRole('dialog', { name: t.sales.receipt.title }, PAGE);
+    expect(within(receipt).getByText(t.sales.credit.receiptDebt)).toBeInTheDocument();
+    await waitFor(() => expect(state.credits.length).toBe(creditsBefore + 1));
+    const sale = state.sales.at(-1)!;
+    expect(state.credits.at(-1)).toMatchObject({
+      saleId: sale.id,
+      amount: '15000.00',
+      debtorName: 'Ali',
+      debtorPhone: '+998901234567',
+    });
+  });
+
+  it('to‘liq to‘lansa, nasiya oynasi xato beradi va sotuv saqlanmaydi', async () => {
+    const { state } = renderApp('/sales');
+    setMockNow(new Date());
+    const user = userEvent.setup();
+    const cards = await screen.findAllByRole('button', { name: /so‘m/ }, PAGE);
+    await user.click(cards.find((c) => !c.hasAttribute('disabled'))!);
+    await user.click(await screen.findByRole('button', { name: t.sales.credit.button }, PAGE));
+    const dialog = await screen.findByRole('dialog', { name: t.sales.credit.title }, PAGE);
+    await user.type(within(dialog).getByLabelText(new RegExp(t.credits.form.name)), 'Ali');
+    await user.type(
+      within(dialog).getByLabelText(new RegExp(t.credits.form.phone)),
+      '+998901234567',
+    );
+    const paid = within(dialog).getByLabelText(new RegExp(t.sales.credit.paidInput));
+    await user.clear(paid);
+    await user.type(paid, '999999999');
+    const salesBefore = state.sales.length;
+    await user.click(within(dialog).getByRole('button', { name: t.sales.credit.submit }));
+    expect(await within(dialog).findByText(/To‘liq to‘lansa/, {}, PAGE)).toBeInTheDocument();
+    expect(state.sales.length).toBe(salesBefore);
   });
 
   it('savat ostida jami mahsulot soni ko‘rsatiladi', async () => {
