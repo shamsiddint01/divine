@@ -1,4 +1,4 @@
-import type { ProductUnit } from '@divine/shared';
+import { type ProductUnit, buildCreditInstallments } from '@divine/shared';
 import { lineTotal, sumMoney, sumQty } from '@/shared/lib/decimal';
 import { todayInTashkent } from '@/shared/lib/format';
 import { formatDocNumber, getStock, postMovement } from './inventory';

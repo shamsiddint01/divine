@@ -1,6 +1,7 @@
 import type {
   AuditAction,
   AuditEntityType,
+  CreditInstallment,
   IncomingStatus,
   ProductStatus,
   ProductUnit,
