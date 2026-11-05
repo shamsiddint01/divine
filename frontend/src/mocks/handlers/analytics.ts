@@ -426,7 +426,7 @@ const BUILDERS: Record<ReportType, (s: MockState, q: ReportQuery) => ReportRows>
           group: groupName(s, p.groupId),
           stock,
           stockValue: lineTotal(stock, p.costPrice),
-          saleValue: lineTotal(stock, p.salePrice),
+          saleValue: lineTotal(stock, p.salePrice ?? p.wholesalePrice ?? '0'),
           status,
         };
       })

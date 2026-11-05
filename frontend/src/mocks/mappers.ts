@@ -85,6 +85,7 @@ export function toProductDto(
     groupName: state.groups.find((g) => g.id === p.groupId)?.name ?? '—',
     barcode: p.barcode,
     salePrice: p.salePrice,
+    wholesalePrice: p.wholesalePrice,
     // Backend kabi: `products.read_cost` bo'lmasa kalit umuman yo'q (OWN-06).
     ...(currentCan(state, 'products.read_cost') ? { costPrice: p.costPrice } : {}),
     unit: p.unit,
@@ -197,6 +198,7 @@ export function toSaleDto(state: MockState, s: SaleRow, withItems = false): Sale
     totalCost: s.totalCost,
     grossProfit: subMoney(s.totalAmount, s.totalCost),
     status: 'COMPLETED',
+    priceType: s.priceType ?? 'RETAIL',
   };
   if (withItems) {
     dto.items = s.items.map((i) => {

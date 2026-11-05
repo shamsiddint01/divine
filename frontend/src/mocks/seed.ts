@@ -699,6 +699,8 @@ export function createSeedState(now: Date = new Date()): MockState {
       barcode: c.noBarcode ? null : ean13(String(100_000_000 + i * 7919).slice(-9)),
       costPrice: money(c.cost),
       salePrice: money(c.sale),
+      // Demo: optom narxi — dona narxidan ~10% arzon, kelgan narxidan past emas.
+      wholesalePrice: money(Math.max(c.cost, Math.round((c.sale * 0.9) / 1000) * 1000)),
       unit: c.unit,
       allowDecimal: c.unit !== 'DONA',
       minStock: `${c.min}.000`,
@@ -903,7 +905,7 @@ export function createSeedState(now: Date = new Date()): MockState {
         items.push({
           productId: product.id,
           quantity: qty,
-          unitPrice: product.salePrice,
+          unitPrice: product.salePrice ?? '0.00',
           unitCost: product.costPrice,
         });
       }

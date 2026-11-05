@@ -12,7 +12,7 @@ export type AuditLookups = Partial<
   Record<'warehouse' | 'user' | 'group' | 'category', Map<string, string>>
 >;
 
-const MONEY_KEYS = new Set(['costPrice', 'salePrice', 'totalAmount', 'amount']);
+const MONEY_KEYS = new Set(['costPrice', 'salePrice', 'wholesalePrice', 'totalAmount', 'amount']);
 const QUANTITY_KEYS = new Set(['totalQuantity', 'lowStockDefaultThreshold', 'minStock']);
 const ID_KEYS: Record<string, keyof AuditLookups> = {
   warehouseId: 'warehouse',

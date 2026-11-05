@@ -65,7 +65,9 @@ export interface ProductInput {
   groupId: string;
   barcode?: string | null;
   costPrice: Money;
-  salePrice: Money;
+  /** Dona va optom narxidan kamida bittasi (D-25). */
+  salePrice: Money | null;
+  wholesalePrice: Money | null;
   unit: ProductUnit;
   allowDecimal: boolean;
   minStock?: Quantity | null;

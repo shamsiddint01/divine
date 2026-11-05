@@ -174,7 +174,7 @@ route('GET', '/products', ({ query }) => {
       received: (p) => num(p.received),
       sold: (p) => num(p.sold),
       costPrice: (p) => num(p.costPrice),
-      salePrice: (p) => num(p.salePrice),
+      salePrice: (p) => num(p.salePrice ?? '0'),
       createdAt: (p) => p.createdAt,
     },
     'name:asc',
@@ -246,7 +246,8 @@ route('POST', '/products', ({ body }) => {
     groupId: input.groupId,
     barcode: input.barcode ?? null,
     costPrice: input.costPrice,
-    salePrice: input.salePrice,
+    salePrice: input.salePrice ?? null,
+    wholesalePrice: input.wholesalePrice ?? null,
     unit: input.unit,
     allowDecimal: input.allowDecimal,
     minStock: input.minStock ?? null,
@@ -266,6 +267,7 @@ route('POST', '/products', ({ body }) => {
       unit: row.unit,
       costPrice: row.costPrice,
       salePrice: row.salePrice,
+      wholesalePrice: row.wholesalePrice,
       status: row.status,
     },
   });
@@ -308,6 +310,7 @@ route('PATCH', '/products/:id', ({ params, body }) => {
     'barcode',
     'costPrice',
     'salePrice',
+    'wholesalePrice',
     'minStock',
   ]);
   if (hasChanges(changes)) {

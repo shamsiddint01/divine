@@ -6,6 +6,7 @@ import type {
   ProductStatus,
   ProductUnit,
   RoleCode,
+  SalePriceType,
   UserStatus,
   WarehouseStatus,
 } from '@divine/shared';
@@ -28,7 +29,8 @@ export interface ProductRow {
   groupId: string;
   barcode: string | null;
   costPrice: string;
-  salePrice: string;
+  salePrice: string | null;
+  wholesalePrice: string | null;
   unit: ProductUnit;
   allowDecimal: boolean;
   minStock: string | null;
@@ -83,6 +85,8 @@ export interface SaleRow {
   customerId: string;
   customerName: string;
   customerPhone: string | null;
+  /** Dona yoki optom (D-25). */
+  priceType: SalePriceType;
   items: SaleItemRow[];
   totalQuantity: string;
   totalAmount: string;
@@ -230,6 +234,6 @@ export interface MockState {
   counters: { sale: number; incoming: number; movement: number; audit: number; credit: number };
 }
 
-export const STATE_VERSION = 9;
+export const STATE_VERSION = 10;
 
 export const stockKey = (warehouseId: string, productId: string) => `${warehouseId}|${productId}`;
