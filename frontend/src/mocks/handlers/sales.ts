@@ -184,6 +184,7 @@ function saleRequestHash(input: SaleCreateInput, merged: Map<string, string>): s
   return JSON.stringify({
     warehouseId: input.warehouseId,
     customer: 'id' in input.customer ? { id: input.customer.id } : input.customer,
+    ...(input.priceType === 'WHOLESALE' ? { priceType: input.priceType } : {}),
     items: [...merged.entries()]
       .map(([productId, quantity]) => ({ productId, quantity: toMilli(quantity) }))
       .sort((a, b) => a.productId.localeCompare(b.productId)),
