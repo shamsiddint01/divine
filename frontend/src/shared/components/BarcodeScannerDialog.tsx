@@ -11,6 +11,8 @@ import {
 
 type ScannerError = keyof typeof t.scanner.errors;
 
+const hasCamera = () => typeof navigator.mediaDevices?.getUserMedia === 'function';
+
 function errorOf(error: unknown): ScannerError {
   const name = error instanceof DOMException ? error.name : '';
   if (name === 'NotAllowedError' || name === 'SecurityError') return 'denied';
@@ -25,8 +27,9 @@ function errorOf(error: unknown): ScannerError {
 function ScannerView({ onDetected }: { onDetected: (code: string) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const latest = useRef(onDetected);
+  // `http` manzilda brauzer `mediaDevices`ni umuman bermaydi.
   const [error, setError] = useState<ScannerError | null>(() =>
-    navigator.mediaDevices?.getUserMedia ? null : 'unsupported',
+    hasCamera() ? null : 'unsupported',
   );
   const [ready, setReady] = useState(false);
 
@@ -36,7 +39,7 @@ function ScannerView({ onDetected }: { onDetected: (code: string) => void }) {
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !navigator.mediaDevices?.getUserMedia) return;
+    if (!video || !hasCamera()) return;
     let cancelled = false;
     let stop: (() => void) | undefined;
     void (async () => {
