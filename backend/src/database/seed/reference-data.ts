@@ -39,6 +39,7 @@ export const PERMISSION_DESCRIPTIONS: Readonly<Record<Permission, string>> = {
   [Permission.EXPENSES_READ]: 'Xarajatlarni ko‘rish',
   [Permission.EXPENSES_CREATE]: 'Yangi xarajat qo‘shish (ro‘yxatsiz)',
   [Permission.EXPENSES_MANAGE]: 'Xarajat va kategoriyalarni boshqarish',
+  [Permission.CREDITS_MANAGE]: 'Nasiya: ko‘rish, qo‘shish va to‘lov yozish',
   [Permission.REPORTS_READ]: 'Barcha hisobotlar',
   [Permission.DASHBOARD_ADMIN]: 'Admin dashboard ko‘rsatkichlari',
   [Permission.DASHBOARD_OWN]: 'O‘zining bugungi sotuv ko‘rsatkichlari',

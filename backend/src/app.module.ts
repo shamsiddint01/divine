@@ -8,6 +8,7 @@ import { AuditModule } from './modules/audit/audit.service.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { CustomersModule } from './modules/customers/customers.module.js';
 import { DashboardModule } from './modules/dashboard/dashboard.module.js';
+import { CreditsModule } from './modules/credits/credits.module.js';
 import { ExpensesModule } from './modules/expenses/expenses.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { IncomingModule } from './modules/incoming/incoming.module.js';
@@ -42,6 +43,7 @@ import { WarehousesModule } from './modules/warehouses/warehouses.module.js';
     CustomersModule,
     SalesModule,
     ExpensesModule,
+    CreditsModule,
     ReportsModule,
     DashboardModule,
     SettingsModule,

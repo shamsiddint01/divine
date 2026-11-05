@@ -38,6 +38,7 @@ const STATUS: Readonly<Record<ErrorCode, number>> = {
   [ErrorCode.PRODUCT_GROUP_INACTIVE]: 422,
   [ErrorCode.WAREHOUSE_INACTIVE]: 422,
   [ErrorCode.EXPENSE_CATEGORY_INACTIVE]: 422,
+  [ErrorCode.CREDIT_OVERPAID]: 422,
   [ErrorCode.INCOMING_EMPTY]: 422,
   [ErrorCode.SALE_EMPTY]: 422,
   [ErrorCode.CUSTOMER_NAME_REQUIRED]: 422,

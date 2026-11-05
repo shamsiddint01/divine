@@ -168,6 +168,8 @@ model User {
   createdExpenseCategories ExpenseCategory[]
   createdExpenses          Expense[]           @relation("ExpenseCreatedBy")
   updatedExpenses          Expense[]           @relation("ExpenseUpdatedBy")
+  createdCredits           Credit[]
+  createdCreditPayments    CreditPayment[]
   deletedExpenses          Expense[]           @relation("ExpenseDeletedBy")
   auditLogs                AuditLog[]
   updatedSettings          Setting[]
@@ -537,6 +539,59 @@ model Expense {
   @@index([categoryId])
   @@index([createdById])
   @@map("expenses")
+}
+
+/// Nasiya (D-24). Qoldiq va holat saqlanmaydi — jadval va to'lovlardan hisoblanadi (@divine/shared).
+model Credit {
+  id          String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  /// IDENTITY; UI'da `N-000123`.
+  number      BigInt   @unique @default(autoincrement())
+  debtorName  String   @map("debtor_name") @db.VarChar(150)
+  debtorPhone String?  @map("debtor_phone") @db.VarChar(13)
+  amount      Decimal  @db.Decimal(18, 2)
+  takenAt     DateTime @map("taken_at") @db.Timestamptz(3)
+  note        String?  @db.VarChar(1000)
+  createdById String   @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  createdBy    User                @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  installments CreditInstallment[]
+  payments     CreditPayment[]
+
+  @@index([takenAt])
+  @@index([createdById])
+  @@map("credits")
+}
+
+model CreditInstallment {
+  id       String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  creditId String   @map("credit_id") @db.Uuid
+  seq      Int      @db.SmallInt
+  dueDate  DateTime @map("due_date") @db.Date
+  amount   Decimal  @db.Decimal(18, 2)
+
+  credit Credit @relation(fields: [creditId], references: [id], onDelete: Restrict)
+
+  @@unique([creditId, seq])
+  @@map("credit_installments")
+}
+
+model CreditPayment {
+  id          String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  creditId    String   @map("credit_id") @db.Uuid
+  paymentDate DateTime @map("payment_date") @db.Date
+  amount      Decimal  @db.Decimal(18, 2)
+  note        String?  @db.VarChar(1000)
+  createdById String   @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  credit    Credit @relation(fields: [creditId], references: [id], onDelete: Restrict)
+  createdBy User   @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([creditId])
+  @@index([createdById])
+  @@map("credit_payments")
 }
 
 // ─── Audit / Settings ──────────────────────────────────────────────────────────────────────────
