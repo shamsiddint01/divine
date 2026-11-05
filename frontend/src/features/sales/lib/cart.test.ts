@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { type CartProduct, addToCart, cartTotals, removeLine, setLineQuantity } from './cart';
+import {
+  type CartProduct,
+  addToCart,
+  cartTotals,
+  removeLine,
+  repriceCart,
+  setLineQuantity,
+} from './cart';
 
 const phone: CartProduct = {
   productId: 'p1',
@@ -7,6 +14,8 @@ const phone: CartProduct = {
   unit: 'DONA',
   allowDecimal: false,
   unitPrice: '2190000.00',
+  retailPrice: '2190000.00',
+  wholesalePrice: '2000000.00',
   stock: '3.000',
 };
 const rice: CartProduct = {
@@ -15,6 +24,8 @@ const rice: CartProduct = {
   unit: 'KG',
   allowDecimal: true,
   unitPrice: '28000.00',
+  retailPrice: '28000.00',
+  wholesalePrice: null,
   stock: '10.000',
 };
 
@@ -67,5 +78,22 @@ describe('savat — qator miqdori (Phase 15)', () => {
     const result = addToCart(first, { ...phone, stock: '2.000' });
     expect(result.limited).toBe(true);
     expect(result.lines[0]).toMatchObject({ quantity: '2.000', stock: '2.000' });
+  });
+});
+
+describe('repriceCart — dona/optom almashganda (D-25)', () => {
+  const lines = addToCart(addToCart([], phone).lines, rice).lines;
+
+  it('optomga: narx o‘zgaradi, optom narxi yo‘q qator chiqariladi', () => {
+    const result = repriceCart(lines, 'WHOLESALE');
+    expect(result.lines.map((l) => [l.productId, l.unitPrice])).toEqual([['p1', '2000000.00']]);
+    expect(result.removed.map((l) => l.name)).toEqual(['Guruch']);
+  });
+
+  it('donaga qaytsa: dona narxi tiklanadi, miqdor saqlanadi', () => {
+    const wholesale = repriceCart(lines, 'WHOLESALE').lines;
+    const result = repriceCart(wholesale, 'RETAIL');
+    expect(result.lines[0]).toMatchObject({ unitPrice: '2190000.00', quantity: '1' });
+    expect(result.removed).toEqual([]);
   });
 });
