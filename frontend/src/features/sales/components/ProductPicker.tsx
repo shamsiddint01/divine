@@ -1,5 +1,5 @@
 import type { SalePriceType } from '@divine/shared';
-import { Barcode, PackageSearch, Plus } from 'lucide-react';
+import { Barcode, PackageSearch, Plus, ScanBarcode } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useGroupOptions } from '@/features/product-groups/api/groups';
 import { useProducts } from '@/features/products/api/products';
@@ -7,11 +7,13 @@ import { t } from '@/i18n/uz';
 import { compareQty, subQty } from '@/shared/lib/decimal';
 import { formatMoney, formatQuantity } from '@/shared/lib/format';
 import { cn } from '@/shared/lib/utils';
+import { BarcodeScannerDialog } from '@/shared/components/BarcodeScannerDialog';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { ErrorState } from '@/shared/components/ErrorState';
 import { FilterSelect } from '@/shared/components/FilterSelect';
 import { SearchInput } from '@/shared/components/SearchInput';
 import { Badge } from '@/shared/ui/badge';
+import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 import { Skeleton } from '@/shared/ui/skeleton';
@@ -44,6 +46,7 @@ export function ProductPicker({
   const [groupId, setGroupId] = useState('');
   const [barcode, setBarcode] = useState('');
   const [scanning, setScanning] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const barcodeRef = useRef<HTMLInputElement>(null);
   // Katalog va ombor — bitta manbadan (aralash rejimda server): qoldiq tanlangan ombor bo'yicha.
   const { data: groups } = useGroupOptions();
@@ -83,7 +86,8 @@ export function ProductPicker({
     <div className="@container space-y-4">
       <div className="grid gap-1.5">
         <Label htmlFor="pos-barcode">{t.sales.barcodeLabel}</Label>
-        <div className="relative">
+        <div className="flex gap-2">
+        <div className="relative min-w-0 flex-1">
           <Barcode
             className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-primary"
             aria-hidden
@@ -106,7 +110,24 @@ export function ProductPicker({
             autoComplete="off"
           />
         </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="size-11 shrink-0"
+          onClick={() => setCameraOpen(true)}
+          aria-label={t.scanner.open}
+          title={t.scanner.open}
+        >
+          <ScanBarcode className="size-5" />
+        </Button>
+        </div>
       </div>
+      <BarcodeScannerDialog
+        open={cameraOpen}
+        onOpenChange={setCameraOpen}
+        onDetected={(code) => void onBarcode(code)}
+      />
       <div className="flex flex-col gap-2 sm:flex-row">
         <SearchInput
           value={search}
