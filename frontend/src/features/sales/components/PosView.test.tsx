@@ -54,7 +54,7 @@ describe('POS — sotuv oqimi', () => {
     const retail = within(group).getByRole('radio', { name: t.sales.priceType.RETAIL });
     const wholesale = within(group).getByRole('radio', { name: t.sales.priceType.WHOLESALE });
     expect(retail).toHaveAttribute('aria-checked', 'true');
-    const barcode = await screen.findByLabelText(new RegExp(t.sales.barcode), {}, PAGE);
+    const barcode = await screen.findByPlaceholderText(t.sales.barcodePlaceholder, {}, PAGE);
     expect(group.compareDocumentPosition(barcode) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     await user.click(wholesale);

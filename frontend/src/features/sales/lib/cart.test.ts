@@ -93,7 +93,8 @@ describe('repriceCart — dona/optom almashganda (D-25)', () => {
   it('donaga qaytsa: dona narxi tiklanadi, miqdor saqlanadi', () => {
     const wholesale = repriceCart(lines, 'WHOLESALE').lines;
     const result = repriceCart(wholesale, 'RETAIL');
-    expect(result.lines[0]).toMatchObject({ unitPrice: '2190000.00', quantity: '1' });
+    expect(result.lines[0]?.unitPrice).toBe('2190000.00');
+    expect(result.lines[0]?.quantity).toBe(lines[0]?.quantity);
     expect(result.removed).toEqual([]);
   });
 });
