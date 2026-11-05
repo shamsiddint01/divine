@@ -180,6 +180,16 @@ export function toCustomerDto(
   };
 }
 
+function saleCredit(state: MockState, s: SaleRow): SaleDto['credit'] {
+  const c = state.credits.find((x) => x.saleId === s.id);
+  if (!c) return null;
+  return {
+    number: `N-${String(c.number).padStart(6, '0')}`,
+    amount: c.amount,
+    paidAmount: subMoney(s.totalAmount, c.amount),
+  };
+}
+
 export function toSaleDto(state: MockState, s: SaleRow, withItems = false): SaleDto {
   const product = (id: string) => state.products.find((p) => p.id === id);
   const dto: SaleDto = {
@@ -199,6 +209,7 @@ export function toSaleDto(state: MockState, s: SaleRow, withItems = false): Sale
     grossProfit: subMoney(s.totalAmount, s.totalCost),
     status: 'COMPLETED',
     priceType: s.priceType ?? 'RETAIL',
+    credit: saleCredit(state, s),
   };
   if (withItems) {
     dto.items = s.items.map((i) => {

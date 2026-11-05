@@ -155,6 +155,8 @@ export interface CreditRow {
   amount: string;
   takenAt: string;
   note: string | null;
+  /** Kassadan yozilgan bo'lsa (D-26). */
+  saleId?: string | null;
   installments: CreditInstallment[];
   payments: CreditPaymentRow[];
   createdBy: string;
@@ -234,6 +236,6 @@ export interface MockState {
   counters: { sale: number; incoming: number; movement: number; audit: number; credit: number };
 }
 
-export const STATE_VERSION = 10;
+export const STATE_VERSION = 11;
 
 export const stockKey = (warehouseId: string, productId: string) => `${warehouseId}|${productId}`;

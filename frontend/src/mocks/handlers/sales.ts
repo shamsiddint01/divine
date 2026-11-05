@@ -185,6 +185,7 @@ function saleRequestHash(input: SaleCreateInput, merged: Map<string, string>): s
     warehouseId: input.warehouseId,
     customer: 'id' in input.customer ? { id: input.customer.id } : input.customer,
     ...(input.priceType === 'WHOLESALE' ? { priceType: input.priceType } : {}),
+    ...(input.credit ? { credit: input.credit } : {}),
     items: [...merged.entries()]
       .map(([productId, quantity]) => ({ productId, quantity: toMilli(quantity) }))
       .sort((a, b) => a.productId.localeCompare(b.productId)),
@@ -323,6 +324,10 @@ route('POST', '/sales', ({ body, headers }) => {
     idempotencyKey: key,
     requestHash: hash,
   };
+  if (input.credit) {
+    const issue = saleCreditIssue(sale.totalAmount, input.credit, mockToday());
+    if (issue) fail(400, 'VALIDATION_ERROR', [issue]);
+  }
   try {
     for (const item of items) {
       postMovement(s, {
@@ -362,6 +367,7 @@ route('POST', '/sales', ({ body, headers }) => {
       totalAmount: sale.totalAmount,
     },
   });
+  if (input.credit) createCreditForSale(s, sale, input.credit);
   return saleOut(toSaleDto(s, sale, true));
 });
 

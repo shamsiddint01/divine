@@ -14,8 +14,10 @@ import type {
   CreditReminderDto,
   CreditsListResponse,
 } from '@divine/shared';
+import { lineTotal } from '@/shared/lib/decimal';
 import { recordAudit } from '../audit';
 import { db } from '../db';
+import { formatDocNumber } from '../inventory';
 import { mockToday, nowIso } from '../lib/clock';
 import { fail, includesText, notFound, paginate, route, validate } from '../lib/http';
 import { mockUuid } from '../lib/random';
@@ -49,16 +51,40 @@ function toDto(s: MockState, c: CreditRow): CreditDto {
     next: schedule.next,
     note: c.note,
     createdBy: userRef(s, c.createdBy),
+    saleNumber: saleOf(s, c) ? formatDocNumber('S', saleOf(s, c)!.number) : null,
   };
 }
 
+const saleOf = (s: MockState, c: CreditRow) => s.sales.find((x) => x.id === c.saleId);
+
 function toDetail(s: MockState, c: CreditRow): CreditDetailDto {
+  const sale = saleOf(s, c);
   return {
     ...toDto(s, c),
     schedule: scheduleOf(c).rows,
     payments: [...c.payments]
       .sort((a, b) => `${b.date}${b.createdAt}`.localeCompare(`${a.date}${a.createdAt}`))
       .map((p) => ({ ...p, createdBy: userRef(s, p.createdBy) })),
+    sale: sale
+      ? {
+          id: sale.id,
+          number: formatDocNumber('S', sale.number),
+          soldAt: sale.soldAt,
+          totalAmount: sale.totalAmount,
+          paidAmount: centsToMoney(moneyToCents(sale.totalAmount) - moneyToCents(c.amount)),
+          items: sale.items.map((i) => {
+            const p = s.products.find((x) => x.id === i.productId);
+            return {
+              productId: i.productId,
+              productName: i.productName ?? p?.name ?? '—',
+              unit: p?.unit ?? 'DONA',
+              quantity: i.quantity,
+              unitPrice: i.unitPrice,
+              lineTotal: lineTotal(i.quantity, i.unitPrice),
+            };
+          }),
+        }
+      : null,
   };
 }
 
