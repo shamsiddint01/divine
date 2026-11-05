@@ -217,18 +217,6 @@ export function ProductsPage() {
       cell: (p) => <MoneyText value={p.costPrice} muted />,
     },
     {
-      key: 'wholesalePrice',
-      header: t.products.col.wholesalePrice,
-      align: 'right',
-      hideBelow: 'xl',
-      cell: (p) =>
-        p.wholesalePrice ? (
-          <MoneyText value={p.wholesalePrice} className="font-medium" />
-        ) : (
-          <span className="text-muted-foreground">{t.common.notSet}</span>
-        ),
-    },
-    {
       key: 'salePrice',
       header: t.products.col.salePrice,
       sortKey: 'salePrice',
@@ -237,6 +225,18 @@ export function ProductsPage() {
       cell: (p) =>
         p.salePrice ? (
           <MoneyText value={p.salePrice} className="font-medium" />
+        ) : (
+          <span className="text-muted-foreground">{t.common.notSet}</span>
+        ),
+    },
+    {
+      key: 'wholesalePrice',
+      header: t.products.col.wholesalePrice,
+      align: 'right',
+      hideBelow: 'xl',
+      cell: (p) =>
+        p.wholesalePrice ? (
+          <MoneyText value={p.wholesalePrice} className="font-medium" />
         ) : (
           <span className="text-muted-foreground">{t.common.notSet}</span>
         ),
