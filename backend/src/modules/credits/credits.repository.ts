@@ -112,10 +112,7 @@ export class CreditsRepository {
   }
 
   /** Nasiya sotuvi: sana, jami va mahsulotlar (narx va nomlar sotuv paytidagi snapshot). */
-  async saleOf(
-    saleId: string,
-    creditAmount: string,
-  ): Promise<CreditSaleDto | null> {
+  async saleOf(saleId: string, creditAmount: string): Promise<CreditSaleDto | null> {
     const [sale] = await this.prisma.$queryRaw<
       { id: string; number: string; soldAt: Date; totalAmount: string; paidAmount: string }[]
     >`
