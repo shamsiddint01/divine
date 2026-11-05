@@ -36,6 +36,10 @@ async function signIn(loginName: string) {
 
 /** Boshqa test fayllari mijozlari bilan aralashmasligi uchun noyob telefon (`+99893XXXXXXX`). */
 let phoneSeq = 0;
+/** Faqat harflar: qidiruv 3+ raqamni telefon deb ham izlaydi — raqamli nom boshqa telefonlarga mos kelardi. */
+const letterTag = (prefix: string) =>
+  uniqueLogin(prefix).replace(/\d/g, (d) => 'abcdefghij'[Number(d)] ?? '');
+
 const uniquePhone = () =>
   `+99893${(Date.now() % 1e5).toString().padStart(5, '0')}${(phoneSeq++ % 100).toString().padStart(2, '0')}`;
 
@@ -282,7 +286,7 @@ describe('tahrirlash va tarix (API §10)', () => {
 
 describe('qidiruv, saralash, pagination (REQ-081)', () => {
   it('ism (registrsiz, qisman), telefon raqamlari bo‘yicha; LIKE belgilari ekranlangan', async () => {
-    const tag = uniqueLogin('Qidir');
+    const tag = letterTag('Qidir');
     const phone = uniquePhone();
     const a = (await create({ name: `${tag} Dilnoza`, phone })).body;
     await create({ name: `${tag} Jasur` });
@@ -300,7 +304,7 @@ describe('qidiruv, saralash, pagination (REQ-081)', () => {
   });
 
   it('saralash va pagination; xarid qilmaganlar "oxirgi xarid" kamayishida oxirida', async () => {
-    const tag = uniqueLogin('Sort');
+    const tag = letterTag('Sort');
     for (const n of ['B', 'A', 'C']) await create({ name: `${tag} ${n}` }).expect(201);
     const asc = await api('get', `/customers?search=${tag}&sort=name:asc&pageSize=2`, adminToken);
     expect(asc.body.meta).toMatchObject({ total: 3, totalPages: 2 });
