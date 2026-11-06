@@ -483,6 +483,58 @@ describe('kirimlar hisoboti', () => {
     }).expect(200);
     expect(byProduct.body.meta.total).toBe(2);
   });
+
+  it('qator tafsiloti: qaysi mahsulotlar qo‘shilgan — miqdor, narx, summa; qoralamada ham', async () => {
+    const list = await report('incoming', {
+      dateFrom: '2026-09-09',
+      dateTo: '2026-09-12',
+      warehouseId: w1,
+      sort: 'date:asc',
+    }).expect(200);
+    const [confirmed, draft] = list.body.data as { number: string }[];
+
+    const res = await get(`/reports/incoming/${confirmed!.number}`).expect(200);
+    expect(res.body).toMatchObject({
+      number: confirmed!.number,
+      date: '2026-09-09',
+      status: 'CONFIRMED',
+      totalQuantity: '40.500',
+      totalAmount: '10590.25',
+    });
+    expect(res.body.items).toHaveLength(2);
+    expect(res.body.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          productId: a,
+          unit: 'DONA',
+          quantity: '10.000',
+          costPrice: '600.00',
+          lineTotal: '6000.00',
+        }),
+        expect.objectContaining({
+          productId: b,
+          unit: 'KG',
+          quantity: '30.500',
+          costPrice: '150.50',
+          lineTotal: '4590.25',
+        }),
+      ]),
+    );
+
+    const pending = await get(`/reports/incoming/${draft!.number}`).expect(200);
+    expect(pending.body).toMatchObject({
+      status: 'DRAFT',
+      totalQuantity: '3.000',
+      totalAmount: '300.00',
+    });
+  });
+
+  it('qator tafsiloti: topilmasa 404; sotuvchi → 403; anonim → 401', async () => {
+    await get('/reports/incoming/K-999999999').expect(404);
+    await get('/reports/incoming/abc').expect(404);
+    await get('/reports/incoming/K-000001', sellerToken).expect(403);
+    await get('/reports/incoming/K-000001', null).expect(401);
+  });
 });
 
 describe('xarajatlar hisoboti (D-11, D-19)', () => {
