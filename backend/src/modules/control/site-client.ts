@@ -4,6 +4,7 @@ import {
   ERROR_MESSAGES_UZ,
   isApiErrorBody,
   type SiteLicenseInput,
+  type SiteViewRequestStatus,
 } from '@divine/shared';
 import { AppError } from '../../common/errors/app-error.js';
 import { CONTROL_TOKEN_HEADER } from '../site/control-token.guard.js';
@@ -55,6 +56,10 @@ export class SiteClient {
 
   requestView(site: Target): Promise<{ id: string; expiresAt: string }> {
     return this.call(site, 'POST', '/access-requests');
+  }
+
+  viewStatus(site: Target, id: string): Promise<{ status: SiteViewRequestStatus }> {
+    return this.call(site, 'GET', `/access-requests/${id}`);
   }
 
   verifyView(

@@ -140,6 +140,12 @@ export class ControlSitesController {
     return this.control.requestView(id);
   }
 
+  @Get(':id/view-requests/:requestId')
+  @ApiOperation({ summary: 'So‘rov holati' })
+  viewStatus(@Param('id') id: string, @Param('requestId') requestId: string) {
+    return this.control.viewStatus(id, requestId);
+  }
+
   @Post(':id/view-requests/:requestId/verify')
   @HttpCode(200)
   @ApiOperation({ summary: 'Admin aytgan kod bilan ko‘rish havolasini olish' })

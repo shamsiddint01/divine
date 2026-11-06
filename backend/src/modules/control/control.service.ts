@@ -159,6 +159,11 @@ export class ControlService {
     return this.sites.requestView(site);
   }
 
+  async viewStatus(id: string, requestId: string) {
+    const site = (await this.prisma.controlSite.findUnique({ where: { id } })) ?? notFound();
+    return this.sites.viewStatus(site, requestId);
+  }
+
   /** To'g'ri koddan keyin ko'rish havolasi: token URL fragmentida, serverga va loglarga bormaydi. */
   async verifyView(id: string, requestId: string, code: string): Promise<{ viewUrl: string }> {
     const site = (await this.prisma.controlSite.findUnique({ where: { id } })) ?? notFound();

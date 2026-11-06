@@ -31,6 +31,7 @@ export function useDenySiteAccess() {
   return useMutation({
     mutationFn: (id: string) =>
       apiRequest<void>(`/site/access-request/${id}`, { method: 'DELETE' }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ACCESS_KEY }),
+    // Xabar darhol yo'qoladi: keyingi tekshiruvni kutmaydi.
+    onSuccess: () => queryClient.setQueryData(ACCESS_KEY, null),
   });
 }

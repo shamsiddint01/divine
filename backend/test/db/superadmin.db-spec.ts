@@ -321,6 +321,36 @@ describe('ko‘rish: admin kodi va faqat o‘qish', () => {
   });
 });
 
+describe('so‘rovlar cheklovi va rad etish', () => {
+  it('admin rad etsa panel buni ko‘radi', async () => {
+    const site = (await panel('post', '/sites').send(newSite()).expect(201)).body;
+    const view = (await panel('post', `/sites/${site.id}/view-requests`).expect(201)).body;
+    const path = `/sites/${site.id}/view-requests/${view.id}`;
+    expect((await panel('get', path).expect(200)).body.status).toBe('PENDING');
+    await server()
+      .delete(`/api/v1/site/access-request/${view.id}`)
+      .set({ Authorization: `Bearer ${await signIn()}` })
+      .expect(204);
+    expect((await panel('get', path).expect(200)).body.status).toBe('DENIED');
+  });
+
+  it('3 ta so‘rovdan keyin 10 daqiqa cheklanadi, keyin yana yuborsa bo‘ladi', async () => {
+    const site = (await panel('post', '/sites').send(newSite()).expect(201)).body;
+    const ask = () => panel('post', `/sites/${site.id}/view-requests`);
+    for (let i = 0; i < 3; i += 1) {
+      await ask().expect(201);
+      t.clock.advance(1_000);
+    }
+    const blocked = await ask();
+    expect(blocked.status).toBeGreaterThanOrEqual(400);
+    expect(blocked.body.error.message).toContain('10 daqiqaga cheklandi');
+    t.clock.advance(9 * 60_000);
+    expect((await ask()).status).toBeGreaterThanOrEqual(400);
+    t.clock.advance(60_000);
+    await ask().expect(201);
+  });
+});
+
 describe('rollar va audit', () => {
   it('sotuvchi kodni ko‘rmaydi va rad eta olmaydi; to‘lov eslatmasini ko‘radi', async () => {
     const seller = await createUser(t, { password: PASSWORD });

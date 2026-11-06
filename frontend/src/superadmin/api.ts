@@ -6,6 +6,7 @@ import {
   type ControlSiteDto,
   type ControlSiteUpdateInput,
   isApiErrorBody,
+  type SiteViewRequestStatus,
 } from '@divine/shared';
 
 export class PanelError extends Error {
@@ -60,6 +61,8 @@ export const panelApi = {
   sync: (id: string) => request<ControlSiteDetailDto>(`/sites/${id}/sync`, 'POST'),
   requestView: (id: string) =>
     request<{ id: string; expiresAt: string }>(`/sites/${id}/view-requests`, 'POST'),
+  viewStatus: (id: string, requestId: string) =>
+    request<{ status: SiteViewRequestStatus }>(`/sites/${id}/view-requests/${requestId}`),
   verifyView: (id: string, requestId: string, code: string) =>
     request<{ viewUrl: string }>(`/sites/${id}/view-requests/${requestId}/verify`, 'POST', {
       code,
