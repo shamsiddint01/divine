@@ -389,6 +389,7 @@ describe('audit qamrovi (AC-21, REQ-120, BR-24)', () => {
     expect(rotated.res.status).toBe(200);
     expect(rotated.audits).toEqual([]);
     covered.add('POST /auth/refresh');
+    t.clock.advance(31_000); // grace oralig'idan keyin
     const reuse = await call('post', '/auth/refresh', {
       token: null,
       headers: { ...csrf, Cookie: cookie },
@@ -446,6 +447,11 @@ describe('audit qamrovi (AC-21, REQ-120, BR-24)', () => {
       'INCOMING_CREATED',
       'INCOMING_UPDATED',
       'INCOMING_CANCELLED',
+      // Superadmin amallari superadmin.db-spec'da tekshiriladi.
+      'SITE_LICENSE_UPDATED',
+      'SITE_VIEW_REQUESTED',
+      'SITE_VIEW_GRANTED',
+      'SITE_VIEW_DENIED',
     ]);
     expect([...produced].sort()).toEqual(
       [...AUDIT_ACTIONS].filter((a) => !historical.has(a)).sort(),

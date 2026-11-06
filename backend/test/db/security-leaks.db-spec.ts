@@ -152,6 +152,7 @@ beforeAll(async () => {
   remember('admin access token (refresh)', rotated.body.accessToken);
   const rotatedCookie = refreshCookieOf(rotated);
   remember('admin refresh token (rotated)', rotatedCookie.split('=')[1]);
+  t.clock.advance(31_000); // grace oralig'idan keyin
   await refresh(t, adminCookie).expect(401);
   await http()
     .post('/api/v1/auth/logout')

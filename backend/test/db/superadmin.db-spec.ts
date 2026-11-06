@@ -285,6 +285,37 @@ describe('ko‘rish: admin kodi va faqat o‘qish', () => {
   });
 });
 
+describe('rollar va audit', () => {
+  it('sotuvchi kodni ko‘rmaydi va rad eta olmaydi; to‘lov eslatmasini ko‘radi', async () => {
+    const seller = await createUser(t, { password: PASSWORD });
+    const accessToken = (await login(t, { login: seller.login, password: PASSWORD }).expect(200))
+      .body.accessToken as string;
+    const auth = { Authorization: `Bearer ${accessToken}` };
+    await server().get('/api/v1/site/access-request').set(auth).expect(403);
+    await server()
+      .delete('/api/v1/site/access-request/01a1b0a6-fa25-7a7b-8827-2ecb8f0d3610')
+      .set(auth)
+      .expect(403);
+    await server().get('/api/v1/site/license').set(auth).expect(200);
+  });
+
+  it('muddat o‘zgarishi va ko‘rish so‘rovi auditga yoziladi', async () => {
+    const before = await t.prisma.auditLog.count({
+      where: { action: { in: ['SITE_LICENSE_UPDATED', 'SITE_VIEW_REQUESTED'] } },
+    });
+    await setLicense(TOMORROW).expect(204);
+    await server()
+      .post('/api/v1/site-control/access-requests')
+      .set('x-control-token', token())
+      .set('X-Forwarded-For', uniqueIp())
+      .expect(201);
+    const after = await t.prisma.auditLog.count({
+      where: { action: { in: ['SITE_LICENSE_UPDATED', 'SITE_VIEW_REQUESTED'] } },
+    });
+    expect(after - before).toBe(2);
+  });
+});
+
 describe('panel o‘chiq sayt', () => {
   it('/control/* 404 beradi', async () => {
     const plain = await createAuthApp();

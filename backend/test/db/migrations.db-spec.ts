@@ -162,6 +162,7 @@ describe('FK delete strategiyasi (tarix yo‘qolmaydi)', () => {
       .map((r) => `${r.tbl}.${r.col}:${r.rule}`)
       .sort();
     expect(nonRestrict).toEqual([
+      'control_payments.site_id:c',
       'incoming_items.incoming_id:c', // faqat DRAFT kirim o'chiriladi (trigger)
       'role_permissions.permission_id:c',
       'role_permissions.role_id:c',
