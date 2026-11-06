@@ -106,7 +106,7 @@ export class ControlService {
         paidUntil: dateOnly(site.paidUntil),
       });
       await this.prisma.$executeRaw`
-        UPDATE control_sites SET license_synced_at = now(), updated_at = updated_at WHERE id = ${id}::uuid`;
+        UPDATE control_sites SET license_synced_at = updated_at WHERE id = ${id}::uuid`;
     } catch {
       // Holat `synced: false` bo'lib ko'rinadi; panel "Qayta yuborish"ni taklif qiladi.
     }
