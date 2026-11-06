@@ -6,7 +6,7 @@ import {
 } from '@divine/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Eye, LogOut, Plus, RefreshCw, Trash2 } from 'lucide-react';
-import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
+import { type FormEvent, type ReactNode, useState } from 'react';
 import { DatePicker } from '@/shared/components/DatePicker';
 import { formatDate, formatMoney, formatPhone, todayInTashkent } from '@/shared/lib/format';
 import { Badge } from '@/shared/ui/badge';
@@ -247,13 +247,9 @@ const VIEW_STATUS_POLL_MS = 6_000;
 
 function ViewAccess({ siteId }: { siteId: string }) {
   const [requestId, setRequestId] = useState<string | null>(null);
-  const [closedReason, setClosedReason] = useState<string | null>(null);
   const ask = useMutation({
     mutationFn: () => panelApi.requestView(siteId),
-    onSuccess: (result) => {
-      setClosedReason(null);
-      setRequestId(result.id);
-    },
+    onSuccess: (result) => setRequestId(result.id),
   });
   const verify = useMutation({
     mutationFn: (code: string) => panelApi.verifyView(siteId, requestId ?? '', code),
@@ -266,18 +262,16 @@ function ViewAccess({ siteId }: { siteId: string }) {
     queryKey: ['view-request', requestId],
     queryFn: () => panelApi.viewStatus(siteId, requestId ?? ''),
     enabled: requestId !== null,
-    refetchInterval: VIEW_STATUS_POLL_MS,
+    refetchInterval: (query) =>
+      (query.state.data?.status ?? 'PENDING') === 'PENDING' ? VIEW_STATUS_POLL_MS : false,
   });
-  useEffect(() => {
-    if (state?.status === 'DENIED') {
-      setRequestId(null);
-      setClosedReason('Admin so‘rovni rad etdi');
-    } else if (state?.status === 'EXPIRED') {
-      setRequestId(null);
-      setClosedReason('Kod muddati tugadi');
-    }
-  }, [state?.status]);
-  if (!requestId) {
+  const closedReason =
+    state?.status === 'DENIED'
+      ? 'Admin so‘rovni rad etdi'
+      : state?.status === 'EXPIRED'
+        ? 'Kod muddati tugadi'
+        : null;
+  if (!requestId || closedReason) {
     return (
       <div className="grid gap-2">
         <Button variant="outline" disabled={ask.isPending} onClick={() => ask.mutate()}>
