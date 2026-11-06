@@ -8,7 +8,12 @@
  */
 // `.env` yuklovchi BIRINCHI import bo'lishi shart (qarang: config/load-env-file.ts).
 import '../config/load-env-file.js';
-import { AuditAction, AuditEntityType, generatedPasswordSchema, normalizeLogin } from '@divine/shared';
+import {
+  AuditAction,
+  AuditEntityType,
+  generatedPasswordSchema,
+  normalizeLogin,
+} from '@divine/shared';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { parseBootstrapConfig } from '../config/env.schema.js';
 import { PrismaClient } from '../generated/prisma/client.js';
