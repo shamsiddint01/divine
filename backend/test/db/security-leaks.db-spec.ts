@@ -262,7 +262,7 @@ describe('maxfiy qiymatlar oshkor bo‘lmaydi (Phase 16, SECURITY §14, §18)', 
       ] as const) {
         const res = await http().get(url).set(bearer(token)).set('X-Forwarded-For', uniqueIp());
         if (res.status >= 500) failures.push(`${role} ${route.key}: ${res.status}`);
-        if (role === 'ADMIN' && res.status === 200) withData++; else if (role === 'ADMIN') console.log('NO200', route.key, res.status, res.text.slice(0, 120));
+        if (role === 'ADMIN' && res.status === 200) withData++;
         const keys = findKeys(res.body);
         const values = leaksIn(res.text);
         if (keys.length > 0) failures.push(`${role} ${route.key}: kalitlar ${keys.join(', ')}`);
