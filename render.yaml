@@ -1,0 +1,73 @@
+# Divine.uz — Render Blueprint (bepul tarif): docs/RUNBOOK-RENDER.md.
+# Baza — Neon, Redis — Upstash. Secretlar faylda YO'Q: `sync: false` qiymatlar Render panelida kiritiladi.
+services:
+  - type: web
+    name: divine-uz-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    buildCommand: scripts/render/build-api.sh
+    startCommand: cd backend && node dist/main.js
+    # healthCheckPath ataylab yo'q: /api/v1/health har so'rovda Neon va Upstash'ga boradi (bepul limitlar).
+    envVars:
+      - key: NODE_VERSION
+        value: '24'
+      - key: NODE_ENV
+        value: production
+      - key: API_PORT
+        value: '10000'
+      - key: TRUST_PROXY
+        value: '1'
+      - key: CORS_ORIGINS
+        value: https://divine-uz-web.onrender.com
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: PASSWORD_PEPPER
+        sync: false
+
+  - type: web
+    name: divine-uz-web
+    runtime: static
+    branch: main
+    buildCommand: scripts/render/build-web.sh
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: NODE_VERSION
+        value: '24'
+      - key: VITE_API_MODE
+        value: http
+      - key: VITE_API_BASE_URL
+        value: /api/v1
+    # Refresh cookie SameSite=Strict: brauzer API'ni sayt bilan bitta origin deb ko'rishi shart.
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://divine-uz-api.onrender.com/api/*
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    # docker/nginx/security-headers.conf bilan bir xil.
+    headers:
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(self), microphone=(), geolocation=(), payment=()
+      - path: /*
+        name: Cross-Origin-Opener-Policy
+        value: same-origin
