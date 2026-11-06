@@ -182,8 +182,11 @@ describe('panel: saytlar va to‘lovlar', () => {
   });
 
   it('egasi nomini o‘zgartirsa saytga boradi; holat muddatdan hisoblanadi', async () => {
-    const site = (await panel('post', '/sites').send(newSite({ paidUntil: TOMORROW })).expect(201))
-      .body;
+    const site = (
+      await panel('post', '/sites')
+        .send(newSite({ paidUntil: TOMORROW }))
+        .expect(201)
+    ).body;
     expect(site.status).toBe('EXPIRING');
     const updated = await panel('patch', `/sites/${site.id}`)
       .send({ ownerName: 'Vali Aliyev', paidUntil: YESTERDAY })
