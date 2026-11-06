@@ -1,3 +1,4 @@
+import { LicenseModule } from '../license/license.module.js';
 import {
   type MiddlewareConsumer,
   Module,
@@ -27,7 +28,7 @@ import { UnknownLoginLockout } from './unknown-login-lockout.js';
  * `AccessTokenMiddleware` guard'lardan oldin token imzosini tekshiradi (rate limit user bo'yicha bo'lsin).
  */
 @Module({
-  imports: [DiscoveryModule],
+  imports: [DiscoveryModule, LicenseModule],
   controllers: [AuthController],
   providers: [
     AuthService,

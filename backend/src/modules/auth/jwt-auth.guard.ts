@@ -5,17 +5,20 @@ import { PUBLIC_KEY } from '../../common/auth/auth.decorators.js';
 import type { AuthRequest } from '../../common/auth/request-types.js';
 import { AppError } from '../../common/errors/app-error.js';
 import { Clock } from '../../common/time/clock.js';
+import { LicenseService } from '../license/license.service.js';
 import { AuthRepository } from './auth.repository.js';
 
 /** Rol permissionlari keshi (RBAC §4.1): seed bilan o'zgaradi, shuning uchun qisqa TTL. */
 const PERMISSION_CACHE_TTL_MS = 60_000;
+const READ_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 /**
  * Global guard (deny by default, SECURITY §1, RBAC §4.1). `@Public()` bo'lmagan har bir endpoint:
  * 1) imzosi tekshirilgan access token (`AccessTokenMiddleware`) — yo'q/yaroqsiz → `401 UNAUTHENTICATED`;
  * 2) user DB'dan PK bo'yicha: yo'q → 401; `status != ACTIVE` → `401 ACCOUNT_BLOCKED` (bloklash darhol);
  * 3) `iat >= password_changed_at` (soniya aniqligida) — parol tiklangandan oldingi token → `401 SESSION_EXPIRED`;
- * 4) `req.accessContext` = { userId, role, permissions, warehouseIds }.
+ * 4) to'lov muddati o'tgan bo'lsa → `403 LICENSE_EXPIRED`; ko'rish tokeni yozolmaydi → `403 READ_ONLY_SESSION`;
+ * 5) `req.accessContext` = { userId, role, permissions, warehouseIds }.
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -28,6 +31,7 @@ export class JwtAuthGuard implements CanActivate {
     private readonly reflector: Reflector,
     private readonly repository: AuthRepository,
     private readonly clock: Clock,
+    private readonly license: LicenseService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -46,6 +50,11 @@ export class JwtAuthGuard implements CanActivate {
     if (user.status !== 'ACTIVE') throw new AppError(ErrorCode.ACCOUNT_BLOCKED);
     if (claims.iat < Math.floor(user.passwordChangedAt.getTime() / 1000)) {
       throw new AppError(ErrorCode.SESSION_EXPIRED);
+    }
+    if (claims.view) {
+      if (!READ_METHODS.has(req.method)) throw new AppError(ErrorCode.READ_ONLY_SESSION);
+    } else {
+      await this.license.assertActive();
     }
 
     req.accessContext = {

@@ -16,6 +16,8 @@ const STATUS: Readonly<Record<ErrorCode, number>> = {
   [ErrorCode.ACCOUNT_BLOCKED]: 401,
 
   [ErrorCode.FORBIDDEN]: 403,
+  [ErrorCode.LICENSE_EXPIRED]: 403,
+  [ErrorCode.READ_ONLY_SESSION]: 403,
   [ErrorCode.WAREHOUSE_ACCESS_DENIED]: 403,
   [ErrorCode.CANNOT_MODIFY_SELF]: 403,
   [ErrorCode.LAST_ACTIVE_ADMIN]: 409,

@@ -9,6 +9,11 @@ export const JWT_ISSUER = 'divine.uz';
 export const JWT_AUDIENCE = 'divine.uz/api';
 const ALGORITHM = 'HS256';
 const CLOCK_TOLERANCE_SECONDS = 30;
+/** Superadmin ko'rish rejimi shuncha davom etadi. */
+const VIEW_TTL_SECONDS = 30 * 60;
+/** Superadmin paneli sessiyasi. */
+export const CONTROL_TTL_SECONDS = 12 * 3600;
+const CONTROL_AUDIENCE = 'divine.uz/control';
 
 /** Imzosi va muddati tekshirilgan access token ma'lumoti (SECURITY §2). */
 export interface AccessClaims {
@@ -16,6 +21,8 @@ export interface AccessClaims {
   role: RoleCode;
   /** Berilgan vaqt, soniya. */
   iat: number;
+  /** Superadmin ko'rish rejimi: faqat o'qish. */
+  view?: boolean;
 }
 
 /**
@@ -48,6 +55,51 @@ export class TokenService {
       .sign(this.key);
   }
 
+  /** Ko'rish tokeni: oddiy access token, lekin `view` belgisi bilan (JwtAuthGuard yozishni rad etadi). */
+  async signViewToken(
+    subject: { userId: string; role: RoleCode },
+    now: Date,
+  ): Promise<{ token: string; expiresAt: string }> {
+    const iat = Math.floor(now.getTime() / 1000);
+    const exp = iat + VIEW_TTL_SECONDS;
+    const token = await new SignJWT({ role: subject.role, view: true })
+      .setProtectedHeader({ alg: ALGORITHM, typ: 'JWT' })
+      .setSubject(subject.userId)
+      .setIssuer(JWT_ISSUER)
+      .setAudience(JWT_AUDIENCE)
+      .setIssuedAt(iat)
+      .setExpirationTime(exp)
+      .sign(this.key);
+    return { token, expiresAt: new Date(exp * 1000).toISOString() };
+  }
+
+  async signControlToken(adminId: string, now: Date): Promise<string> {
+    const iat = Math.floor(now.getTime() / 1000);
+    return new SignJWT({})
+      .setProtectedHeader({ alg: ALGORITHM, typ: 'JWT' })
+      .setSubject(adminId)
+      .setIssuer(JWT_ISSUER)
+      .setAudience(CONTROL_AUDIENCE)
+      .setIssuedAt(iat)
+      .setExpirationTime(iat + CONTROL_TTL_SECONDS)
+      .sign(this.key);
+  }
+
+  async verifyControlToken(token: string, now: Date): Promise<string | null> {
+    try {
+      const { payload } = await jwtVerify(token, this.key, {
+        algorithms: [ALGORITHM],
+        issuer: JWT_ISSUER,
+        audience: CONTROL_AUDIENCE,
+        currentDate: now,
+        requiredClaims: ['sub', 'exp'],
+      });
+      return payload.sub ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   /** Yaroqsiz (imzo, algoritm, iss/aud, muddat, format) bo'lsa — `null`. */
   async verifyAccessToken(token: string, now: Date): Promise<AccessClaims | null> {
     try {
@@ -61,7 +113,12 @@ export class TokenService {
       });
       const role = payload.role;
       if (typeof payload.sub !== 'string' || !ROLE_CODES.includes(role as RoleCode)) return null;
-      return { sub: payload.sub, role: role as RoleCode, iat: payload.iat! };
+      return {
+        sub: payload.sub,
+        role: role as RoleCode,
+        iat: payload.iat!,
+        ...(payload.view === true ? { view: true } : {}),
+      };
     } catch {
       return null;
     }

@@ -62,6 +62,11 @@ export const envSchema = z
      * Faqat dev'da, HTTPS'siz LAN manzil orqali sinashda `false`. Production'da `false` rad etiladi.
      */
     AUTH_COOKIE_SECURE: booleanString.default(true),
+
+    /** Superadmin paneli API'si (`/control/*`): faqat egasining o'z serverida yoqiladi. */
+    CONTROL_PANEL_ENABLED: booleanString.default(false),
+    /** Panel shu saytni boshqaradigan kalit. Berilmasa — JWT_ACCESS_SECRET'dan hosil qilinadi. */
+    CONTROL_API_TOKEN: secret(32).optional(),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'production') return;

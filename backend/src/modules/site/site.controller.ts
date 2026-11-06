@@ -1,0 +1,86 @@
+import { Controller, Delete, Get, HttpCode, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  Permission,
+  type SiteAccessRequestDto,
+  type SiteLicenseDto,
+  type SiteLicenseInput,
+  siteLicenseSchema,
+  type SiteViewVerifyInput,
+  siteViewVerifySchema,
+} from '@divine/shared';
+import type { AccessContext } from '../../common/auth/access-context.js';
+import {
+  Authenticated,
+  Ctx,
+  Public,
+  RequirePermissions,
+} from '../../common/auth/auth.decorators.js';
+import { ZodBody } from '../../common/validation/zod-validation.pipe.js';
+import { LicenseService } from '../license/license.service.js';
+import { ControlTokenGuard } from './control-token.guard.js';
+import { SiteAccessService } from './site-access.service.js';
+
+/** Sayt foydalanuvchilari uchun: to'lov eslatmasi va superadmin so'rovi bildirishnomasi. */
+@ApiTags('Site')
+@Controller('site')
+export class SiteController {
+  constructor(
+    private readonly license: LicenseService,
+    private readonly access: SiteAccessService,
+  ) {}
+
+  @Get('license')
+  @Authenticated()
+  @ApiOperation({ summary: 'To‘lov muddati (eslatma uchun)' })
+  getLicense(): Promise<SiteLicenseDto | null> {
+    return this.license.current();
+  }
+
+  @Get('access-request')
+  @RequirePermissions(Permission.SETTINGS_MANAGE)
+  @ApiOperation({ summary: 'Superadminning faol ko‘rish so‘rovi' })
+  getAccessRequest(): Promise<SiteAccessRequestDto | null> {
+    return this.access.active();
+  }
+
+  @Delete('access-request/:id')
+  @RequirePermissions(Permission.SETTINGS_MANAGE)
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Ko‘rish so‘rovini rad etish' })
+  deny(@Param('id') id: string, @Ctx() ctx: AccessContext): Promise<void> {
+    return this.access.deny(id, ctx.userId);
+  }
+}
+
+/** Superadmin panelidan: kalit bilan (`x-control-token`), foydalanuvchi sessiyasisiz. */
+@ApiTags('Site control')
+@Public()
+@UseGuards(ControlTokenGuard)
+@Controller('site-control')
+export class SiteControlController {
+  constructor(
+    private readonly license: LicenseService,
+    private readonly access: SiteAccessService,
+  ) {}
+
+  @Put('license')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Egasi nomi va to‘lov muddatini yozish' })
+  setLicense(@ZodBody(siteLicenseSchema) body: SiteLicenseInput) {
+    return this.license.set(body);
+  }
+
+  @Post('access-requests')
+  @ApiOperation({ summary: 'Adminga ko‘rish so‘rovi yuborish' })
+  request() {
+    return this.access.request();
+  }
+
+  @Post('access-requests/:id/verify')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Admin aytgan kodni tekshirish' })
+  verify(@Param('id') id: string, @ZodBody(siteViewVerifySchema) body: SiteViewVerifyInput) {
+    return this.access.verify(id, body.code);
+  }
+}

@@ -18,6 +18,8 @@ import { ProductsModule } from './modules/products/products.module.js';
 import { ReportsModule } from './modules/reports/reports.module.js';
 import { SalesModule } from './modules/sales/sales.module.js';
 import { SettingsModule } from './modules/settings/settings.module.js';
+import { SiteModule } from './modules/site/site.module.js';
+import { ControlModule } from './modules/control/control.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { WarehousesModule } from './modules/warehouses/warehouses.module.js';
 
@@ -47,6 +49,8 @@ import { WarehousesModule } from './modules/warehouses/warehouses.module.js';
     ReportsModule,
     DashboardModule,
     SettingsModule,
+    SiteModule,
+    ControlModule,
     HealthModule,
   ],
 })

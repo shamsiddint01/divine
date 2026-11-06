@@ -10,6 +10,6 @@ import type { AccessContext } from './access-context.js';
  */
 export type AuthRequest = Request & {
   id?: unknown;
-  authToken?: { sub: string; role: RoleCode; iat: number };
+  authToken?: { sub: string; role: RoleCode; iat: number; view?: boolean };
   accessContext?: AccessContext;
 };

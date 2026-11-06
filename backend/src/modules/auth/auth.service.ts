@@ -8,6 +8,7 @@ import {
   type LoginResponse,
 } from '@divine/shared';
 import { AppError } from '../../common/errors/app-error.js';
+import { LicenseService } from '../license/license.service.js';
 import { LoginFingerprint } from '../../common/security/login-fingerprint.js';
 import { Clock } from '../../common/time/clock.js';
 import { InjectConfig } from '../../config/config.module.js';
@@ -59,6 +60,7 @@ export class AuthService {
     private readonly tokens: TokenService,
     private readonly unknownLogins: UnknownLoginLockout,
     private readonly fingerprint: LoginFingerprint,
+    private readonly license: LicenseService,
     private readonly audit: AuditService,
     private readonly transactions: TransactionRunner,
     private readonly clock: Clock,
@@ -183,6 +185,9 @@ export class AuthService {
       throw new AppError(ErrorCode.ACCOUNT_BLOCKED, { status: 403 });
     }
 
+    // To'g'ri parolgacha aytilmaydi: muddat tugaganini faqat shu saytning foydalanuvchisi ko'radi.
+    await this.license.assertActive();
+
     // Pepper rotation: eski versiyadagi hash — tranzaksiyadan oldin (argon2 ~200 ms) hisoblanadi.
     const upgradedHash = this.hasher.needsRehash(candidate.passwordHash)
       ? await this.hasher.hash(input.password)
@@ -237,6 +242,7 @@ export class AuthService {
     if (!refreshToken || !REFRESH_TOKEN_PATTERN.test(refreshToken)) {
       throw new AppError(ErrorCode.SESSION_EXPIRED);
     }
+    await this.license.assertActive();
     const now = this.clock.now();
     const nextToken = generateRefreshToken();
 

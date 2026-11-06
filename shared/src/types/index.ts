@@ -558,3 +558,49 @@ export interface CreditReminderDto {
   dueDate: DateOnlyString;
   amount: MoneyString;
 }
+
+/** `GET /site/license`: eslatma uchun. `null` — sayt cheklanmagan. */
+export interface SiteLicenseDto {
+  ownerName: string;
+  paidUntil: DateOnlyString;
+  /** Bugundan `paidUntil`gacha (0 — bugun oxirgi kun). */
+  daysLeft: number;
+}
+
+/** Superadmin ko'rmoqchi: adminga chiqadigan bildirishnoma. */
+export interface SiteAccessRequestDto {
+  id: string;
+  code: string;
+  expiresAt: string;
+}
+
+export type ControlSiteStatus = 'ACTIVE' | 'EXPIRING' | 'EXPIRED';
+
+export interface ControlPaymentDto {
+  id: string;
+  amount: string;
+  paidAt: DateOnlyString;
+  paidUntil: DateOnlyString;
+  note: string | null;
+}
+
+export interface ControlSiteDto {
+  id: string;
+  name: string;
+  siteUrl: string;
+  apiUrl: string;
+  ownerName: string;
+  ownerPhone: string | null;
+  agreedPrice: string;
+  paidUntil: DateOnlyString;
+  lastPaidAt: DateOnlyString | null;
+  notes: string | null;
+  status: ControlSiteStatus;
+  daysLeft: number;
+  /** Oxirgi o'zgarish saytga yetib bordimi (sayt uxlab yotgan bo'lishi mumkin). */
+  synced: boolean;
+}
+
+export interface ControlSiteDetailDto extends ControlSiteDto {
+  payments: ControlPaymentDto[];
+}
