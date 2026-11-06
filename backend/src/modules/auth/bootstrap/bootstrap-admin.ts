@@ -29,37 +29,40 @@ export async function bootstrapAdmin(
   const password = generatePassword();
   const passwordHash = await hasher.hash(password);
 
-  return prisma.$transaction(async (tx) => {
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${BOOTSTRAP_LOCK_KEY}))`;
+  return prisma.$transaction(
+    async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${BOOTSTRAP_LOCK_KEY}))`;
 
-    const adminRole = await tx.role.findUnique({ where: { code: RoleCode.ADMIN } });
-    if (!adminRole) return { status: 'roles_missing' as const };
+      const adminRole = await tx.role.findUnique({ where: { code: RoleCode.ADMIN } });
+      if (!adminRole) return { status: 'roles_missing' as const };
 
-    if ((await tx.user.count({ where: { roleId: adminRole.id } })) > 0) {
-      return { status: 'admin_exists' as const };
-    }
-    const taken = await tx.$queryRaw<{ id: string }[]>`
+      if ((await tx.user.count({ where: { roleId: adminRole.id } })) > 0) {
+        return { status: 'admin_exists' as const };
+      }
+      const taken = await tx.$queryRaw<{ id: string }[]>`
       SELECT id FROM users WHERE lower(login) = lower(${input.login})`;
-    if (taken.length > 0) return { status: 'login_taken' as const };
+      if (taken.length > 0) return { status: 'login_taken' as const };
 
-    const user = await tx.user.create({
-      data: {
-        login: input.login,
-        passwordHash,
-        fullName: input.fullName?.trim() || null,
-        roleId: adminRole.id,
-      },
-      select: { id: true, login: true },
-    });
-    await tx.auditLog.create({
-      data: {
-        actorId: null,
-        action: AuditAction.USER_CREATED,
-        entityType: AuditEntityType.USER,
-        entityId: user.id,
-        metadata: { login: user.login, role: RoleCode.ADMIN, bootstrap: true },
-      },
-    });
-    return { status: 'created' as const, userId: user.id, login: user.login, password };
-  }, { maxWait: 30_000, timeout: 60_000 });
+      const user = await tx.user.create({
+        data: {
+          login: input.login,
+          passwordHash,
+          fullName: input.fullName?.trim() || null,
+          roleId: adminRole.id,
+        },
+        select: { id: true, login: true },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorId: null,
+          action: AuditAction.USER_CREATED,
+          entityType: AuditEntityType.USER,
+          entityId: user.id,
+          metadata: { login: user.login, role: RoleCode.ADMIN, bootstrap: true },
+        },
+      });
+      return { status: 'created' as const, userId: user.id, login: user.login, password };
+    },
+    { maxWait: 30_000, timeout: 60_000 },
+  );
 }
