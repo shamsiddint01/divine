@@ -574,6 +574,9 @@ export interface SiteAccessRequestDto {
   expiresAt: string;
 }
 
+/** Superadmin so'rovining holati: panel shunga qarab kod so'rashni to'xtatadi. */
+export type SiteViewRequestStatus = 'PENDING' | 'DENIED' | 'USED' | 'EXPIRED';
+
 export type ControlSiteStatus = 'ACTIVE' | 'EXPIRING' | 'EXPIRED';
 
 export interface ControlPaymentDto {

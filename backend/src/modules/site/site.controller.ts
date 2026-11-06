@@ -77,6 +77,12 @@ export class SiteControlController {
     return this.access.request();
   }
 
+  @Get('access-requests/:id')
+  @ApiOperation({ summary: 'So‘rov holati (admin rad etdimi)' })
+  async status(@Param('id') id: string) {
+    return { status: await this.access.status(id) };
+  }
+
   @Post('access-requests/:id/verify')
   @HttpCode(200)
   @ApiOperation({ summary: 'Admin aytgan kodni tekshirish' })

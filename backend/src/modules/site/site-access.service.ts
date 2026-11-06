@@ -6,6 +6,7 @@ import {
   ErrorCode,
   RoleCode,
   type SiteAccessRequestDto,
+  type SiteViewRequestStatus,
 } from '@divine/shared';
 import { AppError } from '../../common/errors/app-error.js';
 import { Clock } from '../../common/time/clock.js';
@@ -15,6 +16,9 @@ import { TokenService } from '../auth/token.service.js';
 
 const CODE_TTL_MS = 10 * 60_000;
 const MAX_ATTEMPTS = 5;
+/** 3 ta so'rovdan keyin 10 daqiqa so'rov yuborib bo'lmaydi (egasining qarori, 2026-11-07). */
+const REQUEST_LIMIT = 3;
+const REQUEST_BLOCK_MS = 10 * 60_000;
 
 const META = { ip: null, userAgent: 'superadmin', requestId: null };
 
@@ -33,6 +37,7 @@ export class SiteAccessService {
 
   async request(): Promise<{ id: string; expiresAt: string }> {
     const now = this.clock.now();
+    await this.assertRequestAllowed(now);
     const expiresAt = new Date(now.getTime() + CODE_TTL_MS);
     const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
     // Yangi so'rov eskisini bekor qiladi: adminda bir vaqtda bitta kod turadi.
@@ -40,7 +45,9 @@ export class SiteAccessService {
       where: { usedAt: null, deniedAt: null, expiresAt: { gt: now } },
       data: { deniedAt: now },
     });
-    const row = await this.prisma.siteAccessRequest.create({ data: { code, expiresAt } });
+    const row = await this.prisma.siteAccessRequest.create({
+      data: { code, expiresAt, createdAt: now },
+    });
     await this.audit.record({
       actorId: null,
       action: AuditAction.SITE_VIEW_REQUESTED,
@@ -49,6 +56,31 @@ export class SiteAccessService {
       meta: META,
     });
     return { id: row.id, expiresAt: expiresAt.toISOString() };
+  }
+
+  private async assertRequestAllowed(now: Date): Promise<void> {
+    const recent = await this.prisma.siteAccessRequest.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: REQUEST_LIMIT,
+      select: { createdAt: true },
+    });
+    if (recent.length < REQUEST_LIMIT) return;
+    const latest = recent[0]!.createdAt.getTime();
+    const oldest = recent[REQUEST_LIMIT - 1]!.createdAt.getTime();
+    const blockedMs = latest + REQUEST_BLOCK_MS - now.getTime();
+    if (latest - oldest <= REQUEST_BLOCK_MS && blockedMs > 0) {
+      throw new AppError(ErrorCode.RATE_LIMITED, {
+        message: `Ko‘p so‘rov tufayli 10 daqiqaga cheklandi. Yana ${Math.ceil(blockedMs / 60_000)} daqiqadan keyin urinib ko‘ring`,
+      });
+    }
+  }
+
+  async status(id: string): Promise<SiteViewRequestStatus> {
+    const row = await this.prisma.siteAccessRequest.findUnique({ where: { id } });
+    if (!row) throw new AppError(ErrorCode.NOT_FOUND);
+    if (row.usedAt) return 'USED';
+    if (row.deniedAt) return 'DENIED';
+    return row.expiresAt > this.clock.now() ? 'PENDING' : 'EXPIRED';
   }
 
   async active(): Promise<SiteAccessRequestDto | null> {
