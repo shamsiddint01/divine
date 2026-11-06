@@ -18,6 +18,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table';
 import { Textarea } from '@/shared/ui/textarea';
 import { PanelError, panelApi } from './api';
+import { maskDate, parseDayMonthYear, toDayMonthYear } from './date-text';
 
 const SITES_KEY = ['sites'] as const;
 const siteKey = (id: string) => ['site', id] as const;
@@ -122,13 +123,16 @@ function SiteForm({
   pending: boolean;
   error: unknown;
 }) {
-  const [paidUntil, setPaidUntil] = useState(site?.paidUntil ?? todayInTashkent());
+  const [paidUntil, setPaidUntil] = useState(site ? toDayMonthYear(site.paidUntil) : '');
+  const [dateError, setDateError] = useState(false);
   return (
     <form
       className="grid gap-3"
       onSubmit={(event) => {
         event.preventDefault();
-        onSubmit(values(event));
+        const date = parseDayMonthYear(paidUntil);
+        setDateError(!date);
+        if (date) onSubmit({ ...values(event), paidUntil: date });
       }}
     >
       <Field label="Sayt nomi">
@@ -143,8 +147,23 @@ function SiteForm({
       <Field label="Kelishilgan summa (oyiga, so‘m)">
         <Input name="agreedPrice" defaultValue={site?.agreedPrice} inputMode="decimal" required />
       </Field>
-      <Field label="To‘lov muddati (shu kungacha ishlaydi)">
-        <DateField name="paidUntil" value={paidUntil} onChange={setPaidUntil} />
+      <Field label="To‘lov muddati: kun/oy/yil (shu kungacha ishlaydi)">
+        <Input
+          value={paidUntil}
+          onChange={(event) => {
+            setPaidUntil(maskDate(event.target.value));
+            setDateError(false);
+          }}
+          inputMode="numeric"
+          placeholder="06/12/2026"
+          aria-invalid={dateError}
+          required
+        />
+        {dateError ? (
+          <p role="alert" className="text-sm text-destructive">
+            Sanani kun/oy/yil ko‘rinishida to‘g‘ri yozing
+          </p>
+        ) : null}
       </Field>
       <Field label="Sayt manzili">
         <Input name="siteUrl" type="url" defaultValue={site?.siteUrl} required />
