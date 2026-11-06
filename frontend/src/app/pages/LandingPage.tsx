@@ -196,7 +196,8 @@ export function LandingPage() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  if (status === 'authenticated') return <Navigate to={safeRedirect(params.get('redirect'))} replace />;
+  if (status === 'authenticated')
+    return <Navigate to={safeRedirect(params.get('redirect'))} replace />;
 
   return (
     <div className="ld" ref={root}>
