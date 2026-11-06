@@ -1,9 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { ErrorCode, type SiteLicenseDto, type SiteLicenseInput } from '@divine/shared';
+import {
+  AuditAction,
+  AuditEntityType,
+  ErrorCode,
+  type SiteLicenseDto,
+  type SiteLicenseInput,
+} from '@divine/shared';
 import { AppError } from '../../common/errors/app-error.js';
 import { Clock } from '../../common/time/clock.js';
 import { tashkentToday } from '../../common/time/tashkent-time.js';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
+import { AuditService } from '../audit/audit.service.js';
 
 /** Har so'rovda DB'ga bormaslik uchun: blok ko'pi bilan shuncha kechikadi. */
 const CACHE_TTL_MS = 30_000;
@@ -24,6 +31,7 @@ export class LicenseService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly clock: Clock,
+    private readonly audit: AuditService,
   ) {}
 
   private async read(): Promise<License> {
@@ -58,5 +66,12 @@ export class LicenseService {
       update: data,
     });
     this.cache = null;
+    await this.audit.record({
+      actorId: null,
+      action: AuditAction.SITE_LICENSE_UPDATED,
+      entityType: AuditEntityType.SITE,
+      metadata: { ...input },
+      meta: { ip: null, userAgent: 'superadmin', requestId: null },
+    });
   }
 }

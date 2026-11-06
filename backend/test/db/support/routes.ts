@@ -22,6 +22,8 @@ import {
  */
 /** Test yordamchi modullari (`__rbac`, `__probe`) matritsaga kirmaydi. */
 const TEST_ONLY = /^\/__/;
+/** Superadmin endpointlari foydalanuvchi rollari bilan ishlamaydi: o'z guard'lari, superadmin.db-spec. */
+const SUPERADMIN = /^\/(control|site-control|site)(\/|$)/;
 
 export type Security =
   | { kind: 'public' }
@@ -52,7 +54,7 @@ export function discoverRoutes(app: INestApplication): RouteInfo[] {
       const method = Reflect.getMetadata(METHOD_METADATA, handler) as RequestMethod | undefined;
       if (path === undefined || method === undefined) continue;
       const full = `/${[base, path].filter((p) => p && p !== '/').join('/')}`.replace(/\/+/g, '/');
-      if (TEST_ONLY.test(full)) continue;
+      if (TEST_ONLY.test(full) || SUPERADMIN.test(full)) continue;
       const meta = <T>(key: string) => reflector.getAllAndOverride<T>(key, [handler, controller]);
       const all = meta<Permission[]>(PERMISSIONS_ALL_KEY);
       const any = meta<Permission[]>(PERMISSIONS_ANY_KEY);
