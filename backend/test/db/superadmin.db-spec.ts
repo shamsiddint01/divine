@@ -183,15 +183,21 @@ describe('panel: saytlar va to‘lovlar', () => {
   });
 
   it('to‘lov har doim 1 oy: vaqtida — to‘lov kuni saqlanadi, kechiksa — to‘langan kundan', async () => {
-    const site = (await panel('post', '/sites').send(newSite({ paidUntil: TOMORROW })).expect(201))
-      .body;
+    const site = (
+      await panel('post', '/sites')
+        .send(newSite({ paidUntil: TOMORROW }))
+        .expect(201)
+    ).body;
     const onTime = await panel('post', `/sites/${site.id}/payments`)
       .send({ amount: '500000', paidAt: TODAY })
       .expect(201);
     expect(onTime.body.paidUntil).toBe('2026-11-10');
 
-    const late = (await panel('post', '/sites').send(newSite({ paidUntil: YESTERDAY })).expect(201))
-      .body;
+    const late = (
+      await panel('post', '/sites')
+        .send(newSite({ paidUntil: YESTERDAY }))
+        .expect(201)
+    ).body;
     await login(t, { login: admin.login, password: PASSWORD }).expect(403);
     const paid = await panel('post', `/sites/${late.id}/payments`)
       .send({ amount: '500000', paidAt: TODAY })
@@ -205,8 +211,10 @@ describe('panel: saytlar va to‘lovlar', () => {
     const paid = await panel('post', `/sites/${site.id}/payments`)
       .send({ amount: '500000', paidAt: TODAY })
       .expect(201);
-    const res = await panel('delete', `/sites/${site.id}/payments/${paid.body.payments[0].id}`)
-      .expect(200);
+    const res = await panel(
+      'delete',
+      `/sites/${site.id}/payments/${paid.body.payments[0].id}`,
+    ).expect(200);
     expect(res.body).toMatchObject({ payments: [], paidUntil: '2026-12-09' });
   });
 
