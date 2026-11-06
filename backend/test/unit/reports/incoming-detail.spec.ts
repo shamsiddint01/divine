@@ -36,7 +36,8 @@ function service() {
     reports: new ReportsService({ incomingDetail } as unknown as ReportsRepository),
   };
 }
-const ctx = (permissions: string[]) => ({ permissions }) as unknown as AccessContext;
+const ctx = (permissions: string[]) =>
+  ({ permissions: new Set(permissions) }) as unknown as AccessContext;
 
 describe('kirim hisoboti tafsiloti (OWN-06)', () => {
   it('`products.read_cost` bor — narx va summa javobda', async () => {
