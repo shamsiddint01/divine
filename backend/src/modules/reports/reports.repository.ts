@@ -1,5 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import type { ReportColumn, ReportGroupItem, ReportSummaryDef, ReportType } from '@divine/shared';
+import type {
+  IncomingReportDetailDto,
+  IncomingReportItemDto,
+  ReportColumn,
+  ReportGroupItem,
+  ReportSummaryDef,
+  ReportType,
+} from '@divine/shared';
 import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import type { Tx } from '../../infrastructure/prisma/transaction-runner.js';

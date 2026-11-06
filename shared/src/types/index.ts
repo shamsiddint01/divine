@@ -6,6 +6,7 @@ import type {
   SalePriceType,
   AuditAction,
   AuditEntityType,
+  IncomingStatus,
   ProductStatus,
   ProductUnit,
   RoleCode,
@@ -400,6 +401,33 @@ export interface TopProductDto {
 }
 
 /** `GET /reports/<path>` — yagona shakl (API §13, §18). */
+/** `GET /reports/incoming/:number`: kirim hujjatidagi mahsulot (nom va shtrix-kod — snapshot, D-08). */
+export interface IncomingReportItemDto {
+  productId: string;
+  productName: string;
+  barcode: string | null;
+  unit: ProductUnit;
+  quantity: QuantityString;
+  /** Faqat `products.read_cost` (OWN-06). */
+  costPrice?: MoneyString;
+  lineTotal?: MoneyString;
+}
+
+/** Kirim hisoboti qatorining tafsiloti: qaysi mahsulotlar qo'shilgan. */
+export interface IncomingReportDetailDto {
+  /** `K-000123`. */
+  number: string;
+  date: string;
+  warehouse: string;
+  status: IncomingStatus;
+  notes: string | null;
+  createdBy: UserRefDto;
+  totalQuantity: QuantityString;
+  /** Faqat `products.read_cost` (OWN-06). */
+  totalAmount?: MoneyString;
+  items: IncomingReportItemDto[];
+}
+
 export interface ReportResponse {
   columns: ReportColumn[];
   data: Record<string, string | number | null>[];
