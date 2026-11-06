@@ -1,7 +1,13 @@
-import type { ControlSiteDetailDto, ControlSiteDto, ControlSiteStatus } from '@divine/shared';
+import {
+  type ControlSiteDetailDto,
+  type ControlSiteDto,
+  type ControlSiteStatus,
+  nextPaidUntil,
+} from '@divine/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Eye, LogOut, Plus, RefreshCw } from 'lucide-react';
+import { Eye, LogOut, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { type FormEvent, type ReactNode, useState } from 'react';
+import { DatePicker } from '@/shared/components/DatePicker';
 import { formatDate, formatMoney, formatPhone, todayInTashkent } from '@/shared/lib/format';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
@@ -37,6 +43,24 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       <Label>{label}</Label>
       {children}
     </div>
+  );
+}
+
+/** Sana `kun.oy.yil`da ko'rinadi (brauzerning `oy/kun/yil` maydoni adashtirgan edi); formaga yashirin qiymat. */
+function DateField({
+  name,
+  value,
+  onChange,
+}: {
+  name: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <>
+      <input type="hidden" name={name} value={value} />
+      <DatePicker value={value} onChange={onChange} disableFuture={false} />
+    </>
   );
 }
 
@@ -98,6 +122,7 @@ function SiteForm({
   pending: boolean;
   error: unknown;
 }) {
+  const [paidUntil, setPaidUntil] = useState(site?.paidUntil ?? todayInTashkent());
   return (
     <form
       className="grid gap-3"
@@ -119,7 +144,7 @@ function SiteForm({
         <Input name="agreedPrice" defaultValue={site?.agreedPrice} inputMode="decimal" required />
       </Field>
       <Field label="To‘lov muddati (shu kungacha ishlaydi)">
-        <Input name="paidUntil" type="date" defaultValue={site?.paidUntil} required />
+        <DateField name="paidUntil" value={paidUntil} onChange={setPaidUntil} />
       </Field>
       <Field label="Sayt manzili">
         <Input name="siteUrl" type="url" defaultValue={site?.siteUrl} required />
@@ -145,12 +170,12 @@ function SiteForm({
 
 function PaymentForm({ site }: { site: ControlSiteDetailDto }) {
   const queryClient = useQueryClient();
+  const [paidAt, setPaidAt] = useState(todayInTashkent());
   const pay = useMutation({
     mutationFn: (input: Record<string, string>) =>
       panelApi.addPayment(site.id, {
         amount: input.amount ?? '',
         paidAt: input.paidAt ?? '',
-        paidUntil: input.paidUntil ?? '',
         note: input.note ?? null,
       }),
     onSuccess: async () => {
@@ -171,14 +196,19 @@ function PaymentForm({ site }: { site: ControlSiteDetailDto }) {
         <Input name="amount" defaultValue={site.agreedPrice} inputMode="decimal" required />
       </Field>
       <Field label="To‘langan sana">
-        <Input name="paidAt" type="date" defaultValue={todayInTashkent()} required />
+        <DateField name="paidAt" value={paidAt} onChange={setPaidAt} />
       </Field>
-      <Field label="Keyingi to‘lov sanasigacha">
-        <Input name="paidUntil" type="date" required />
-      </Field>
-      <Field label="Izoh">
-        <Input name="note" />
-      </Field>
+      <div className="sm:col-span-2">
+        <Field label="Izoh">
+          <Input name="note" />
+        </Field>
+      </div>
+      <p className="text-sm text-muted-foreground sm:col-span-2">
+        Bir oyga uzayadi. Keyingi to‘lov:{' '}
+        <span className="font-medium text-foreground">
+          {formatDate(nextPaidUntil(site.paidUntil, paidAt))}
+        </span>
+      </p>
       <div className="sm:col-span-2">
         <ErrorText error={pay.error} />
         <Button type="submit" disabled={pay.isPending} className="mt-2 w-full">
@@ -262,6 +292,10 @@ function SiteSheet({ id, onClose }: { id: string; onClose: () => void }) {
     },
   });
   const sync = useMutation({ mutationFn: () => panelApi.sync(id), onSuccess: refresh });
+  const removePayment = useMutation({
+    mutationFn: (paymentId: string) => panelApi.deletePayment(id, paymentId),
+    onSuccess: refresh,
+  });
 
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
@@ -342,7 +376,7 @@ function SiteSheet({ id, onClose }: { id: string; onClose: () => void }) {
                 ) : (
                   <ul className="divide-y rounded-lg border text-sm">
                     {site.payments.map((payment) => (
-                      <li key={payment.id} className="flex justify-between gap-3 p-3">
+                      <li key={payment.id} className="flex items-center gap-3 p-3">
                         <span>
                           {formatDate(payment.paidAt)}
                           <span className="block text-xs text-muted-foreground">
@@ -350,9 +384,18 @@ function SiteSheet({ id, onClose }: { id: string; onClose: () => void }) {
                             {payment.note ? ` · ${payment.note}` : ''}
                           </span>
                         </span>
-                        <span className="font-medium">
+                        <span className="ml-auto font-medium">
                           {formatMoney(payment.amount, { withCurrency: true })}
                         </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="To‘lovni o‘chirish"
+                          disabled={removePayment.isPending}
+                          onClick={() => removePayment.mutate(payment.id)}
+                        >
+                          <Trash2 />
+                        </Button>
                       </li>
                     ))}
                   </ul>
