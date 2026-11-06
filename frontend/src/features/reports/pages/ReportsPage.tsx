@@ -52,6 +52,7 @@ import type {
   ReportType,
 } from '@/shared/types/api';
 import { useFinanceSummary, useReport } from '../api/reports';
+import { IncomingDetailSheet } from '../components/IncomingDetailSheet';
 
 type Tab = ReportType | 'finance';
 

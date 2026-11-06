@@ -1,6 +1,7 @@
 import {
   type DashboardSummaryDto,
   type FinanceSummaryDto,
+  type IncomingReportDetailDto,
   type MyDashboardSummaryDto,
   ProductUnit,
   REPORT_DEFINITIONS,
