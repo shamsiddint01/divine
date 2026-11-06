@@ -154,6 +154,8 @@ function SiteForm({
             setPaidUntil(maskDate(event.target.value));
             setDateError(false);
           }}
+          // To'liq sana ustiga yozib bo'lmaydi (8 raqamdan ortig'i tashlanadi): bosganda belgilanadi.
+          onFocus={(event) => event.currentTarget.select()}
           inputMode="numeric"
           placeholder="06/12/2026"
           aria-invalid={dateError}
@@ -174,6 +176,9 @@ function SiteForm({
       {site ? null : (
         <Field label="Sayt kaliti">
           <Input name="apiToken" type="password" autoComplete="off" required />
+          <p className="text-xs text-muted-foreground">
+            Superadmin paroli emas: yangi mijoz sayti o‘rnatilganda beriladigan texnik kalit.
+          </p>
         </Field>
       )}
       <Field label="Izoh">
