@@ -47,3 +47,11 @@ Admin paroli terminalda bir marta chiqadi. Render qiymatlari `.env.render.secret
 ## Bekap
 
 Neon'dan to'liq nusxa trafik sarflaydi (oyiga 5 GB). Katta bazada haftalik oling.
+
+## Superadmin paneli
+
+- Manzil: `https://divine-uz-superadmin.onrender.com`. Hisob saytning `users`idan alohida (`control_admins`).
+- Birinchi sozlash: `scripts/render/setup-superadmin.sh <login>` (migratsiya, hisob, birinchi sayt).
+- Sayt muddatni o'zida saqlaydi (`site_license`) va o'zi bloklaydi: panel uxlasa ham blok ishlaydi.
+- **Migratsiya koddan oldin:** auto-sync har o'zgarishni `main`ga chiqaradi va Render darhol ishga tushiradi.
+  Yangi jadvalga bog'liq kod bo'lsa, avval Neon'ga migratsiya qiling.

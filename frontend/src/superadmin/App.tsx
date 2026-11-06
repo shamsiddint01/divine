@@ -2,7 +2,7 @@ import type { ControlSiteDetailDto, ControlSiteDto, ControlSiteStatus } from '@d
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Eye, LogOut, Plus, RefreshCw } from 'lucide-react';
 import { type FormEvent, type ReactNode, useState } from 'react';
-import { formatDate, formatMoney, formatPhone } from '@/shared/lib/format';
+import { formatDate, formatMoney, formatPhone, todayInTashkent } from '@/shared/lib/format';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
@@ -174,7 +174,7 @@ function PaymentForm({ site }: { site: ControlSiteDetailDto }) {
         <Input
           name="paidAt"
           type="date"
-          defaultValue={new Date().toISOString().slice(0, 10)}
+          defaultValue={todayInTashkent()}
           required
         />
       </Field>

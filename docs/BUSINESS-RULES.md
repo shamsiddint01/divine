@@ -240,3 +240,10 @@ TZ'dagi noaniqlik va ziddiyatlar bo‘yicha. Foydalanuvchiga taklif qilingan sta
 | A-27 | ~~Xarajat holati: `PAID` (standart) yoki `PENDING`; xarajatlar jamiga ikkalasi kiradi, alohida ham ko‘rsatiladi~~ | TZ §11 holat bermaydi; frontend "Chiqim" sahifasida "To‘langan / Kutilmoqda" ustuni bor (API §18). Phase 2'da DB'ga kiritildi; Phase 11'da biznes egasi bilan tasdiqlanadi — **BEKOR (D-11, 2026-10-22)** |
 | A-L06 | "Ombordagi jami miqdor" bitta raqam sifatida va birlik bo‘yicha bo‘linma bilan ko‘rsatiladi | Turli birliklarni (dona + kg) qo‘shish ma’nosiz bo‘lishi mumkin |
 | A-L11 | Performance maqsadi: oddiy API p95 < 300 ms; hisobotlar 1 mln sotuvda < 2 s | TZ'da raqam yo‘q (REQ-167) |
+
+### D-27. Superadmin va to'lov bloki (egasining qarori, 2026-11-07)
+
+Loyiha egasi — alohida hisob va alohida manzil, saytdagi bo'lim emas. Har mijoz keyinchalik alohida sayt bo'ladi.
+Sayt to'lov muddatini o'zida saqlaydi: `paid_until` kuni ishlaydi, ertasi kuni login to'g'ri paroldan keyin to'xtaydi
+va `+998901333831` ko'rsatiladi. Bir kun qolganda egasining nomi bilan eslatma chiqadi. Superadmin saytni faqat admin
+aytgan bir martalik kod bilan ko'radi (kod 10 daqiqa, ko'rish 30 daqiqa, faqat o'qish).
