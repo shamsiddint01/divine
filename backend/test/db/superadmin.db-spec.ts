@@ -42,7 +42,7 @@ async function signIn() {
     .accessToken as string;
 }
 
-const panel = (method: 'get' | 'post' | 'patch', path: string) =>
+const panel = (method: 'get' | 'post' | 'patch' | 'delete', path: string) =>
   server()
     [method](`/api/v1/control${path}`)
     .set({ Cookie: panelCookie, Origin: ORIGIN, 'X-Requested-With': 'XMLHttpRequest' })
@@ -170,7 +170,7 @@ describe('panel: saytlar va to‘lovlar', () => {
       ownerName: 'Ali Valiyev',
     });
     const paid = await panel('post', `/sites/${site.id}/payments`)
-      .send({ amount: '500000', paidAt: TODAY, paidUntil: '2026-12-09' })
+      .send({ amount: '500000', paidAt: TODAY })
       .expect(201);
     expect(paid.body).toMatchObject({
       paidUntil: '2026-12-09',
@@ -180,6 +180,34 @@ describe('panel: saytlar va to‘lovlar', () => {
     });
     const license = await t.prisma.siteLicense.findUnique({ where: { id: 1 } });
     expect(license?.paidUntil.toISOString().slice(0, 10)).toBe('2026-12-09');
+  });
+
+  it('to‘lov har doim 1 oy: vaqtida — to‘lov kuni saqlanadi, kechiksa — to‘langan kundan', async () => {
+    const site = (await panel('post', '/sites').send(newSite({ paidUntil: TOMORROW })).expect(201))
+      .body;
+    const onTime = await panel('post', `/sites/${site.id}/payments`)
+      .send({ amount: '500000', paidAt: TODAY })
+      .expect(201);
+    expect(onTime.body.paidUntil).toBe('2026-11-10');
+
+    const late = (await panel('post', '/sites').send(newSite({ paidUntil: YESTERDAY })).expect(201))
+      .body;
+    await login(t, { login: admin.login, password: PASSWORD }).expect(403);
+    const paid = await panel('post', `/sites/${late.id}/payments`)
+      .send({ amount: '500000', paidAt: TODAY })
+      .expect(201);
+    expect(paid.body).toMatchObject({ paidUntil: '2026-11-09', status: 'ACTIVE', synced: true });
+    await login(t, { login: admin.login, password: PASSWORD }).expect(200);
+  });
+
+  it('adashib yozilgan to‘lov o‘chiriladi, muddat o‘zgarmaydi', async () => {
+    const site = (await panel('post', '/sites').send(newSite()).expect(201)).body;
+    const paid = await panel('post', `/sites/${site.id}/payments`)
+      .send({ amount: '500000', paidAt: TODAY })
+      .expect(201);
+    const res = await panel('delete', `/sites/${site.id}/payments/${paid.body.payments[0].id}`)
+      .expect(200);
+    expect(res.body).toMatchObject({ payments: [], paidUntil: '2026-12-09' });
   });
 
   it('egasi nomini o‘zgartirsa saytga boradi; holat muddatdan hisoblanadi', async () => {

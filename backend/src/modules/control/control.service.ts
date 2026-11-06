@@ -9,6 +9,7 @@ import {
   type ControlSiteUpdateInput,
   ErrorCode,
   LICENSE_WARNING_DAYS,
+  nextPaidUntil,
 } from '@divine/shared';
 import { AppError } from '../../common/errors/app-error.js';
 import { Clock } from '../../common/time/clock.js';
@@ -130,8 +131,8 @@ export class ControlService {
   }
 
   async addPayment(id: string, input: ControlPaymentInput): Promise<ControlSiteDetailDto> {
-    await this.get(id);
-    const paidUntil = new Date(input.paidUntil);
+    const site = await this.get(id);
+    const paidUntil = new Date(nextPaidUntil(site.paidUntil, input.paidAt));
     await this.prisma.$transaction([
       this.prisma.controlPayment.create({
         data: {
@@ -145,6 +146,12 @@ export class ControlService {
       this.prisma.controlSite.update({ where: { id }, data: { paidUntil } }),
     ]);
     return this.sync(id);
+  }
+
+  /** Adashib yozilgan to'lov tarixdan olinadi; muddat alohida "Tahrirlash"da to'g'rilanadi. */
+  async deletePayment(id: string, paymentId: string): Promise<ControlSiteDetailDto> {
+    await this.prisma.controlPayment.deleteMany({ where: { id: paymentId, siteId: id } });
+    return this.get(id);
   }
 
   async requestView(id: string): Promise<{ id: string; expiresAt: string }> {

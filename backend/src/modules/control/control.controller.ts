@@ -1,4 +1,4 @@
-import { Controller, Get, HttpCode, Param, Patch, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   type ControlLoginInput,
@@ -108,6 +108,12 @@ export class ControlSitesController {
   @ApiOperation({ summary: 'To‘lov yozish (muddat uzayadi)' })
   addPayment(@Param('id') id: string, @ZodBody(controlPaymentSchema) body: ControlPaymentInput) {
     return this.control.addPayment(id, body);
+  }
+
+  @Delete(':id/payments/:paymentId')
+  @ApiOperation({ summary: 'Adashib yozilgan to‘lovni o‘chirish' })
+  deletePayment(@Param('id') id: string, @Param('paymentId') paymentId: string) {
+    return this.control.deletePayment(id, paymentId);
   }
 
   @Post(':id/sync')

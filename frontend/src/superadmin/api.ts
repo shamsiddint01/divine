@@ -55,6 +55,8 @@ export const panelApi = {
     request<ControlSiteDetailDto>(`/sites/${id}`, 'PATCH', input),
   addPayment: (id: string, input: ControlPaymentInput) =>
     request<ControlSiteDetailDto>(`/sites/${id}/payments`, 'POST', input),
+  deletePayment: (id: string, paymentId: string) =>
+    request<ControlSiteDetailDto>(`/sites/${id}/payments/${paymentId}`, 'DELETE'),
   sync: (id: string) => request<ControlSiteDetailDto>(`/sites/${id}/sync`, 'POST'),
   requestView: (id: string) =>
     request<{ id: string; expiresAt: string }>(`/sites/${id}/view-requests`, 'POST'),

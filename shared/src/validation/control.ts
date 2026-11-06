@@ -58,12 +58,25 @@ export const controlSiteUpdateSchema = z.strictObject(controlSiteFields).partial
 export const controlPaymentSchema = z.strictObject({
   amount: positiveMoneySchema,
   paidAt: dateOnlySchema,
-  /** Shu to'lov qaysi sanagacha yopadi: blok shu sanadan keyin. */
-  paidUntil: dateOnlySchema,
   note: z
     .preprocess((value) => (value === '' ? null : value), z.string().trim().max(500).nullable())
     .optional(),
 });
+
+/** Oy oxiri saqlanadi: 31-yanvar → 28-fevral. */
+export function addOneMonth(date: string): string {
+  const [year, month, day] = date.split('-').map(Number) as [number, number, number];
+  const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(year, month, Math.min(day, lastDay))).toISOString().slice(0, 10);
+}
+
+/**
+ * To'lov har doim bir oyga (egasining qarori, 2026-11-07). Vaqtida to'lansa to'lov kuni o'zgarmaydi,
+ * muddat o'tib to'lansa bir oy to'lov kunidan hisoblanadi.
+ */
+export function nextPaidUntil(currentPaidUntil: string, paidAt: string): string {
+  return addOneMonth(currentPaidUntil > paidAt ? currentPaidUntil : paidAt);
+}
 
 export type SiteLicenseInput = z.infer<typeof siteLicenseSchema>;
 export type SiteViewVerifyInput = z.infer<typeof siteViewVerifySchema>;
