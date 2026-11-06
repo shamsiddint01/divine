@@ -3,6 +3,7 @@ import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tansta
 import { apiRequest, isServerUnavailable, refreshSession } from '@/shared/lib/api-client';
 import { authMode } from '@/shared/lib/api-mode';
 import { authSession } from '@/shared/lib/auth-session';
+import { readViewToken } from '@/shared/lib/view-session';
 import { playSplash } from '@/shared/lib/splash';
 import type { CurrentUserDto } from '@/shared/types/api';
 import { useAuthStore } from '../auth-store';
@@ -36,6 +37,13 @@ export async function bootstrapSession(queryClient: QueryClient): Promise<void> 
   const { setStatus } = useAuthStore.getState();
   try {
     if (authMode === 'http') {
+      const viewToken = readViewToken();
+      if (viewToken) {
+        authSession.setToken(viewToken);
+        queryClient.setQueryData(SESSION_KEY, await apiRequest<CurrentUserDto>('/auth/me'));
+        setStatus('authenticated');
+        return;
+      }
       const session = await refreshSession();
       if (session) applySession(queryClient, session);
       else setStatus('anonymous');

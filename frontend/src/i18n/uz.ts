@@ -142,6 +142,14 @@ export const uz = {
     noResults: 'Hech narsa topilmadi',
     noResultsHint: 'Qidiruv so‘zini yoki filtrlarni o‘zgartirib ko‘ring.',
   },
+  site: {
+    licenseWarning: (owner: string, daysLeft: number, phone: string) =>
+      `Hurmatli ${owner}, to‘lov muddatingiz ${daysLeft <= 0 ? 'bugun' : 'ertaga'} tugaydi. Bog‘lanish uchun: ${phone}`,
+    accessRequest:
+      'Superadmin saytingizni ko‘rmoqchi. Ruxsat berasizmi? Rozi bo‘lsangiz, unga shu kodni ayting:',
+    accessDeny: 'Rad etish',
+    viewMode: 'Superadmin ko‘rish rejimi: faqat ko‘rish mumkin, o‘zgartirib bo‘lmaydi',
+  },
   topbar: {
     demoBadge: 'Demo rejim',
     demoHint:

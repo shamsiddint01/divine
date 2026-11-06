@@ -5,6 +5,9 @@ import { runPrisma } from './support/global-setup.js';
 
 const TABLES = [
   'audit_logs',
+  'control_admins',
+  'control_payments',
+  'control_sites',
   'credit_installments',
   'credit_payments',
   'credits',
@@ -22,6 +25,8 @@ const TABLES = [
   'sale_items',
   'sales',
   'settings',
+  'site_access_requests',
+  'site_license',
   'user_sessions',
   'user_warehouses',
   'users',

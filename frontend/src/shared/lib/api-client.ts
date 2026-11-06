@@ -159,6 +159,9 @@ async function authorizedRequest<T>(
       authSession.notifyExpired();
     } else if (error.status === 401) {
       authSession.notifyExpired();
+    } else if (error.code === ErrorCode.LICENSE_EXPIRED) {
+      // To'lov muddati ish paytida tugadi: login sahifasi sababini ko'rsatadi.
+      authSession.notifyExpired();
     } else if (error.status === 403 && error.code === ErrorCode.FORBIDDEN) {
       authSession.notifyForbidden();
     }

@@ -1,6 +1,7 @@
 import { Suspense, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { useCurrentUser } from '@/features/session/api/session';
+import { SiteBanners } from '@/features/site/components/SiteBanners';
 import { hasAny, usePermissions } from '@/features/session/hooks/use-permissions';
 import { playSplashOnce } from '@/shared/lib/splash';
 import { Skeleton } from '@/shared/ui/skeleton';
@@ -51,6 +52,7 @@ export function AppLayout() {
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
+        <SiteBanners />
         <main className="flex-1 p-4 pb-[calc(var(--mobile-nav-h)+1rem)] sm:p-6 sm:pb-[calc(var(--mobile-nav-h)+1.5rem)]">
           <div key={pathname} className="page-enter mx-auto w-full max-w-[1440px] space-y-6">
             <Suspense fallback={<PageFallback />}>

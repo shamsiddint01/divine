@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, type RouteObject } from 'react-router';
 import { RequireAuth, SessionLoader } from '@/features/session/components/RequireAuth';
+import { ViewEntry } from '@/features/site/components/ViewEntry';
 import { AppLayout } from './layouts/AppLayout';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { RouteErrorPage } from './pages/RouteErrorPage';
@@ -55,6 +56,7 @@ export const routes: RouteObject[] = [
     ),
     errorElement: <RouteErrorPage />,
   },
+  { path: '/view', element: <ViewEntry /> },
   {
     path: '/welcome',
     element: (
