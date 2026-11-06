@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ErrorCode, ERROR_MESSAGES_UZ, isApiErrorBody, type SiteLicenseInput } from '@divine/shared';
+import {
+  ErrorCode,
+  ERROR_MESSAGES_UZ,
+  isApiErrorBody,
+  type SiteLicenseInput,
+} from '@divine/shared';
 import { AppError } from '../../common/errors/app-error.js';
 import { CONTROL_TOKEN_HEADER } from '../site/control-token.guard.js';
 
@@ -52,7 +57,11 @@ export class SiteClient {
     return this.call(site, 'POST', '/access-requests');
   }
 
-  verifyView(site: Target, id: string, code: string): Promise<{ token: string; expiresAt: string }> {
+  verifyView(
+    site: Target,
+    id: string,
+    code: string,
+  ): Promise<{ token: string; expiresAt: string }> {
     return this.call(site, 'POST', `/access-requests/${id}/verify`, { code });
   }
 }

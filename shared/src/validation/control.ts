@@ -60,10 +60,9 @@ export const controlPaymentSchema = z.strictObject({
   paidAt: dateOnlySchema,
   /** Shu to'lov qaysi sanagacha yopadi: blok shu sanadan keyin. */
   paidUntil: dateOnlySchema,
-  note: z.preprocess(
-    (value) => (value === '' ? null : value),
-    z.string().trim().max(500).nullable(),
-  ).optional(),
+  note: z
+    .preprocess((value) => (value === '' ? null : value), z.string().trim().max(500).nullable())
+    .optional(),
 });
 
 export type SiteLicenseInput = z.infer<typeof siteLicenseSchema>;
