@@ -115,6 +115,7 @@ describe('sayt: to‘lov muddati va avtomatik blok', () => {
 
   it('muddat ish paytida tugasa: API va refresh avtomatik yopiladi', async () => {
     await setLicense(TODAY).expect(204);
+    t.clock.set(new Date('2026-10-09T18:55:00.000Z'));
     const res = await login(t, { login: admin.login, password: PASSWORD }).expect(200);
     const accessToken = res.body.accessToken as string;
     const cookie = refreshCookieOf(res);
