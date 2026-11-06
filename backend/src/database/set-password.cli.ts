@@ -38,7 +38,7 @@ const prisma = new PrismaClient({ adapter: new PrismaPg(pgPoolConfig(config.DATA
 try {
   await prisma.$transaction(
     async (tx) => {
-      const user = await tx.user.findUnique({ where: { login: normalizeLogin(login) } });
+      const user = await tx.user.findFirst({ where: { loginNormalized: normalizeLogin(login) } });
       if (!user) fail('Bunday login topilmadi');
       const now = new Date();
       await tx.user.update({
