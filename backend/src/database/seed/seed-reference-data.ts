@@ -23,6 +23,9 @@ export interface SeedSummary {
  * Birinchi admin bu yerda yaratilmaydi: parol hash'i (argon2id + pepper) Phase 4 auth modulida
  * paydo bo'ladi va admin bootstrap o'sha yerda CLI sifatida qo'shiladi (docs/DATABASE.md §9).
  */
+/** Masofadagi baza (Neon, noutbukdan): ko'p ketma-ket so'rov Prisma'ning standart 5 soniyasiga sig'maydi. */
+const SEED_TRANSACTION_OPTIONS = { maxWait: 30_000, timeout: 180_000 };
+
 export async function seedReferenceData(prisma: PrismaClient): Promise<SeedSummary> {
   return prisma.$transaction(async (tx) => {
     for (const code of ROLE_CODES) {
@@ -82,5 +85,5 @@ export async function seedReferenceData(prisma: PrismaClient): Promise<SeedSumma
       rolePermissions,
       insertedSettings,
     };
-  });
+  }, SEED_TRANSACTION_OPTIONS);
 }
