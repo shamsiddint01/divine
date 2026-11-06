@@ -43,3 +43,8 @@ export const CURRENCY_LABEL = 'so‘m';
 export const CREDIT_MIN_AMOUNT = '1000';
 export const CREDIT_INSTALLMENTS_MAX = 365;
 export const CREDIT_INTERVAL_DAYS_MAX = 365;
+
+/** To'lov muddati tugaganda ko'rsatiladigan aloqa raqami (egasining qarori, 2026-11-07). */
+export const LICENSE_CONTACT_PHONE = '+998901333831';
+/** Muddat tugashiga shuncha kun qolganda eslatma chiqadi. */
+export const LICENSE_WARNING_DAYS = 1;

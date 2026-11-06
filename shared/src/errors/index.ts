@@ -12,6 +12,8 @@ export const ErrorCode = {
   ACCOUNT_BLOCKED: 'ACCOUNT_BLOCKED',
   SESSION_EXPIRED: 'SESSION_EXPIRED',
   FORBIDDEN: 'FORBIDDEN',
+  LICENSE_EXPIRED: 'LICENSE_EXPIRED',
+  READ_ONLY_SESSION: 'READ_ONLY_SESSION',
 
   NOT_FOUND: 'NOT_FOUND',
   CONFLICT: 'CONFLICT',
@@ -56,6 +58,8 @@ export const ERROR_MESSAGES_UZ: Readonly<Record<ErrorCode, string>> = {
   ACCOUNT_LOCKED: 'Juda ko‘p noto‘g‘ri urinish. Hisob vaqtincha bloklandi, keyinroq urinib ko‘ring',
   ACCOUNT_BLOCKED: 'Hisobingiz bloklangan. Administratorga murojaat qiling',
   SESSION_EXPIRED: 'Sessiya muddati tugadi. Qaytadan kiring',
+  LICENSE_EXPIRED: 'Sizning to‘lov muddatingiz tugadi. Bog‘lanish uchun: +998901333831',
+  READ_ONLY_SESSION: 'Bu ko‘rish rejimi: o‘zgartirish mumkin emas',
   FORBIDDEN: 'Bu amalni bajarishga ruxsatingiz yo‘q',
 
   NOT_FOUND: 'Ma’lumot topilmadi',

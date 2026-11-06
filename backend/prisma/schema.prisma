@@ -649,3 +649,72 @@ model Setting {
 
   @@map("settings")
 }
+
+/// Saytning to'lov muddati (superadmin yozadi). Bitta qator; yo'q bo'lsa — sayt cheklanmagan.
+model SiteLicense {
+  id        Int      @id @default(1) @db.SmallInt
+  ownerName String   @map("owner_name") @db.VarChar(200)
+  paidUntil DateTime @map("paid_until") @db.Date
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("site_license")
+}
+
+/// Superadmin saytni ko'rmoqchi: kod adminga bildirishnomada chiqadi va adminning o'zi aytadi.
+model SiteAccessRequest {
+  id        String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  code      String    @db.Char(6)
+  attempts  Int       @default(0) @db.SmallInt
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  deniedAt  DateTime? @map("denied_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("site_access_requests")
+}
+
+/// Loyiha egasi (superadmin). Saytlarning `users` jadvalidan alohida.
+model ControlAdmin {
+  id           String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  login        String   @unique @db.VarChar(32)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("control_admins")
+}
+
+/// Mijoz sayti: kelishuv va to'lov holati. `apiToken` — saytning `/site-control` kaliti.
+model ControlSite {
+  id              String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  name            String    @db.VarChar(200)
+  siteUrl         String    @map("site_url") @db.VarChar(300)
+  apiUrl          String    @map("api_url") @db.VarChar(300)
+  apiToken        String    @map("api_token") @db.VarChar(200)
+  ownerName       String    @map("owner_name") @db.VarChar(200)
+  ownerPhone      String?   @map("owner_phone") @db.VarChar(32)
+  agreedPrice     Decimal   @map("agreed_price") @db.Decimal(18, 2)
+  paidUntil       DateTime  @map("paid_until") @db.Date
+  notes           String?   @db.VarChar(1000)
+  licenseSyncedAt DateTime? @map("license_synced_at") @db.Timestamptz(3)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  payments ControlPayment[]
+
+  @@map("control_sites")
+}
+
+model ControlPayment {
+  id        String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  siteId    String   @map("site_id") @db.Uuid
+  amount    Decimal  @db.Decimal(18, 2)
+  paidAt    DateTime @map("paid_at") @db.Date
+  paidUntil DateTime @map("paid_until") @db.Date
+  note      String?  @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  site ControlSite @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, paidAt])
+  @@map("control_payments")
+}
