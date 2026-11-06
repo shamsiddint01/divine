@@ -131,6 +131,8 @@ function mutatingRoutes(): string[] {
       const verb = RequestMethod[method];
       if (verb === 'GET' || verb === 'HEAD' || verb === 'OPTIONS') continue;
       const full = `/${[base, path].filter((p) => p && p !== '/').join('/')}`.replace(/\/+/g, '/');
+      // Superadmin endpointlari: superadmin.db-spec.
+      if (/^\/(control|site-control|site)(\/|$)/.test(full)) continue;
       routes.push(`${verb} ${full}`);
     }
   }

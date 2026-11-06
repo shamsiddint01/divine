@@ -154,6 +154,21 @@ beforeAll(async () => {
   remember('admin refresh token (rotated)', rotatedCookie.split('=')[1]);
   t.clock.advance(31_000); // grace oralig'idan keyin
   await refresh(t, adminCookie).expect(401);
+  const credit = await http()
+    .post('/api/v1/credits')
+    .set(bearer(adminToken))
+    .set('X-Forwarded-For', uniqueIp())
+    .send({
+      debtorName: 'Maxfiylik testi',
+      debtorPhone: '+998901234567',
+      amount: '50000',
+      takenAt: '2026-10-09T10:00:00+05:00',
+      firstDueDate: '2026-10-10',
+      installments: 1,
+      intervalDays: 1,
+    })
+    .expect(201);
+  ids.credits = credit.body.id as string;
   await http()
     .post('/api/v1/auth/logout')
     .set('X-Forwarded-For', uniqueIp())
