@@ -74,7 +74,7 @@ describe('POST /auth/login', () => {
       'Secure',
       'SameSite=Strict',
       'Path=/api/v1/auth',
-      'Max-Age=604800',
+      'Max-Age=57600',
     ]) {
       expect(cookie).toContain(attribute);
     }
@@ -84,7 +84,7 @@ describe('POST /auth/login', () => {
     const session = await t.prisma.userSession.findFirstOrThrow({ where: { userId: user.id } });
     expect(session.tokenHash).toBe(sha256(token));
     expect(session.tokenHash).not.toContain(token);
-    expect(session.expiresAt.getTime() - BASE_TIME.getTime()).toBe(7 * 86_400_000);
+    expect(session.expiresAt.getTime() - BASE_TIME.getTime()).toBe(16 * 3_600_000);
 
     const [audit] = await auditFor('AUTH_LOGIN_SUCCEEDED');
     expect(audit).toMatchObject({ actorId: user.id, entityType: 'SESSION', entityId: session.id });
@@ -579,6 +579,7 @@ describe('refresh: rotation, reuse detection, CSRF', () => {
     );
     const second = refreshCookieOf(await refresh(t, first).expect(200));
 
+    t.clock.advance(31_000); // grace oralig'idan keyin
     const reused = await refresh(t, first).expect(401);
     expect(reused.body.error.code).toBe('SESSION_EXPIRED');
     // O'g'irlangan bo'lishi mumkin bo'lgan zanjirning yangi tokeni ham endi ishlamaydi.
@@ -590,13 +591,29 @@ describe('refresh: rotation, reuse detection, CSRF', () => {
     expect((await auditFor('AUTH_REFRESH_REUSE_DETECTED'))[0]).toMatchObject({ actorId: user.id });
   });
 
-  it('bir xil token bilan parallel refresh: faqat bittasi o‘tadi (qat’iy reuse detection)', async () => {
+  it('bir xil token bilan parallel refresh (ikki tab): ikkalasi o‘tadi, sessiya yopilmaydi', async () => {
     const user = await createUser(t, { password: PASSWORD });
     const cookie = refreshCookieOf(
       await login(t, { login: user.login, password: PASSWORD }).expect(200),
     );
     const results = await Promise.all([refresh(t, cookie), refresh(t, cookie)]);
-    expect(results.map((r) => r.status).sort()).toEqual([200, 401]);
+    expect(results.map((r) => r.status)).toEqual([200, 200]);
+    expect(await auditFor('AUTH_REFRESH_REUSE_DETECTED')).toHaveLength(0);
+    await refresh(t, refreshCookieOf(results[0]!)).expect(200);
+    await refresh(t, refreshCookieOf(results[1]!)).expect(200);
+  });
+
+  it('refresh muddatni uzaytirmaydi: kirishdan 16 soat o‘tgach sessiya tugaydi', async () => {
+    const user = await createUser(t, { password: PASSWORD });
+    let cookie = refreshCookieOf(
+      await login(t, { login: user.login, password: PASSWORD }).expect(200),
+    );
+    t.clock.advance(15 * 3_600_000);
+    const res = await refresh(t, cookie).expect(200);
+    expect(String(res.headers['set-cookie'])).toContain('Max-Age=3600');
+    cookie = refreshCookieOf(res);
+    t.clock.advance(3_600_000 + 1_000);
+    await refresh(t, cookie).expect(401);
   });
 
   it('muddati o‘tgan refresh → 401 SESSION_EXPIRED va cookie tozalanadi', async () => {
@@ -604,7 +621,7 @@ describe('refresh: rotation, reuse detection, CSRF', () => {
     const cookie = refreshCookieOf(
       await login(t, { login: user.login, password: PASSWORD }).expect(200),
     );
-    t.clock.advance(7 * 86_400_000 + 1_000);
+    t.clock.advance(16 * 3_600_000 + 1_000);
     const res = await refresh(t, cookie).expect(401);
     expect(res.body.error.code).toBe('SESSION_EXPIRED');
     expect(String(res.headers['set-cookie'])).toContain('Max-Age=0');

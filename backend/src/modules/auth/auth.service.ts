@@ -48,6 +48,9 @@ const secondsUntil = (until: Date, now: Date) =>
  * Autentifikatsiya use-case'lari (SECURITY §1–§4, API §3). HTTP'ni bilmaydi: cookie va header'lar
  * controller'da. Vaqt `Clock` orqali (testlarda boshqariladi).
  */
+/** Ikki tab bir vaqtda yoki javob yo'qolib qayta so'ralganda: bu oraliqdagi reuse family'ni yopmaydi. */
+const REFRESH_REUSE_GRACE_MS = 30_000;
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -186,7 +189,7 @@ export class AuthService {
       : null;
     const refreshToken = generateRefreshToken();
     const refreshExpiresAt = new Date(
-      now.getTime() + this.config.REFRESH_TOKEN_TTL_DAYS * 86_400_000,
+      now.getTime() + this.config.REFRESH_TOKEN_TTL_HOURS * 3_600_000,
     );
     const user = await this.transactions.run(async (tx) => {
       // Shartli: parallel xato urinish shu orada lock qilgan bo'lsa — to'g'ri parol ham o'tmaydi.
@@ -226,8 +229,9 @@ export class AuthService {
   }
 
   /**
-   * Refresh (SECURITY §3): rotation + reuse detection. Sessiya qatori `FOR UPDATE` bilan olinadi —
-   * parallel refresh'lardan faqat bittasi rotate qiladi, ikkinchisi qayta ishlatish deb aniqlanadi.
+   * Refresh (SECURITY §3): rotation + reuse detection. Sessiya qatori `FOR UPDATE` bilan olinadi.
+   * Rotatsiyadan keyin REFRESH_REUSE_GRACE_MS ichida kelgan shu token (ikkinchi tab, yo'qolgan javob)
+   * o'g'irlik emas: shu family'da yana bitta sessiya ochiladi. Muddat kirish paytidan hisoblanadi.
    */
   async refresh(refreshToken: string | undefined, meta: RequestMeta): Promise<IssuedSession> {
     if (!refreshToken || !REFRESH_TOKEN_PATTERN.test(refreshToken)) {
@@ -235,7 +239,6 @@ export class AuthService {
     }
     const now = this.clock.now();
     const nextToken = generateRefreshToken();
-    const nextExpiresAt = new Date(now.getTime() + this.config.REFRESH_TOKEN_TTL_DAYS * 86_400_000);
 
     const outcome = await this.transactions.run(async (tx) => {
       const session = await this.repository.lockSessionByTokenHash(
@@ -244,7 +247,12 @@ export class AuthService {
       );
       if (!session) return { kind: 'invalid' as const };
 
-      if (session.revokedAt) {
+      const concurrent =
+        session.revokedReason === 'ROTATED' &&
+        session.revokedAt !== null &&
+        now.getTime() - session.revokedAt.getTime() < REFRESH_REUSE_GRACE_MS;
+
+      if (session.revokedAt && !concurrent) {
         if (session.revokedReason !== 'ROTATED') return { kind: 'invalid' as const };
         // Allaqachon almashtirilgan token qayta keldi — o'g'irlangan bo'lishi mumkin: butun family yopiladi.
         const revoked = await this.repository.revokeFamily(tx, session.familyId, now);
@@ -274,14 +282,16 @@ export class AuthService {
         userId: session.userId,
         tokenHash: hashRefreshToken(nextToken),
         familyId: session.familyId,
-        expiresAt: nextExpiresAt,
+        expiresAt: session.expiresAt,
         now,
         ip: meta.ip,
         userAgent: meta.userAgent,
       });
-      await this.repository.revokeSession(tx, session.id, 'ROTATED', now, next.id);
+      if (!concurrent) {
+        await this.repository.revokeSession(tx, session.id, 'ROTATED', now, next.id);
+      }
       const current = await this.repository.loadCurrentUser(session.userId, tx);
-      return { kind: 'ok' as const, user: current! };
+      return { kind: 'ok' as const, user: current!, expiresAt: session.expiresAt };
     });
 
     if (outcome.kind === 'blocked') throw new AppError(ErrorCode.ACCOUNT_BLOCKED);
@@ -289,7 +299,7 @@ export class AuthService {
     return {
       response: await this.buildResponse(outcome.user, now),
       refreshToken: nextToken,
-      refreshExpiresAt: nextExpiresAt,
+      refreshExpiresAt: outcome.expiresAt,
     };
   }
 

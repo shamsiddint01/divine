@@ -1,7 +1,7 @@
 import { BarChart3, LogIn, Plus, Send, ShoppingCart, Truck, Warehouse, X } from 'lucide-react';
 import { Dialog } from 'radix-ui';
 import { type CSSProperties, type RefObject, useEffect, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Link, Navigate, useSearchParams } from 'react-router';
 import { safeRedirect } from '@/features/session/lib/safe-redirect';
 import { t } from '@/i18n/uz';
 import { useMediaQuery } from '@/shared/hooks/use-media-query';
@@ -163,6 +163,9 @@ function useScrollReveal(root: RefObject<HTMLDivElement | null>, enabled: boolea
  * header ostida o'qish progressi, oxirida yakuniy CTA.
  */
 export function LandingPage() {
+  const queryClient = useQueryClient();
+  const status = useAuthStore((s) => s.status);
+  const [params] = useSearchParams();
   const loginHref = useLoginHref();
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const root = useRef<HTMLDivElement>(null);
@@ -170,6 +173,11 @@ export function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
   useScrollReveal(root, !reduceMotion);
+
+  // Sessiyasi tirik user tanishtiruvda to'xtamaydi — to'g'ridan-to'g'ri saytga.
+  useEffect(() => {
+    if (useAuthStore.getState().status === 'checking') void bootstrapSession(queryClient);
+  }, [queryClient]);
 
   useEffect(() => {
     const onScroll = () => {

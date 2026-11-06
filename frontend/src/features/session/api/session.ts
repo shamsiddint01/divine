@@ -45,10 +45,7 @@ export async function bootstrapSession(queryClient: QueryClient): Promise<void> 
     queryClient.setQueryData(SESSION_KEY, user);
     setStatus('authenticated');
   } catch (error) {
-    setStatus(
-      'anonymous',
-      error instanceof ApiError && error.code === 'NETWORK_ERROR' ? 'offline' : null,
-    );
+    setStatus('anonymous', isServerUnavailable(error) ? 'offline' : null);
   }
 }
 

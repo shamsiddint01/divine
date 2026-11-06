@@ -95,20 +95,41 @@ const SESSION_ENDPOINTS = new Set(['/auth/login', '/auth/refresh', '/auth/logout
 
 let refreshInFlight: Promise<LoginResponse | null> | null = null;
 
+/** Bepul serverda backend uxlaydi: uyg'onguncha refresh qayta uriniladi (sessiya tugadi deb hisoblanmaydi). */
+const SERVER_WAKE_LIMIT_MS = 75_000;
+const SERVER_WAKE_RETRY_MS = 3_000;
+
+/** Server javob bermadi yoki 5xx: sessiya haqida hech narsa ma'lum emas. */
+export function isServerUnavailable(error: unknown): boolean {
+  return error instanceof ApiError && (error.code === 'NETWORK_ERROR' || error.status >= 500);
+}
+
+async function requestRefresh(): Promise<LoginResponse> {
+  const deadline = Date.now() + SERVER_WAKE_LIMIT_MS;
+  for (;;) {
+    try {
+      return await httpRequest<LoginResponse>('/auth/refresh', { method: 'POST' });
+    } catch (error) {
+      if (!isServerUnavailable(error) || Date.now() >= deadline) throw error;
+      await new Promise((resolve) => setTimeout(resolve, SERVER_WAKE_RETRY_MS));
+    }
+  }
+}
+
 /**
  * Refresh cookie bilan yangi access token olish (`null` — sessiya yo'q yoki tugagan; tarmoq xatosi —
  * istisno sifatida uzatiladi). Bir vaqtda kelgan bir nechta 401 uchun BITTA so'rov
  * (single-flight): server qayta ishlatilgan refresh token'ni o'g'irlangan deb hisoblaydi (SECURITY §3).
  */
 export function refreshSession(): Promise<LoginResponse | null> {
-  refreshInFlight ??= httpRequest<LoginResponse>('/auth/refresh', { method: 'POST' })
+  refreshInFlight ??= requestRefresh()
     .then((session) => {
       authSession.setToken(session.accessToken);
       return session;
     })
     .catch((error: unknown) => {
       // Server bilan aloqa yo'q — bu "sessiya tugadi" emas: xato uzatiladi (UI "aloqa yo'q" deydi).
-      if (error instanceof ApiError && error.code === 'NETWORK_ERROR') throw error;
+      if (isServerUnavailable(error)) throw error;
       authSession.setToken(null);
       return null;
     })

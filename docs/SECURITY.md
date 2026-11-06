@@ -37,8 +37,8 @@
 - **Reuse detection:** `ROTATED` holatidagi token qayta kelsa, bu token o‘g‘irlanganini bildiradi. Shuning uchun **butun family** revoke qilinadi (`REUSE_DETECTED`) va audit `AUTH_REFRESH_REUSE_DETECTED` yoziladi. Foydalanuvchi qaytadan login qilishi kerak.
 - **Bekor qilish:** logout (joriy sessiya), parol tiklash (`PASSWORD_RESET`) va bloklash (`USER_BLOCKED`) — barcha sessiyalar (Phase 5 ✔).
 - **Qoldiq (ma’lum):** `iat` soniya aniqligida, shuning uchun parol tiklangan **aynan o‘sha soniyada** berilgan access token tekshiruvdan o‘tadi (≤ 1 s oyna, refresh sessiyalari esa baribir bekor). Ms aniqlik tiklashdan keyingi birinchi login'ni ham rad etardi — qabul qilingan narx.
-- **Muddat:** `REFRESH_TOKEN_TTL_DAYS` = 7. Muddati o‘tgan sessiyalarni 30 kundan keyin tozalash — **hali implement qilinmagan** (rejali vazifa, Phase 17; ular faqat joy egallaydi, qayta ishlatib bo‘lmaydi).
-- **Ikki tab bir vaqtda refresh qilsa:** biri `ROTATED` tokenni qayta yuborgan bo‘lib chiqadi → family revoke, ikkala tab ham qayta login qiladi. Bu qat’iy reuse detection'ning ongli narxi (grace period yo‘q). Frontend bitta tab ichida refresh'ni single-flight qiladi.
+- **Muddat:** `REFRESH_TOKEN_TTL_HOURS` = 16, kirish paytidan hisoblanadi (refresh uzaytirmaydi; egasining qarori, 2026-11-06). Muddati o‘tgan sessiyalarni 30 kundan keyin tozalash — **hali implement qilinmagan** (rejali vazifa, Phase 17; ular faqat joy egallaydi, qayta ishlatib bo‘lmaydi).
+- **Ikki tab bir vaqtda refresh qilsa:** rotatsiyadan keyin 30 soniya ichida kelgan shu token reuse hisoblanmaydi: shu family'da yana bir sessiya ochiladi. Bu oraliqda o'g'irlangan token ishlashi mumkin (qabul qilingan xavf); undan keyin — family revoke.
 - **CSRF himoyasi:** [§9](#9-csrf).
 
 ## 4. Lockout

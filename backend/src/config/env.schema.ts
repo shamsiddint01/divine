@@ -49,7 +49,8 @@ export const envSchema = z
     // Auth (Phase 4, SECURITY §1–§4)
     JWT_ACCESS_SECRET: secret(32),
     JWT_ACCESS_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(900),
-    REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(7),
+    /** Kirishdan keyin sessiya shu muddat turadi; refresh uzaytirmaydi (egasining qarori, 2026-11-06). */
+    REFRESH_TOKEN_TTL_HOURS: z.coerce.number().int().min(1).max(2160).default(16),
     PASSWORD_PEPPER: secret(32),
     /** Pepper rotation (SECURITY §13): berilsa yangi hash'lar `v2$`, eskilari login'da qayta hash qilinadi. */
     PASSWORD_PEPPER_V2: secret(32).optional(),

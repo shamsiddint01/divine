@@ -57,9 +57,9 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     if (reason === 'signedOut') return <Navigate to="/login" replace />;
     const redirect = `${location.pathname}${location.search}`;
     const query = redirect === '/' ? '' : `?redirect=${encodeURIComponent(redirect)}`;
-    // Sessiya tugagan/aloqa uzilgan user — to'g'ridan-to'g'ri qayta kirishga (xabar bilan);
-    // hali kirmagan mehmon — avval tanishtiruv sahifasiga, u yerdan "Kirish" (redirect saqlanadi).
-    const target = reason === 'expired' || reason === 'offline' ? '/login' : '/welcome';
+    // Aloqa uzilgan user — to'g'ridan-to'g'ri qayta kirishga (xabar bilan); mehmon va sessiyasi tugagan
+    // user — avval tanishtiruv sahifasiga, u yerdan "Kirish" (redirect saqlanadi).
+    const target = reason === 'offline' ? '/login' : '/welcome';
     return <Navigate to={`${target}${query}`} replace />;
   }
   return children;
