@@ -61,5 +61,5 @@ export async function bootstrapAdmin(
       },
     });
     return { status: 'created' as const, userId: user.id, login: user.login, password };
-  });
+  }, { maxWait: 30_000, timeout: 60_000 });
 }
