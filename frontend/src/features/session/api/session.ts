@@ -1,6 +1,6 @@
 import type { LoginRequest, LoginResponse } from '@divine/shared';
 import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ApiError, apiRequest, refreshSession } from '@/shared/lib/api-client';
+import { apiRequest, isServerUnavailable, refreshSession } from '@/shared/lib/api-client';
 import { authMode } from '@/shared/lib/api-mode';
 import { authSession } from '@/shared/lib/auth-session';
 import { playSplash } from '@/shared/lib/splash';

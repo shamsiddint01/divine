@@ -1,7 +1,10 @@
 import { BarChart3, LogIn, Plus, Send, ShoppingCart, Truck, Warehouse, X } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Dialog } from 'radix-ui';
 import { type CSSProperties, type RefObject, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router';
+import { bootstrapSession } from '@/features/session/api/session';
+import { useAuthStore } from '@/features/session/auth-store';
 import { safeRedirect } from '@/features/session/lib/safe-redirect';
 import { t } from '@/i18n/uz';
 import { useMediaQuery } from '@/shared/hooks/use-media-query';
@@ -192,6 +195,8 @@ export function LandingPage() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  if (status === 'authenticated') return <Navigate to={safeRedirect(params.get('redirect'))} replace />;
 
   return (
     <div className="ld" ref={root}>

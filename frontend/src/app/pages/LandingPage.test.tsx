@@ -67,4 +67,9 @@ describe('landing sahifa (/welcome)', () => {
     // jsdom'da IntersectionObserver yo'q — scroll effekti ulanmaydi, kontent ko'rinib turadi.
     expect(final.closest('.ld')).not.toHaveAttribute('data-reveal-ready');
   });
+
+  it('sessiyasi tirik user /welcome da to‘xtamaydi — saytga o‘tadi', async () => {
+    const { router } = renderApp('/welcome?redirect=%2Fproducts');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/products'), PAGE);
+  });
 });

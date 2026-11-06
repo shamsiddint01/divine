@@ -104,10 +104,36 @@ describe('api-client: access token va refresh', () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'));
     const expired = vi.fn();
     const off = authSession.onExpired(expired);
-    await expect(refreshSession()).rejects.toMatchObject({ code: 'NETWORK_ERROR' });
+    vi.useFakeTimers();
+    const refreshed = expect(refreshSession()).rejects.toMatchObject({ code: 'NETWORK_ERROR' });
+    await vi.runAllTimersAsync();
+    await refreshed;
     authSession.setToken('tok');
-    await expect(request('/products', {})).rejects.toMatchObject({ code: 'NETWORK_ERROR' });
+    const retried = expect(request('/products', {})).rejects.toMatchObject({
+      code: 'NETWORK_ERROR',
+    });
+    await vi.runAllTimersAsync();
+    await retried;
+    vi.useRealTimers();
     expect(expired).not.toHaveBeenCalled();
     off();
+  });
+
+  it('server uyg‘onayotganda (503) refresh qayta uriniladi va sessiya tiklanadi', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response('<html>waking</html>', { status: 503 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ accessToken: 'tok-awake', expiresIn: 900, user: {} }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+    vi.useFakeTimers();
+    const session = refreshSession();
+    await vi.runAllTimersAsync();
+    await expect(session).resolves.toMatchObject({ accessToken: 'tok-awake' });
+    vi.useRealTimers();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
