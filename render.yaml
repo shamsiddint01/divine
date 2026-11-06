@@ -20,7 +20,9 @@ services:
       - key: TRUST_PROXY
         value: '1'
       - key: CORS_ORIGINS
-        value: https://divine-uz-web.onrender.com
+        value: https://divine-uz-web.onrender.com,https://divine-uz-superadmin.onrender.com
+      - key: CONTROL_PANEL_ENABLED
+        value: 'true'
       - key: DATABASE_URL
         sync: false
       - key: REDIS_URL
@@ -44,6 +46,46 @@ services:
       - key: VITE_API_BASE_URL
         value: /api/v1
     # Refresh cookie SameSite=Strict: brauzer API'ni sayt bilan bitta origin deb ko'rishi shart.
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://divine-uz-api.onrender.com/api/*
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    # docker/nginx/security-headers.conf bilan bir xil.
+    headers:
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(self), microphone=(), geolocation=(), payment=()
+      - path: /*
+        name: Cross-Origin-Opener-Policy
+        value: same-origin
+
+  # Superadmin paneli: alohida manzil, API o'sha backend (`/control/*`).
+  - type: web
+    name: divine-uz-superadmin
+    runtime: static
+    branch: main
+    buildCommand: scripts/render/build-superadmin.sh
+    staticPublishPath: frontend/dist-superadmin
+    envVars:
+      - key: NODE_VERSION
+        value: '24'
+      - key: VITE_API_MODE
+        value: http
     routes:
       - type: rewrite
         source: /api/*
