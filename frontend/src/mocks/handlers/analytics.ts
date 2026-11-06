@@ -37,7 +37,7 @@ import { mockToday, nowIso } from '../lib/clock';
 import { formatDocNumber, getStock, getTotalStock } from '../inventory';
 import { fail, num, route, validate, type Query } from '../lib/http';
 import { addDays, dateOnlyInRange, inDateRange, tashkentDate } from '../lib/time';
-import { currentCan, thresholdOf } from '../mappers';
+import { currentCan, thresholdOf, userRef } from '../mappers';
 import type { MockState, SaleRow } from '../state';
 
 // Backend bilan bir xil shartnoma (Phase 12, API §13, §14, §18, D-21): o'sha ruxsatlar, shared
@@ -703,6 +703,42 @@ route('GET', '/reports/finance-summary', ({ query }): FinanceSummaryDto => {
     netProfit: w ? null : subMoney(grossProfit, expenses),
     incomingPurchases,
     inventoryValueAtCost,
+  };
+});
+
+route('GET', '/reports/incoming/:number', ({ params }): IncomingReportDetailDto => {
+  requireCan('reports.read');
+  const s = db();
+  const doc = s.incoming.find((d) => formatDocNumber('K', d.number) === params.number);
+  if (!doc) fail(404, 'NOT_FOUND');
+  const canReadCost = currentCan(s, 'products.read_cost');
+  const items = doc.items
+    .map((i) => {
+      const p = s.products.find((x) => x.id === i.productId);
+      return {
+        productId: i.productId,
+        productName: i.productName ?? p?.name ?? '—',
+        barcode: i.barcode ?? p?.barcode ?? null,
+        unit: p?.unit ?? 'DONA',
+        quantity: i.quantity,
+        ...(canReadCost
+          ? { costPrice: i.costPrice, lineTotal: lineTotal(i.quantity, i.costPrice) }
+          : {}),
+      };
+    })
+    .sort((a, b) => a.productName.localeCompare(b.productName));
+  return {
+    number: formatDocNumber('K', doc.number),
+    date: doc.date,
+    warehouse: warehouseName(s, doc.warehouseId),
+    status: doc.status,
+    notes: doc.notes,
+    createdBy: userRef(s, doc.createdBy),
+    totalQuantity: sumQty(doc.items.map((i) => i.quantity)),
+    ...(canReadCost
+      ? { totalAmount: sumMoney(doc.items.map((i) => lineTotal(i.quantity, i.costPrice))) }
+      : {}),
+    items,
   };
 });
 

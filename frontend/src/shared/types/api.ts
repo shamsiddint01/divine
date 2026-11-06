@@ -160,6 +160,7 @@ export type { UserCreatedResponse } from '@divine/shared';
 export type {
   DashboardSummaryDto,
   FinanceSummaryDto,
+  IncomingReportDetailDto,
   MyDashboardSummaryDto,
   ReportCellKind,
   ReportColumn,

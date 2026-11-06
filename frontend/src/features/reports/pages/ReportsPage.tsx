@@ -11,7 +11,7 @@ import {
   Wallet,
   type LucideIcon,
 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { REPORT_DEFINITIONS, type ReportFilter } from '@divine/shared';
 import { useExpenseCategories } from '@/features/expenses/api/expenses';
@@ -265,6 +265,7 @@ export function ReportsPage() {
         : definition!.filters.includes(filter);
 
   const list = useListParams({ defaultSort: '', filterKeys: FILTER_KEYS });
+  const [incomingNumber, setIncomingNumber] = useState<string | null>(null);
   const month = currentMonth();
   const dateFrom = list.filters.dateFrom || month.from;
   const dateTo = list.filters.dateTo || month.to;
@@ -467,6 +468,9 @@ export function ReportsPage() {
           columns={columns}
           rows={data?.data}
           rowKey={(row) => Object.values(row).join('|')}
+          onRowClick={
+            active === 'incoming' ? (row) => setIncomingNumber(String(row.number)) : undefined
+          }
           isLoading={report.isPending || report.isFetching}
           error={errorText(report.error)}
           onRetry={() => report.refetch()}
@@ -488,6 +492,7 @@ export function ReportsPage() {
           }
         />
       )}
+      <IncomingDetailSheet number={incomingNumber} onClose={() => setIncomingNumber(null)} />
     </>
   );
 }

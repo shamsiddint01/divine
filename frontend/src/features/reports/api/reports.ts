@@ -1,7 +1,12 @@
 import { REPORT_PATHS } from '@divine/shared';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { apiRequest, type QueryValue } from '@/shared/lib/api-client';
-import type { FinanceSummaryDto, ReportResponse, ReportType } from '@/shared/types/api';
+import type {
+  FinanceSummaryDto,
+  IncomingReportDetailDto,
+  ReportResponse,
+  ReportType,
+} from '@/shared/types/api';
 
 export function useReport(type: ReportType, query: Record<string, QueryValue>, enabled = true) {
   return useQuery({
@@ -10,6 +15,16 @@ export function useReport(type: ReportType, query: Record<string, QueryValue>, e
       apiRequest<ReportResponse>(`/reports/${REPORT_PATHS[type]}`, { signal, query }),
     placeholderData: keepPreviousData,
     enabled,
+  });
+}
+
+/** Kirim hisoboti qatorining tafsiloti: hujjatga qaysi mahsulotlar qo'shilgan. */
+export function useIncomingReportDetail(number: string | null) {
+  return useQuery({
+    queryKey: ['reports', 'incoming', number],
+    queryFn: ({ signal }) =>
+      apiRequest<IncomingReportDetailDto>(`/reports/incoming/${number}`, { signal }),
+    enabled: Boolean(number),
   });
 }
 

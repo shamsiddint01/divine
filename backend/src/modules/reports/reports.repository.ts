@@ -387,6 +387,12 @@ export function financeStatement(q: {
       FROM s, e, i, v`;
 }
 
+/** Ichki qator: tannarx doim bor — javobga faqat service (ruxsatga qarab) chiqaradi. */
+export type IncomingDetailRow = Omit<IncomingReportDetailDto, 'items' | 'totalAmount'> & {
+  totalAmount: string;
+  items: Required<IncomingReportItemDto>[];
+};
+
 export interface FinanceRow {
   salesCount: number;
   revenue: string;
@@ -435,6 +441,45 @@ export class ReportsRepository {
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
     );
+  }
+
+  /** Kirim hujjati va uning mahsulotlari; jami — qatorlardan (qoralamada ham to'g'ri). */
+  async incomingDetail(number: bigint): Promise<IncomingDetailRow | null> {
+    const [doc] = await this.prisma.$queryRaw<
+      (Omit<IncomingDetailRow, 'items' | 'createdBy'> & {
+        id: string;
+        userId: string;
+        userLogin: string;
+        userFullName: string | null;
+      })[]
+    >`
+      SELECT i.id, 'K-' || lpad(i.number::text, 6, '0') AS number,
+             to_char(i.incoming_date, 'YYYY-MM-DD') AS date, w.name AS warehouse,
+             i.status::text AS status, i.notes,
+             u.id AS "userId", u.login AS "userLogin", u.full_name AS "userFullName",
+             t.quantity::text AS "totalQuantity", t.amount::text AS "totalAmount"
+        FROM incoming i
+        JOIN warehouses w ON w.id = i.warehouse_id
+        JOIN users u ON u.id = i.created_by
+       CROSS JOIN LATERAL (
+         SELECT coalesce(sum(ii.quantity), 0)::numeric(14, 3) AS quantity,
+                coalesce(sum(ii.line_total), 0)::numeric(18, 2) AS amount
+           FROM incoming_items ii WHERE ii.incoming_id = i.id) t
+       WHERE i.number = ${number}`;
+    if (!doc) return null;
+    const items = await this.prisma.$queryRaw<Required<IncomingReportItemDto>[]>`
+      SELECT ii.product_id AS "productId", ii.product_name AS "productName", ii.barcode,
+             p.unit::text AS unit, ii.quantity::text AS quantity,
+             ii.cost_price::text AS "costPrice", ii.line_total::text AS "lineTotal"
+        FROM incoming_items ii JOIN products p ON p.id = ii.product_id
+       WHERE ii.incoming_id = ${doc.id}::uuid
+       ORDER BY ii.product_name, ii.id`;
+    const { id: _id, userId, userLogin, userFullName, ...rest } = doc;
+    return {
+      ...rest,
+      createdBy: { id: userId, login: userLogin, fullName: userFullName },
+      items,
+    };
   }
 
   /**

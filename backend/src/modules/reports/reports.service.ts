@@ -3,6 +3,7 @@ import {
   buildPaginationMeta,
   ErrorCode,
   type FinanceSummaryDto,
+  type IncomingReportDetailDto,
   inclusiveDays,
   Permission,
   REPORT_DEFINITIONS,
@@ -53,6 +54,19 @@ export class ReportsService {
         value: result.summary[d.labelKey] ?? '0',
       })),
       ...(result.groups ? { groups: result.groups } : {}),
+    };
+  }
+
+  /** Kirim hisoboti qatorining tafsiloti. Narx va summa — faqat `products.read_cost` (OWN-06). */
+  async incomingDetail(ctx: AccessContext, number: string): Promise<IncomingReportDetailDto> {
+    const digits = /^K-(\d{1,18})$/.exec(number)?.[1];
+    const row = digits ? await this.repository.incomingDetail(BigInt(digits)) : null;
+    if (!row) throw new AppError(ErrorCode.NOT_FOUND);
+    if (hasPermission(ctx, Permission.PRODUCTS_READ_COST)) return row;
+    const { totalAmount: _amount, items, ...rest } = row;
+    return {
+      ...rest,
+      items: items.map(({ costPrice: _cost, lineTotal: _total, ...item }) => item),
     };
   }
 

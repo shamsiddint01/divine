@@ -1,8 +1,9 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   ErrorCode,
   type FinanceSummaryDto,
+  type IncomingReportDetailDto,
   Permission,
   REPORT_DEFINITIONS,
   type ReportResponse,
@@ -113,6 +114,17 @@ export class ReportsController {
     @ZodQuery(reportQuerySchema('incoming')) q: ReportQuery,
   ): Promise<ReportResponse> {
     return this.reports.run(ctx, 'incoming', q);
+  }
+
+  @Get('incoming/:number')
+  @RequirePermissions(Permission.REPORTS_READ)
+  @ApiOperation({ summary: 'Kirim hujjatidagi mahsulotlar' })
+  @ApiErrorResponses(ErrorCode.FORBIDDEN, ErrorCode.NOT_FOUND)
+  incomingDetail(
+    @Ctx() ctx: AccessContext,
+    @Param('number') number: string,
+  ): Promise<IncomingReportDetailDto> {
+    return this.reports.incomingDetail(ctx, number);
   }
 
   @Get('expenses')

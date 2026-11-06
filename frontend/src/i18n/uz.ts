@@ -965,6 +965,18 @@ export const uz = {
 
   reports: {
     description: 'Savdo, ombor va moliya bo‘yicha hisobotlar',
+    incomingDetail: {
+      title: 'Kirim hujjati',
+      items: 'Qo‘shilgan mahsulotlar',
+      createdBy: 'Kiritgan',
+      notes: 'Izoh',
+      product: 'Mahsulot',
+      quantity: 'Miqdor',
+      amount: 'Summa',
+      total: 'Jami',
+      totalQuantity: 'Jami miqdor',
+      empty: 'Bu hujjatda mahsulot yo‘q',
+    },
     types: {
       sales: 'Sotuvlar hisoboti',
       products: 'Mahsulotlar hisoboti',
