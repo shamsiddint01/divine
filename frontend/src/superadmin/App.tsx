@@ -171,12 +171,7 @@ function PaymentForm({ site }: { site: ControlSiteDetailDto }) {
         <Input name="amount" defaultValue={site.agreedPrice} inputMode="decimal" required />
       </Field>
       <Field label="To‘langan sana">
-        <Input
-          name="paidAt"
-          type="date"
-          defaultValue={todayInTashkent()}
-          required
-        />
+        <Input name="paidAt" type="date" defaultValue={todayInTashkent()} required />
       </Field>
       <Field label="Keyingi to‘lov sanasigacha">
         <Input name="paidUntil" type="date" required />
