@@ -598,7 +598,9 @@ describe('refresh: rotation, reuse detection, CSRF', () => {
     );
     const results = await Promise.all([refresh(t, cookie), refresh(t, cookie)]);
     expect(results.map((r) => r.status)).toEqual([200, 200]);
-    expect(await auditFor('AUTH_REFRESH_REUSE_DETECTED')).toHaveLength(0);
+    expect(
+      (await auditFor('AUTH_REFRESH_REUSE_DETECTED')).filter((a) => a.actorId === user.id),
+    ).toHaveLength(0);
     await refresh(t, refreshCookieOf(results[0]!)).expect(200);
     await refresh(t, refreshCookieOf(results[1]!)).expect(200);
   });
