@@ -97,6 +97,24 @@ export class ControlSitesController {
     return this.control.list();
   }
 
+  @Get('dashboard')
+  @ApiOperation({ summary: 'Umumiy hisob: tushum, kutilayotgan to‘lovlar, holatlar' })
+  dashboard() {
+    return this.control.dashboard();
+  }
+
+  @Get('health')
+  @ApiOperation({ summary: 'Saytlar ishlayaptimi' })
+  health() {
+    return this.control.health();
+  }
+
+  @Get('events')
+  @ApiOperation({ summary: 'Harakatlar jurnali' })
+  events(@Query('siteId') siteId?: string) {
+    return this.control.events(siteId);
+  }
+
   @Post()
   @ApiOperation({ summary: 'Sayt qo‘shish' })
   create(@ZodBody(controlSiteCreateSchema) body: ControlSiteCreateInput) {
