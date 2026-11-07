@@ -266,7 +266,7 @@ function PaymentForm({ site }: { site: ControlSiteDetailDto }) {
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: siteKey(site.id) });
-      await queryClient.invalidateQueries({ queryKey: SITES_KEY });
+      await queryClient.invalidateQueries();
     },
   });
   return (
@@ -388,7 +388,7 @@ function SiteSheet({ id, onClose }: { id: string; onClose: () => void }) {
   });
   const refresh = async () => {
     await queryClient.invalidateQueries({ queryKey: siteKey(id) });
-    await queryClient.invalidateQueries({ queryKey: SITES_KEY });
+    await queryClient.invalidateQueries();
   };
   const update = useMutation({
     mutationFn: (input: Record<string, string>) => panelApi.updateSite(id, input),
@@ -593,7 +593,7 @@ function NewSiteSheet({ onClose }: { onClose: () => void }) {
         notes: input.notes ?? null,
       }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: SITES_KEY });
+      await queryClient.invalidateQueries();
       onClose();
     },
   });
