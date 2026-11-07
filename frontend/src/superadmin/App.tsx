@@ -1,11 +1,12 @@
 import {
+  type ControlEventDto,
   type ControlSiteDetailDto,
   type ControlSiteDto,
   type ControlSiteStatus,
   nextPaidUntil,
 } from '@divine/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Eye, LogOut, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { Eye, Lock, LockOpen, LogOut, Plus, RefreshCw, Timer, Trash2 } from 'lucide-react';
 import { type FormEvent, type ReactNode, useState } from 'react';
 import { DatePicker } from '@/shared/components/DatePicker';
 import { formatDate, formatMoney, formatPhone, todayInTashkent } from '@/shared/lib/format';
@@ -28,6 +29,64 @@ const STATUS: Record<ControlSiteStatus, { label: string; className: string }> = 
   EXPIRING: { label: 'Tugayapti', className: 'bg-amber-500/15 text-amber-500' },
   EXPIRED: { label: 'Bloklangan', className: 'bg-destructive/15 text-destructive' },
 };
+
+const EVENT_LABELS: Record<string, string> = {
+  SITE_CREATED: 'Sayt qo‘shildi',
+  SITE_UPDATED: 'O‘zgartirildi',
+  PAYMENT_ADDED: 'To‘lov yozildi',
+  PAYMENT_DELETED: 'To‘lov o‘chirildi',
+  VIEW_REQUESTED: 'Ko‘rish so‘raldi',
+  VIEW_OPENED: 'Sayt ko‘rildi',
+};
+
+function eventText(event: ControlEventDto) {
+  const label = EVENT_LABELS[event.action] ?? event.action;
+  const d = event.details as Record<string, string | boolean | null | undefined>;
+  if (event.action === 'PAYMENT_ADDED' && typeof d.amount === 'string') {
+    return `${label}: ${formatMoney(d.amount, { withCurrency: true })}, ${formatDate(String(d.paidUntil))} gacha`;
+  }
+  if (event.action === 'SITE_UPDATED') {
+    if (d.manualBlock === true) return 'Qo‘lda bloklandi';
+    if (d.manualBlock === false) return 'Blok olib tashlandi';
+    if ('graceUntil' in d) return d.graceUntil ? `Yengillik: ${formatDate(String(d.graceUntil))} gacha` : 'Yengillik bekor qilindi';
+  }
+  return label;
+}
+
+const formatTimestamp = (iso: string) =>
+  new Date(iso).toLocaleString('uz-UZ', {
+    timeZone: 'Asia/Tashkent',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+function EventList({ siteId }: { siteId?: string }) {
+  const { data } = useQuery({
+    queryKey: ['events', siteId ?? 'all'],
+    queryFn: () => panelApi.events(siteId),
+  });
+  if (!data || data.length === 0) {
+    return <p className="text-sm text-muted-foreground">Hali harakat yo‘q</p>;
+  }
+  return (
+    <ul className="divide-y rounded-lg border text-sm">
+      {data.slice(0, 30).map((event) => (
+        <li key={event.id} className="flex flex-wrap justify-between gap-x-3 gap-y-0.5 p-3">
+          <span>
+            {siteId ? null : <span className="font-medium">{event.siteName ?? '—'}: </span>}
+            {eventText(event)}
+          </span>
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {formatTimestamp(event.occurredAt)}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 function daysLabel(site: ControlSiteDto) {
   if (site.daysLeft < 0) return `${-site.daysLeft} kun oldin tugagan`;
@@ -336,6 +395,20 @@ function SiteSheet({ id, onClose }: { id: string; onClose: () => void }) {
     },
   });
   const sync = useMutation({ mutationFn: () => panelApi.sync(id), onSuccess: refresh });
+  const control = useMutation({
+    mutationFn: (input: { manualBlock?: boolean; graceUntil?: string | null }) =>
+      panelApi.updateSite(id, input),
+    onSuccess: async () => {
+      await refresh();
+      await queryClient.invalidateQueries({ queryKey: ['events'] });
+    },
+  });
+  const graceWeek = () => {
+    const from = site && site.paidUntil > todayInTashkent() ? site.paidUntil : todayInTashkent();
+    const date = new Date(`${from}T00:00:00Z`);
+    date.setUTCDate(date.getUTCDate() + 7);
+    control.mutate({ graceUntil: date.toISOString().slice(0, 10) });
+  };
   const removePayment = useMutation({
     mutationFn: (paymentId: string) => panelApi.deletePayment(id, paymentId),
     onSuccess: refresh,
@@ -372,11 +445,24 @@ function SiteSheet({ id, onClose }: { id: string; onClose: () => void }) {
                   <dt className="text-muted-foreground">Telefon</dt>
                   <dd>{site.ownerPhone ? formatPhone(site.ownerPhone) : '—'}</dd>
                   <dt className="text-muted-foreground">Kelishuv</dt>
-                  <dd>{formatMoney(site.agreedPrice, { withCurrency: true })}</dd>
+                  <dd>{formatMoney(site.agreedPrice, { withCurrency: true })} / oy</dd>
+                  <dt className="text-muted-foreground">Balans</dt>
+                  <dd>
+                    {formatMoney(site.balance, { withCurrency: true })}
+                    <span className="block text-xs text-muted-foreground">
+                      Keyingi oy uchun yana {formatMoney(site.amountDue, { withCurrency: true })}
+                    </span>
+                  </dd>
                   <dt className="text-muted-foreground">Oxirgi to‘lov</dt>
                   <dd>{site.lastPaidAt ? formatDate(site.lastPaidAt) : '—'}</dd>
                   <dt className="text-muted-foreground">Keyingi to‘lov</dt>
                   <dd>{formatDate(site.paidUntil)}</dd>
+                  {site.graceUntil ? (
+                    <>
+                      <dt className="text-muted-foreground">Yengillik</dt>
+                      <dd>{formatDate(site.graceUntil)} gacha</dd>
+                    </>
+                  ) : null}
                   <dt className="text-muted-foreground">Manzil</dt>
                   <dd className="break-all">
                     <a href={site.siteUrl} target="_blank" rel="noreferrer" className="underline">
@@ -406,11 +492,46 @@ function SiteSheet({ id, onClose }: { id: string; onClose: () => void }) {
                 </div>
               )}
 
+              <section className="grid gap-2">
+                <h3 className="text-sm font-semibold">Boshqaruv</h3>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Button
+                    variant={site.manualBlock ? 'default' : 'outline'}
+                    disabled={control.isPending}
+                    onClick={() => control.mutate({ manualBlock: !site.manualBlock })}
+                  >
+                    {site.manualBlock ? <LockOpen /> : <Lock />}
+                    {site.manualBlock ? 'Blokdan chiqarish' : 'Qo‘lda bloklash'}
+                  </Button>
+                  {site.graceUntil ? (
+                    <Button
+                      variant="outline"
+                      disabled={control.isPending}
+                      onClick={() => control.mutate({ graceUntil: null })}
+                    >
+                      <Timer />
+                      Yengillikni bekor qilish
+                    </Button>
+                  ) : (
+                    <Button variant="outline" disabled={control.isPending} onClick={graceWeek}>
+                      <Timer />
+                      +7 kun yengillik
+                    </Button>
+                  )}
+                </div>
+                <ErrorText error={control.error} />
+              </section>
+
               <ViewAccess siteId={id} />
 
               <section className="grid gap-3">
                 <h3 className="text-sm font-semibold">To‘lov yozish</h3>
                 <PaymentForm site={site} />
+              </section>
+
+              <section className="grid gap-2">
+                <h3 className="text-sm font-semibold">Jurnal</h3>
+                <EventList siteId={id} />
               </section>
 
               <section className="grid gap-2">
@@ -491,7 +612,52 @@ function NewSiteSheet({ onClose }: { onClose: () => void }) {
   );
 }
 
+function DashboardCards() {
+  const { data } = useQuery({ queryKey: ['dashboard'], queryFn: panelApi.dashboard });
+  if (!data) return null;
+  const cards = [
+    { label: 'Shu oy tushum', value: formatMoney(data.revenueThisMonth, { withCurrency: true }) },
+    { label: 'Shu oy kutilmoqda', value: formatMoney(data.expectedThisMonth, { withCurrency: true }) },
+    { label: 'Faol saytlar', value: `${data.sites.active} / ${data.sites.total}` },
+    {
+      label: 'Tugayapti / bloklangan',
+      value: `${data.sites.expiring} / ${data.sites.expired}`,
+    },
+  ];
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {cards.map((card) => (
+        <Card key={card.label} className="gap-1 py-4">
+          <CardContent className="space-y-1 px-4">
+            <p className="text-sm text-muted-foreground">{card.label}</p>
+            <p className="text-xl font-semibold tabular-nums">{card.value}</p>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function HealthDot({ ok, ms }: { ok: boolean | undefined; ms: number | null | undefined }) {
+  const label = ok === undefined ? 'Tekshirilmoqda' : ok ? `Ishlayapti, ${ms} ms` : 'Javob yo‘q';
+  return (
+    <span
+      title={label}
+      aria-label={label}
+      className={`inline-block size-2.5 shrink-0 rounded-full ${
+        ok === undefined ? 'bg-muted-foreground/40' : ok ? 'bg-emerald-500' : 'bg-destructive'
+      }`}
+    />
+  );
+}
+
 function SitesScreen({ sites }: { sites: ControlSiteDto[] }) {
+  const { data: health } = useQuery({
+    queryKey: ['health'],
+    queryFn: panelApi.health,
+    refetchInterval: 60_000,
+  });
+  const healthOf = (id: string) => health?.find((item) => item.id === id);
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -517,6 +683,7 @@ function SitesScreen({ sites }: { sites: ControlSiteDto[] }) {
           <LogOut />
         </Button>
       </header>
+      <DashboardCards />
       <Card>
         <CardContent className="overflow-x-auto p-0">
           <Table>
@@ -540,7 +707,12 @@ function SitesScreen({ sites }: { sites: ControlSiteDto[] }) {
                     if (event.key === 'Enter') setSelected(site.id);
                   }}
                 >
-                  <TableCell className="font-medium">{site.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <span className="flex items-center gap-2">
+                      <HealthDot ok={healthOf(site.id)?.ok} ms={healthOf(site.id)?.ms} />
+                      {site.name}
+                    </span>
+                  </TableCell>
                   <TableCell>{site.ownerName}</TableCell>
                   <TableCell>
                     <Badge className={STATUS[site.status].className}>
@@ -563,6 +735,10 @@ function SitesScreen({ sites }: { sites: ControlSiteDto[] }) {
           ) : null}
         </CardContent>
       </Card>
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold">Oxirgi harakatlar</h2>
+        <EventList />
+      </section>
       {selected ? <SiteSheet id={selected} onClose={() => setSelected(null)} /> : null}
       {adding ? <NewSiteSheet onClose={() => setAdding(false)} /> : null}
     </main>

@@ -1,5 +1,8 @@
 import {
+  type ControlDashboardDto,
+  type ControlEventDto,
   type ControlLoginInput,
+  type ControlSiteHealthDto,
   type ControlPaymentInput,
   type ControlSiteCreateInput,
   type ControlSiteDetailDto,
@@ -49,6 +52,10 @@ export const panelApi = {
   login: (input: ControlLoginInput) => request<void>('/auth/login', 'POST', input),
   logout: () => request<void>('/auth/logout', 'POST'),
   sites: () => request<ControlSiteDto[]>('/sites'),
+  dashboard: () => request<ControlDashboardDto>('/sites/dashboard'),
+  health: () => request<ControlSiteHealthDto[]>('/sites/health'),
+  events: (siteId?: string) =>
+    request<ControlEventDto[]>(`/sites/events${siteId ? `?siteId=${siteId}` : ''}`),
   site: (id: string) => request<ControlSiteDetailDto>(`/sites/${id}`),
   createSite: (input: ControlSiteCreateInput) =>
     request<ControlSiteDetailDto>('/sites', 'POST', input),
