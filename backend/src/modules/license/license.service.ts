@@ -65,7 +65,7 @@ export class LicenseService {
           lastPaidAt: dateOrNull(row.lastPaidAt),
           manualBlock: row.manualBlock,
           graceUntil: dateOrNull(row.graceUntil),
-          payments: Array.isArray(row.payments) ? (row.payments as SiteLicensePaymentDto[]) : [],
+          payments: Array.isArray(row.payments) ? (row.payments as unknown as SiteLicensePaymentDto[]) : [],
         }
       : null;
     this.cache = { value, at: now };
