@@ -425,8 +425,17 @@ describe('balans, qo‘lda blok, yengillik, jurnal', () => {
       'PAYMENT_ADDED',
       'SITE_CREATED',
     ]);
-    const health = (await panel('get', '/sites/health').expect(200)).body;
-    expect(health).toEqual([{ id: site.id, ok: true, ms: expect.any(Number) }]);
+    let health = (await panel('get', '/sites/health').expect(200)).body;
+    expect(health).toEqual([{ id: site.id, ok: true, ms: expect.any(Number), backup: null }]);
+
+    await server()
+      .post('/api/v1/site-control/backup-report')
+      .set('x-control-token', token())
+      .send({ ok: true, sizeBytes: 131685, runUrl: 'https://github.com/x/y/actions/runs/1' })
+      .expect(204);
+    health = (await panel('get', '/sites/health').expect(200)).body;
+    expect(health[0].backup).toMatchObject({ ok: true, sizeBytes: 131685 });
+    await server().post('/api/v1/site-control/backup-report').send({ ok: true }).expect(403);
   });
 });
 

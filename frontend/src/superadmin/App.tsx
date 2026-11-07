@@ -1,5 +1,6 @@
 import {
   type ControlEventDto,
+  type ControlSiteHealthDto,
   type ControlSiteDetailDto,
   type ControlSiteDto,
   type ControlSiteStatus,
@@ -685,6 +686,28 @@ function HealthDot({ ok, ms }: { ok: boolean | undefined; ms: number | null | un
   );
 }
 
+const BACKUP_STALE_MS = 36 * 3600_000;
+
+/** Oxirgi bekap: yashil — 36 soat ichida muvaffaqiyatli, sariq — eski, qizil — xato yoki yo'q. */
+function BackupBadge({ health }: { health: ControlSiteHealthDto | undefined }) {
+  if (!health) return <span className="text-xs text-muted-foreground">…</span>;
+  if (!health.ok) return <span className="text-xs text-muted-foreground">Sayt javob bermadi</span>;
+  const backup = health.backup;
+  if (!backup) return <Badge className="bg-destructive/15 text-destructive">Bekap yo‘q</Badge>;
+  const stale = Date.now() - Date.parse(backup.at) > BACKUP_STALE_MS;
+  const className = !backup.ok
+    ? 'bg-destructive/15 text-destructive'
+    : stale
+      ? 'bg-amber-500/15 text-amber-500'
+      : 'bg-emerald-500/15 text-emerald-500';
+  return (
+    <span className="flex flex-col gap-0.5">
+      <Badge className={className}>{backup.ok ? 'Bekap bor' : 'Bekap xato'}</Badge>
+      <span className="text-xs text-muted-foreground">{formatTimestamp(backup.at)}</span>
+    </span>
+  );
+}
+
 function SitesScreen({ sites }: { sites: ControlSiteDto[] }) {
   const { data: health } = useQuery({
     queryKey: ['health'],
@@ -727,6 +750,7 @@ function SitesScreen({ sites }: { sites: ControlSiteDto[] }) {
                 <TableHead>Egasi</TableHead>
                 <TableHead>Holat</TableHead>
                 <TableHead>Keyingi to‘lov</TableHead>
+                <TableHead>Bekap</TableHead>
                 <TableHead className="text-right">Kelishuv</TableHead>
               </TableRow>
             </TableHeader>
@@ -756,6 +780,9 @@ function SitesScreen({ sites }: { sites: ControlSiteDto[] }) {
                   <TableCell>
                     {formatDate(site.paidUntil)}
                     <span className="block text-xs text-muted-foreground">{daysLabel(site)}</span>
+                  </TableCell>
+                  <TableCell>
+                    <BackupBadge health={healthOf(site.id)} />
                   </TableCell>
                   <TableCell className="text-right">
                     {formatMoney(site.agreedPrice, { withCurrency: true })}
