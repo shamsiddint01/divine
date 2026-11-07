@@ -163,7 +163,9 @@ export class ControlService {
       data: {
         ...rest,
         ...(input.paidUntil ? { paidUntil: new Date(input.paidUntil) } : {}),
-        ...(graceUntil !== undefined ? { graceUntil: graceUntil ? new Date(graceUntil) : null } : {}),
+        ...(graceUntil !== undefined
+          ? { graceUntil: graceUntil ? new Date(graceUntil) : null }
+          : {}),
       },
     });
     await this.event(id, 'SITE_UPDATED', { ...input });
