@@ -1,6 +1,6 @@
 import type { SalePriceType } from '@divine/shared';
 import { Barcode, PackageSearch, Plus, ScanBarcode } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGroupOptions } from '@/features/product-groups/api/groups';
 import { useProducts } from '@/features/products/api/products';
 import { t } from '@/i18n/uz';
@@ -27,7 +27,12 @@ interface ProductPickerProps {
   onBarcode: (code: string) => Promise<void>;
   /** Savatdagi miqdorlar — kartochkada qolgan qoldiqni ko'rsatish uchun. */
   inCart: Record<string, string>;
+  /** `+`/`-`: savatdagi oxirgi tovar soni. */
+  onStepLast: (direction: '+' | '-') => void;
 }
+
+/** Tez tanlash tugmalari: eng ko'p sotilganlar, Alt+1…9. */
+const QUICK_COUNT = 9;
 
 // Ustunlar soni ekranga emas, ro'yxat kengligiga qarab (container query): savat yonida ham, to'liq
 // kenglikda ham karta ~200px dan torayib ketmaydi.
@@ -41,6 +46,7 @@ export function ProductPicker({
   onPick,
   onBarcode,
   inCart,
+  onStepLast,
 }: ProductPickerProps) {
   const [search, setSearch] = useState('');
   const [groupId, setGroupId] = useState('');
@@ -57,6 +63,31 @@ export function ProductPicker({
     groupId,
     pageSize: 24,
     sort: search ? 'name:asc' : 'sold:desc',
+  });
+
+  // Qidiruv va guruhdan qat'i nazar doim ko'rinadi: kassada eng tez yo'l.
+  const { data: quick } = useProducts({
+    warehouseId,
+    status: 'ACTIVE',
+    pageSize: QUICK_COUNT,
+    sort: 'sold:desc',
+  });
+  const quickItems = (quick?.data ?? []).map((p) => {
+    const price = priceType === 'WHOLESALE' ? p.wholesalePrice : p.salePrice;
+    const left = inCart[p.id] ? subQty(p.stock, inCart[p.id] ?? '0') : p.stock;
+    return { product: p, price, blocked: price === null || compareQty(left, '0') <= 0 };
+  });
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const digit = /^Digit([1-9])$/.exec(event.code)?.[1];
+      if (!event.altKey || !digit || document.querySelector('[role="dialog"]')) return;
+      event.preventDefault();
+      const item = quickItems[Number(digit) - 1];
+      if (item && !item.blocked) onPick(item.product);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   });
 
   // Skaner kodlari navbati: oldingi kod qidirilayotganda maydon yopilmaydi (aks holda skanerning
@@ -86,6 +117,7 @@ export function ProductPicker({
     <div className="@container space-y-4">
       <div className="grid gap-1.5">
         <Label htmlFor="pos-barcode">{t.sales.barcodeLabel}</Label>
+        <p className="hidden text-xs text-muted-foreground xl:block">{t.sales.shortcuts}</p>
         <div className="flex gap-2">
           <div className="relative min-w-0 flex-1">
             <Barcode
@@ -101,6 +133,10 @@ export function ProductPicker({
                 if (e.key === 'Enter') {
                   e.preventDefault();
                   void submitBarcode();
+                } else if ((e.key === '+' || e.key === '-') && !barcode) {
+                  // Skaner kodi boshlanmagan bo'lsa: oxirgi tovar soni.
+                  e.preventDefault();
+                  onStepLast(e.key);
                 }
               }}
               placeholder={t.sales.barcodePlaceholder}
@@ -128,8 +164,40 @@ export function ProductPicker({
         onOpenChange={setCameraOpen}
         onDetected={(code) => void onBarcode(code)}
       />
+      {quickItems.length > 0 ? (
+        <section aria-label={t.sales.quickTitle} className="space-y-1.5">
+          <p className="text-sm font-medium">{t.sales.quickTitle}</p>
+          <div className="grid grid-cols-2 gap-2 @min-[480px]:grid-cols-3">
+            {quickItems.map(({ product, price, blocked }, index) => (
+              <button
+                key={product.id}
+                type="button"
+                disabled={blocked}
+                onClick={() => onPick(product)}
+                className={cn(
+                  'flex min-h-12 items-center gap-2 rounded-md border bg-card px-2.5 py-1.5 text-left text-sm transition-colors',
+                  blocked
+                    ? 'cursor-not-allowed opacity-60'
+                    : 'hover:border-primary/50 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none',
+                )}
+              >
+                <kbd className="hidden shrink-0 rounded border bg-muted px-1 font-mono text-[11px] text-muted-foreground xl:block">
+                  {t.sales.quickHint(index + 1)}
+                </kbd>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">{product.name}</span>
+                  <span className="block text-xs text-muted-foreground tabular-nums">
+                    {price === null ? t.sales.noPrice : formatMoney(price)}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
       <div className="flex flex-col gap-2 sm:flex-row">
         <SearchInput
+          id="pos-search"
           value={search}
           onChange={setSearch}
           placeholder={t.sales.searchPlaceholder}

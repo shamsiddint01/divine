@@ -6,6 +6,7 @@ import { cn } from '@/shared/lib/utils';
 import { Input } from '@/shared/ui/input';
 
 interface SearchInputProps {
+  id?: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
@@ -15,6 +16,7 @@ interface SearchInputProps {
 
 /** Qidiruv maydoni: yozish tugagandan 300 ms keyin `onChange` chaqiriladi. */
 export function SearchInput({
+  id,
   value,
   onChange,
   placeholder,
@@ -39,6 +41,7 @@ export function SearchInput({
     <div className={cn('relative w-full sm:w-72', className)}>
       <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
       <Input
+        id={id}
         type="search"
         value={draft}
         onChange={(e) => setDraft(e.target.value)}

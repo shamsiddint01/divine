@@ -593,6 +593,10 @@ export const uz = {
     warehouse: 'Ombor',
     barcodeLabel: 'Shtrix-kod',
     barcodePlaceholder: 'Skanerlang yoki kiriting va Enter bosing',
+    quickTitle: 'Tez tanlash',
+    quickHint: (key: number) => `Alt+${key}`,
+    shortcuts:
+      'F2 shtrix-kod · F3 qidiruv · F4 nasiya · F9 yopish · + / − oxirgi tovar soni · Alt+1…9 tez tanlash',
     searchPlaceholder: 'Mahsulot nomi bo‘yicha qidirish',
     inStock: 'Omborda',
     outOfStock: 'Tugagan',

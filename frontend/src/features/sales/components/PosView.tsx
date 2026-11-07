@@ -6,13 +6,14 @@ import {
 } from '@divine/shared';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChevronUp, HandCoins, Loader2, RotateCcw, ShoppingCart, Warehouse } from 'lucide-react';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { lookupByBarcode } from '@/features/products/api/products';
 import { useCurrentUser } from '@/features/session/api/session';
 import { useWarehouses } from '@/features/warehouses/api/warehouses';
 import { t } from '@/i18n/uz';
 import { ApiError } from '@/shared/lib/api-client';
+import { addQty, compareQty, subQty } from '@/shared/lib/decimal';
 import { BELOW_XL_QUERY, useMediaQuery } from '@/shared/hooks/use-media-query';
 import { formatMoney, formatQuantity } from '@/shared/lib/format';
 import { toastError } from '@/shared/lib/mutation';
@@ -232,6 +233,30 @@ export function PosView() {
     }
   };
 
+  /** `+`/`-`: oxirgi qo'shilgan tovar soni; bittadan kam bo'lmaydi (o'chirish alohida tugmada). */
+  const stepLast = (direction: '+' | '-') => {
+    const last = linesRef.current.at(-1);
+    if (!last) return;
+    const next = direction === '+' ? addQty(last.quantity, '1') : subQty(last.quantity, '1');
+    if (compareQty(next, '0') > 0) setLines((prev) => setLineQuantity(prev, last.productId, next));
+  };
+
+  // Kassa klaviaturasi: sichqonchasiz sotuv. Oyna ochiq bo'lsa ishlamaydi.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (document.querySelector('[role="dialog"]')) return;
+      const canClose = lines.length > 0 && !createSale.isPending && Boolean(warehouseId);
+      if (event.key === 'F2') document.getElementById('pos-barcode')?.focus();
+      else if (event.key === 'F3') document.getElementById('pos-search')?.focus();
+      else if (event.key === 'F4' && canClose) setCreditOpen(true);
+      else if (event.key === 'F9' && canClose) void submit();
+      else return;
+      event.preventDefault();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
   const totals = cartTotals(lines);
   const checkout = (
     <>
@@ -354,6 +379,7 @@ export function PosView() {
                 onPick={add}
                 onBarcode={handleBarcode}
                 inCart={inCart}
+                onStepLast={stepLast}
               />
             </div>
           ) : warehousesPending ? null : (
@@ -422,7 +448,14 @@ export function PosView() {
         </Card>
       )}
 
-      <SaleReceiptDialog sale={receipt} onClose={() => setReceipt(null)} />
+      <SaleReceiptDialog
+        sale={receipt}
+        onClose={() => {
+          setReceipt(null);
+          // Keyingi mijoz: oyna yopilgach kursor yana shtrix-kodda.
+          setTimeout(() => document.getElementById('pos-barcode')?.focus());
+        }}
+      />
       <SaleCreditDialog
         open={creditOpen}
         onOpenChange={setCreditOpen}
