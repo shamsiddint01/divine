@@ -382,8 +382,8 @@ describe('balans, qo‘lda blok, yengillik, jurnal', () => {
       amountDue: '20000.00',
       lastPaidAt: TODAY,
       payments: [
-        { amount: '250000.00', paidUntil: '2026-12-20' },
         { amount: '30000.00', paidUntil: '2026-12-20' },
+        { amount: '250000.00', paidUntil: '2026-12-20' },
       ],
     });
   });

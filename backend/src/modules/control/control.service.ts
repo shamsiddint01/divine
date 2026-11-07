@@ -122,7 +122,9 @@ export class ControlService {
     const site =
       (await this.prisma.controlSite.findUnique({
         where: { id },
-        include: { payments: { orderBy: { paidAt: 'desc' }, take: LICENSE_PAYMENTS } },
+        include: {
+          payments: { orderBy: [{ paidAt: 'desc' }, { createdAt: 'desc' }], take: LICENSE_PAYMENTS },
+        },
       })) ?? notFound();
     try {
       await this.sites.setLicense(site, {

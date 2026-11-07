@@ -35,7 +35,7 @@ const TABLES = [
   'warehouse_stock',
   'warehouses',
 ];
-const IMMUTABLE = ['audit_logs', 'inventory_movements', 'sale_items', 'sales'];
+const IMMUTABLE = ['audit_logs', 'control_events', 'inventory_movements', 'sale_items', 'sales'];
 /** Hosila yig'malar (Phase 17): faqat trigger yozadi (SECURITY DEFINER) — ilova faqat o'qiydi. */
 const DERIVED = ['warehouse_sales_totals'];
 const WRITABLE_TABLES = TABLES.filter((t) => !DERIVED.includes(t));
