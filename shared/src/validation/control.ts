@@ -51,6 +51,12 @@ export const siteViewVerifySchema = z.strictObject({
   code: z.string().regex(/^\d{6}$/, { error: 'Kod 6 ta raqamdan iborat' }),
 });
 
+export const controlVerifySchema = z.strictObject({
+  challengeId: z.uuid(),
+  code: z.string().regex(/^\d{6}$/, { error: 'Kod 6 ta raqamdan iborat' }),
+});
+export type ControlVerifyInput = z.infer<typeof controlVerifySchema>;
+
 export const controlLoginSchema = z.strictObject({
   login: z.string().trim().min(1).max(32),
   password: z.string().min(1).max(200),

@@ -15,6 +15,8 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   type ControlLoginInput,
   controlLoginSchema,
+  type ControlVerifyInput,
+  controlVerifySchema,
   type ControlPaymentInput,
   controlPaymentSchema,
   type ControlSiteCreateInput,
@@ -38,6 +40,7 @@ import {
   ControlEnabledGuard,
   ControlSessionGuard,
 } from './control.guard.js';
+import { ControlTokenGuard } from '../site/control-token.guard.js';
 import { ControlService } from './control.service.js';
 
 const cookieOptions = (config: AppConfig) => ({
@@ -60,15 +63,34 @@ export class ControlAuthController {
 
   @Post('login')
   @RateLimitGroup('login')
-  @HttpCode(204)
-  @ApiOperation({ summary: 'Superadmin kirishi' })
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Superadmin kirishi (Telegram sozlangan bo‘lsa — kod so‘raladi)' })
   async login(
     @ZodBody(controlLoginSchema) body: ControlLoginInput,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
+  ): Promise<{ codeRequired: boolean; challengeId?: string }> {
+    assertCsrfSafe(req, this.config);
+    const result = await this.control.login(body);
+    if ('challengeId' in result) return { codeRequired: true, challengeId: result.challengeId };
+    this.setSession(res, result.token);
+    return { codeRequired: false };
+  }
+
+  @Post('verify')
+  @RateLimitGroup('login')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Telegram kodini tekshirish' })
+  async verify(
+    @ZodBody(controlVerifySchema) body: ControlVerifyInput,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
     assertCsrfSafe(req, this.config);
-    const token = await this.control.login(body);
+    this.setSession(res, await this.control.verifyCode(body.challengeId, body.code));
+  }
+
+  private setSession(res: Response, token: string): void {
     res.cookie(CONTROL_COOKIE, token, {
       ...cookieOptions(this.config),
       maxAge: CONTROL_TTL_SECONDS * 1000,
@@ -81,6 +103,22 @@ export class ControlAuthController {
   logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): void {
     assertCsrfSafe(req, this.config);
     res.cookie(CONTROL_COOKIE, '', { ...cookieOptions(this.config), maxAge: 0 });
+  }
+}
+
+/** Kunlik eslatma: GitHub Actions saytning kaliti bilan chaqiradi. */
+@ApiTags('Control')
+@Public()
+@UseGuards(ControlEnabledGuard, ControlTokenGuard)
+@Controller('control/cron')
+export class ControlCronController {
+  constructor(private readonly control: ControlService) {}
+
+  @Post('daily')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Kunlik Telegram eslatmasi' })
+  daily() {
+    return this.control.dailyReminder();
   }
 }
 

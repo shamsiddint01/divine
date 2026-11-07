@@ -12,6 +12,7 @@ export const SECRET_FILE_KEYS = [
   'JWT_ACCESS_SECRET',
   'PASSWORD_PEPPER',
   'PASSWORD_PEPPER_V2',
+  'TELEGRAM_BOT_TOKEN',
 ] as const;
 
 export function loadSecretFiles(env: NodeJS.ProcessEnv = process.env): void {

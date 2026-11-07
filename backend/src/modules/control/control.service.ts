@@ -22,7 +22,9 @@ import type { ControlSite } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import { PasswordHasher } from '../auth/password/password-hasher.js';
 import { TokenService } from '../auth/token.service.js';
+import { ControlTwoFactor } from './control-two-factor.js';
 import { SiteClient } from './site-client.js';
+import { TelegramService } from './telegram.service.js';
 
 const DAY_MS = 86_400_000;
 const HEALTH_TIMEOUT_MS = 8_000;
@@ -43,9 +45,44 @@ export class ControlService {
     private readonly hasher: PasswordHasher,
     private readonly tokens: TokenService,
     private readonly sites: SiteClient,
+    private readonly twoFactor: ControlTwoFactor,
+    private readonly telegram: TelegramService,
   ) {}
 
-  async login(input: ControlLoginInput): Promise<string> {
+  /** Parol to'g'ri bo'lsa: Telegram sozlangan — kod yuboriladi, aks holda darhol sessiya. */
+  async login(input: ControlLoginInput): Promise<{ token: string } | { challengeId: string }> {
+    const adminId = await this.checkPassword(input);
+    if (this.twoFactor.enabled) return { challengeId: await this.twoFactor.start(adminId) };
+    return { token: await this.tokens.signControlToken(adminId, this.clock.now()) };
+  }
+
+  async verifyCode(challengeId: string, code: string): Promise<string> {
+    const adminId = await this.twoFactor.verify(challengeId, code);
+    return this.tokens.signControlToken(adminId, this.clock.now());
+  }
+
+  /**
+   * Kunlik eslatma (09:00, GitHub Actions): bugun-ertaga to'lashi kerak va bloklangan saytlar.
+   * Telegram sozlanmagan yoki xabar yo'q — hech narsa yuborilmaydi.
+   */
+  async dailyReminder(): Promise<{ sent: boolean }> {
+    if (!this.telegram.enabled) return { sent: false };
+    const sites = await this.list();
+    const line = (site: ControlSiteDto) =>
+      `• ${site.name} — ${site.ownerName}${site.ownerPhone ? `, ${site.ownerPhone}` : ''}: ` +
+      `${site.paidUntil.split('-').reverse().join('.')}, kerak ${Number(site.amountDue).toLocaleString('ru-RU')} so‘m`;
+    const expiring = sites.filter((site) => site.status === 'EXPIRING');
+    const expired = sites.filter((site) => site.status === 'EXPIRED');
+    if (expiring.length === 0 && expired.length === 0) return { sent: false };
+    const parts = ['Divine: to‘lovlar'];
+    if (expiring.length > 0)
+      parts.push('', 'Bugun yoki ertaga to‘lashi kerak:', ...expiring.map(line));
+    if (expired.length > 0) parts.push('', 'Bloklangan:', ...expired.map(line));
+    await this.telegram.send(parts.join('\n'));
+    return { sent: true };
+  }
+
+  private async checkPassword(input: ControlLoginInput): Promise<string> {
     const admin = await this.prisma.controlAdmin.findUnique({
       where: { login: input.login.toLowerCase() },
     });
@@ -53,7 +90,7 @@ export class ControlService {
       ? await this.hasher.verify(admin.passwordHash, input.password)
       : await this.hasher.verifyAgainstDummy(input.password);
     if (!admin || !valid) throw new AppError(ErrorCode.INVALID_CREDENTIALS);
-    return this.tokens.signControlToken(admin.id, this.clock.now());
+    return admin.id;
   }
 
   private toDto(site: ControlSite, lastPaidAt: Date | null): ControlSiteDto {
