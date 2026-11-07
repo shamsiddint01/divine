@@ -3,7 +3,7 @@ import {
   type ControlSiteDetailDto,
   type ControlSiteDto,
   type ControlSiteStatus,
-  nextPaidUntil,
+  applyPayment,
 } from '@divine/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Eye, Lock, LockOpen, LogOut, Plus, RefreshCw, Timer, Trash2 } from 'lucide-react';
@@ -257,6 +257,16 @@ function SiteForm({
 function PaymentForm({ site }: { site: ControlSiteDetailDto }) {
   const queryClient = useQueryClient();
   const [paidAt, setPaidAt] = useState(todayInTashkent());
+  const [amount, setAmount] = useState(site.agreedPrice);
+  const preview = /^\d+(\.\d{1,2})?$/.test(amount)
+    ? applyPayment({
+        paidUntil: site.paidUntil,
+        balance: site.balance,
+        agreedPrice: site.agreedPrice,
+        paidAt,
+        amount,
+      })
+    : null;
   const pay = useMutation({
     mutationFn: (input: Record<string, string>) =>
       panelApi.addPayment(site.id, {
@@ -279,7 +289,13 @@ function PaymentForm({ site }: { site: ControlSiteDetailDto }) {
       }}
     >
       <Field label="Summa">
-        <Input name="amount" defaultValue={site.agreedPrice} inputMode="decimal" required />
+        <Input
+          name="amount"
+          value={amount}
+          onChange={(event) => setAmount(event.target.value.replace(',', '.'))}
+          inputMode="decimal"
+          required
+        />
       </Field>
       <Field label="To‘langan sana">
         <DateField name="paidAt" value={paidAt} onChange={setPaidAt} />
@@ -290,10 +306,22 @@ function PaymentForm({ site }: { site: ControlSiteDetailDto }) {
         </Field>
       </div>
       <p className="text-sm text-muted-foreground sm:col-span-2">
-        Bir oyga uzayadi. Keyingi to‘lov:{' '}
-        <span className="font-medium text-foreground">
-          {formatDate(nextPaidUntil(site.paidUntil, paidAt))}
-        </span>
+        {preview === null ? (
+          'Summani to‘g‘ri kiriting'
+        ) : preview.months === 0 ? (
+          <>
+            Muddat uzaymaydi: balansga tushadi (
+            {formatMoney(preview.balance, { withCurrency: true })}).
+          </>
+        ) : (
+          <>
+            {preview.months} oyga uzayadi. Keyingi to‘lov:{' '}
+            <span className="font-medium text-foreground">{formatDate(preview.paidUntil)}</span>
+            {preview.balance !== '0.00'
+              ? `, balansda ${formatMoney(preview.balance, { withCurrency: true })} qoladi`
+              : ''}
+          </>
+        )}
       </p>
       <div className="sm:col-span-2">
         <ErrorText error={pay.error} />
