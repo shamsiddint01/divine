@@ -309,7 +309,12 @@ export class ControlService {
         } catch {
           // Javob yo'q: uxlayotgan yoki ishlamayotgan sayt.
         }
-        const backup = ok ? await this.sites.status(site).then((s) => s.backup, () => null) : null;
+        const backup = ok
+          ? await this.sites.status(site).then(
+              (s) => s.backup,
+              () => null,
+            )
+          : null;
         return { id: site.id, ok, ms, backup };
       }),
     );
