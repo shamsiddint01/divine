@@ -1,0 +1,64 @@
+# Har kecha Neon bazasining nusxasi (docs/RUNBOOK-RENDER.md, "Bekap"). Nusxa parol bilan shifrlanadi
+# (repo ochiq: artifact'ni boshqalar ham ko'rishi mumkin) va 30 kun saqlanadi. Natija saytga yuboriladi,
+# superadmin paneli oxirgi bekap sanasini ko'rsatadi.
+name: Bekap
+
+on:
+  schedule:
+    - cron: '0 21 * * *' # Toshkent vaqti bilan 02:00
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+env:
+  API_URL: https://divine-uz-api.onrender.com
+
+jobs:
+  backup:
+    name: Nusxa olish
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Bazadan nusxa
+        env:
+          DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          docker run --rm -e U="$DATABASE_URL" postgres:18-alpine sh -c 'pg_dump "$U" -Fc' > divine.dump
+          SIZE=$(stat -c %s divine.dump)
+          test "$SIZE" -gt 10000
+          echo "SIZE=$SIZE" >> "$GITHUB_ENV"
+
+      - name: Shifrlash
+        env:
+          PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          test -n "$PASSPHRASE"
+          printf '%s' "$PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+            --symmetric --cipher-algo AES256 -o divine.dump.gpg divine.dump
+          rm divine.dump
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: divine-backup-${{ github.run_id }}
+          path: divine.dump.gpg
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Natijani saytga yuborish
+        if: always()
+        env:
+          TOKEN: ${{ secrets.SITE_CONTROL_TOKEN }}
+          OK: ${{ job.status == 'success' }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl -sS --fail --max-time 90 --retry 3 --retry-delay 20 -X POST \
+            "$API_URL/api/v1/site-control/backup-report" \
+            -H "x-control-token: $TOKEN" -H 'Content-Type: application/json' \
+            -d "{\"ok\":$OK,\"sizeBytes\":${SIZE:-0},\"runUrl\":\"$RUN_URL\"}"
