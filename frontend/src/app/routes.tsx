@@ -44,6 +44,7 @@ const CustomerDetailPage = page(
 const CreditsPage = page(() => import('@/features/credits/pages/CreditsPage'), 'CreditsPage');
 const ExpensesPage = page(() => import('@/features/expenses/pages/ExpensesPage'), 'ExpensesPage');
 const ReportsPage = page(() => import('@/features/reports/pages/ReportsPage'), 'ReportsPage');
+const BillingPage = page(() => import('@/features/site/pages/BillingPage'), 'BillingPage');
 const SettingsPage = page(() => import('@/features/settings/pages/SettingsPage'), 'SettingsPage');
 
 export const routes: RouteObject[] = [
@@ -90,6 +91,7 @@ export const routes: RouteObject[] = [
       { path: 'expenses', element: <ExpensesPage /> },
       { path: 'reports', element: <ReportsPage /> },
       { path: 'settings', element: <SettingsPage /> },
+      { path: 'billing', element: <BillingPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

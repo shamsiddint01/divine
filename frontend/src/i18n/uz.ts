@@ -22,6 +22,7 @@ export const uz = {
     expenses: 'Xarajatlar',
     reports: 'Hisobotlar',
     settings: 'Sozlamalar',
+    billing: 'To‘lov',
     mainMenu: 'Asosiy menyu',
     openMenu: 'Menyuni ochish',
     closeMenu: 'Menyuni yopish',
@@ -141,6 +142,28 @@ export const uz = {
     sortBy: (column: string) => `${column} bo‘yicha saralash`,
     noResults: 'Hech narsa topilmadi',
     noResultsHint: 'Qidiruv so‘zini yoki filtrlarni o‘zgartirib ko‘ring.',
+  },
+  billing: {
+    description: 'Dastur uchun to‘lov: muddat, kelishilgan narx va to‘lovlar tarixi',
+    notConfigured: 'To‘lov ma’lumoti hali kiritilmagan',
+    agreedPrice: 'Kelishilgan narx',
+    perMonth: 'Oyiga',
+    lastPaidAt: 'Oxirgi to‘lov',
+    nextPayment: 'Keyingi to‘lov',
+    daysLeft: (days: number) =>
+      days < 0 ? `${-days} kun o‘tdi` : days === 0 ? 'Bugun oxirgi kun' : `${days} kun qoldi`,
+    balance: 'Balans',
+    amountDue: (amount: string) => `Keyingi oy uchun yana ${amount}`,
+    grace: (date: string) => `Qo‘shimcha muddat berilgan: ${date} gacha ishlaydi`,
+    payTitle: 'To‘lov qilish',
+    payRule:
+      'Kelishilgan narx to‘liq to‘langanda keyingi oy ham to‘langan hisoblanadi. Ortiqcha to‘lov balansda qoladi va keyingi to‘lovdan ayiriladi.',
+    paySoon: 'Onlayn to‘lov tez orada ishga tushadi. Hozircha to‘lov uchun bog‘laning:',
+    history: 'To‘lovlar tarixi',
+    noPayments: 'Hali to‘lov yo‘q',
+    paidAt: 'To‘langan sana',
+    coveredUntil: 'Qaysi sanagacha',
+    amount: 'Summa',
   },
   site: {
     licenseWarning: (owner: string, daysLeft: number, phone: string) =>

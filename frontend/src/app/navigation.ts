@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   BarChart3,
   Boxes,
+  CreditCard,
   FolderTree,
   HandCoins,
   House,
@@ -97,6 +98,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     anyOf: [Permission.REPORTS_READ],
   },
   {
+    key: 'billing',
+    path: '/billing',
+    label: t.nav.billing,
+    icon: CreditCard,
+    anyOf: [Permission.SETTINGS_MANAGE],
+  },
+  {
     key: 'settings',
     path: '/settings',
     label: t.nav.settings,
@@ -142,6 +150,6 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     title: t.nav.sectionAdmin,
     shortTitle: t.nav.sectionAdmin,
     icon: ShieldCheck,
-    keys: ['users', 'settings'],
+    keys: ['users', 'billing', 'settings'],
   },
 ];
