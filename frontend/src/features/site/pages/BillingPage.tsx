@@ -73,7 +73,11 @@ export function BillingPage() {
             <Stat
               label={b.balance}
               value={formatMoney(data.balance, { withCurrency: true })}
-              hint={data.amountDue ? b.amountDue(formatMoney(data.amountDue, { withCurrency: true })) : null}
+              hint={
+                data.amountDue
+                  ? b.amountDue(formatMoney(data.amountDue, { withCurrency: true }))
+                  : null
+              }
             />
           </div>
           {data.graceUntil && data.graceUntil > data.paidUntil ? (
