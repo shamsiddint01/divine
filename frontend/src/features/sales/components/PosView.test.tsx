@@ -14,6 +14,49 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe('POS — tez kassa', () => {
+  it('Alt+1 tez tugmadan qo‘shadi, + soni oshiradi, F9 yopadi, Enter keyingi sotuvga qaytaradi', async () => {
+    const { state } = renderApp('/sales');
+    const user = userEvent.setup();
+    const quick = await screen.findByRole('region', { name: t.sales.quickTitle }, PAGE);
+    expect(within(quick).getAllByRole('button').length).toBeGreaterThan(0);
+    const barcode = screen.getByLabelText(t.sales.barcodeLabel);
+    barcode.focus();
+
+    await user.keyboard('{Alt>}1{/Alt}');
+    const quantity = await screen.findByLabelText(new RegExp(t.sales.cart.quantity), {}, PAGE);
+    expect(quantity).toHaveValue('1');
+    barcode.focus();
+    await user.keyboard('+');
+    await waitFor(() => expect(quantity).toHaveValue('2'));
+    await user.keyboard('-');
+    await waitFor(() => expect(quantity).toHaveValue('1'));
+    await user.keyboard('-');
+    expect(quantity).toHaveValue('1');
+
+    const before = state.sales.length;
+    await user.keyboard('{F9}');
+    const dialog = await screen.findByRole('dialog', {}, PAGE);
+    expect(within(dialog).getByText(t.sales.receipt.title)).toBeInTheDocument();
+    await waitFor(() => expect(state.sales.length).toBe(before + 1));
+    await user.keyboard('{Enter}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() => expect(screen.getByLabelText(t.sales.barcodeLabel)).toHaveFocus());
+  });
+
+  it('bo‘sh savatda F9 sotuv yaratmaydi; shtrix-kod boshlangan bo‘lsa + kodga yoziladi', async () => {
+    const { state } = renderApp('/sales');
+    const user = userEvent.setup();
+    const barcode = await screen.findByLabelText(t.sales.barcodeLabel, {}, PAGE);
+    const before = state.sales.length;
+    await user.keyboard('{F9}');
+    expect(state.sales.length).toBe(before);
+    await user.click(barcode);
+    await user.keyboard('12+');
+    expect(barcode).toHaveValue('12+');
+  });
+});
+
 describe('POS — sotuv oqimi', () => {
   it('mijoz ismisiz sotuv "Noma’lum mijoz"ga yoziladi; ism kiritilsa — shu mijozga', async () => {
     const { state } = renderApp('/sales');
