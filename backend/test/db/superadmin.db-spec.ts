@@ -1,6 +1,6 @@
 import type { AddressInfo } from 'node:net';
 import request from 'supertest';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseTrustProxy } from '../../src/config/trusted-proxies.js';
 import { PasswordHasher } from '../../src/modules/auth/password/password-hasher.js';
 import { controlApiToken } from '../../src/modules/site/control-token.guard.js';
@@ -151,7 +151,8 @@ describe('panel: saytlar va to‘lovlar', () => {
       .set({ Origin: ORIGIN, 'X-Requested-With': 'XMLHttpRequest' })
       .set('X-Forwarded-For', uniqueIp())
       .send({ login: 'egasi', password: PANEL_PASSWORD })
-      .expect(204);
+      .expect(200);
+    expect(res.body).toEqual({ codeRequired: false });
     panelCookie = String(res.headers['set-cookie']).split(';')[0]!;
   });
 
@@ -495,6 +496,101 @@ describe('foydalanuvchi IP manzili (TRUST_PROXY ro‘yxati)', () => {
       '213.230.97.152',
     );
     await app.app.close();
+  });
+});
+
+describe('Telegram: kirish kodi va kunlik eslatma', () => {
+  let tg: AuthTestApp;
+  const sent: string[] = [];
+  const realFetch = globalThis.fetch;
+
+  beforeAll(async () => {
+    tg = await createAuthApp({
+      config: {
+        CONTROL_PANEL_ENABLED: true,
+        TELEGRAM_BOT_TOKEN: '123456:test-token-abcdefghijk',
+        TELEGRAM_CHAT_ID: '987654321',
+      },
+    });
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input instanceof Request ? input.url : input);
+      if (!url.startsWith('https://api.telegram.org/')) return realFetch(input, init);
+      sent.push(JSON.parse(String(init?.body)).text as string);
+      return new Response('{"ok":true}', { status: 200 });
+    });
+  });
+  afterAll(async () => {
+    vi.restoreAllMocks();
+    await tg.app.close();
+  });
+
+  const csrf = { Origin: ORIGIN, 'X-Requested-With': 'XMLHttpRequest' };
+  const tgLogin = () =>
+    request(tg.app.getHttpServer())
+      .post('/api/v1/control/auth/login')
+      .set(csrf)
+      .set('X-Forwarded-For', uniqueIp())
+      .send({ login: 'egasi', password: PANEL_PASSWORD })
+      .expect(200);
+  const tgVerify = (challengeId: string, code: string) =>
+    request(tg.app.getHttpServer())
+      .post('/api/v1/control/auth/verify')
+      .set(csrf)
+      .set('X-Forwarded-For', uniqueIp())
+      .send({ challengeId, code });
+
+  it('paroldan keyin kod Telegram’ga boradi; faqat to‘g‘ri kod sessiya beradi', async () => {
+    const res = await tgLogin();
+    expect(res.body.codeRequired).toBe(true);
+    expect(res.headers['set-cookie']).toBeUndefined();
+    const code = /kodi: (\d{6})/.exec(sent.at(-1) ?? '')?.[1];
+    expect(code).toMatch(/^\d{6}$/);
+    const wrong = code === '000000' ? '111111' : '000000';
+    await tgVerify(res.body.challengeId, wrong).expect(401);
+    const ok = await tgVerify(res.body.challengeId, code!).expect(204);
+    expect(String(ok.headers['set-cookie'])).toContain('dv_control=');
+    await tgVerify(res.body.challengeId, code!).expect(401);
+  });
+
+  it('5 xato urinishdan keyin kod ishlamaydi', async () => {
+    const res = await tgLogin();
+    const code = /kodi: (\d{6})/.exec(sent.at(-1) ?? '')?.[1]!;
+    const wrong = code === '000000' ? '111111' : '000000';
+    for (let i = 0; i < 5; i += 1) await tgVerify(res.body.challengeId, wrong).expect(401);
+    await tgVerify(res.body.challengeId, code).expect(401);
+  });
+
+  it('kunlik eslatma: tugayotgan va bloklangan saytlar; kalitsiz chaqirib bo‘lmaydi', async () => {
+    await tg.prisma.controlSite.deleteMany();
+    const create = (name: string, paidUntil: string) =>
+      tg.prisma.controlSite.create({
+        data: {
+          name,
+          siteUrl: 'https://x.example',
+          apiUrl: 'http://127.0.0.1:1',
+          apiToken: 'x'.repeat(40),
+          ownerName: `${name} egasi`,
+          agreedPrice: 100000,
+          paidUntil: new Date(paidUntil),
+        },
+      });
+    await create('Ertaga', TOMORROW);
+    await create('Kecha', YESTERDAY);
+    await create('Uzoq', '2026-12-31');
+    tg.clock.set(BASE_TIME);
+    const cron = () =>
+      request(tg.app.getHttpServer())
+        .post('/api/v1/control/cron/daily')
+        .set('X-Forwarded-For', uniqueIp());
+    await cron().expect(403);
+    const res = await cron().set('x-control-token', controlApiToken(tg.config)).expect(200);
+    expect(res.body).toEqual({ sent: true });
+    const text = sent.at(-1)!;
+    expect(text).toContain('Ertaga — Ertaga egasi');
+    expect(text).toContain('Bloklangan:');
+    expect(text).toContain('Kecha — Kecha egasi');
+    expect(text).not.toContain('Uzoq');
+    await tg.prisma.controlSite.deleteMany();
   });
 });
 

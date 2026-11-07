@@ -1,0 +1,27 @@
+# Har kuni 09:00 (Toshkent): bugun-ertaga to'lashi kerak va bloklangan saytlar egasining Telegram'iga.
+# Telegram sozlanmagan bo'lsa, hech narsa yuborilmaydi (docs/RUNBOOK-RENDER.md, "Telegram").
+name: Eslatmalar
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  API_URL: https://divine-uz-api.onrender.com
+
+jobs:
+  remind:
+    name: Telegram eslatmasi
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Eslatma yuborish
+        env:
+          TOKEN: ${{ secrets.SITE_CONTROL_TOKEN }}
+        run: |
+          curl -sS --fail --max-time 90 --retry 3 --retry-delay 20 -X POST \
+            "$API_URL/api/v1/control/cron/daily" -H "x-control-token: $TOKEN"

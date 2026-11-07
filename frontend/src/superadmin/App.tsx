@@ -139,9 +139,22 @@ function ErrorText({ error }: { error: unknown }) {
 
 function LoginScreen() {
   const queryClient = useQueryClient();
+  const [challengeId, setChallengeId] = useState<string | null>(null);
+  const done = () => queryClient.invalidateQueries({ queryKey: SITES_KEY });
   const login = useMutation({
     mutationFn: panelApi.login,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: SITES_KEY }),
+    onSuccess: async (result) => {
+      if (result.codeRequired && result.challengeId) setChallengeId(result.challengeId);
+      else await done();
+    },
+  });
+  const verify = useMutation({
+    mutationFn: (code: string) => panelApi.verify(challengeId ?? '', code),
+    onSuccess: done,
+    onError: (error) => {
+      // Kod eskirgan yoki urinishlar tugagan: paroldan qaytadan.
+      if (error instanceof PanelError && error.status === 401) setChallengeId(null);
+    },
   });
   return (
     <main className="flex min-h-svh items-center justify-center bg-background p-4">
@@ -150,25 +163,57 @@ function LoginScreen() {
           <CardTitle>Superadmin</CardTitle>
         </CardHeader>
         <CardContent>
-          <form
-            className="grid gap-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const { login: name, password } = values(event);
-              login.mutate({ login: name ?? '', password: password ?? '' });
-            }}
-          >
-            <Field label="Login">
-              <Input name="login" autoComplete="username" required autoFocus />
-            </Field>
-            <Field label="Parol">
-              <Input name="password" type="password" autoComplete="current-password" required />
-            </Field>
-            <ErrorText error={login.error} />
-            <Button type="submit" disabled={login.isPending}>
-              {login.isPending ? 'Tekshirilmoqda…' : 'Kirish'}
-            </Button>
-          </form>
+          {challengeId ? (
+            <form
+              className="grid gap-4"
+              onSubmit={(event) => {
+                event.preventDefault();
+                verify.mutate(values(event).code ?? '');
+              }}
+            >
+              <p className="text-sm text-muted-foreground">
+                Telegram’ga 6 xonali kod yuborildi. Kod 5 daqiqa amal qiladi.
+              </p>
+              <Field label="Kod">
+                <Input
+                  name="code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  pattern="[0-9]{6}"
+                  required
+                  autoFocus
+                />
+              </Field>
+              <ErrorText error={verify.error} />
+              <Button type="submit" disabled={verify.isPending}>
+                {verify.isPending ? 'Tekshirilmoqda…' : 'Tasdiqlash'}
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => setChallengeId(null)}>
+                Orqaga
+              </Button>
+            </form>
+          ) : (
+            <form
+              className="grid gap-4"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const { login: name, password } = values(event);
+                login.mutate({ login: name ?? '', password: password ?? '' });
+              }}
+            >
+              <Field label="Login">
+                <Input name="login" autoComplete="username" required autoFocus />
+              </Field>
+              <Field label="Parol">
+                <Input name="password" type="password" autoComplete="current-password" required />
+              </Field>
+              <ErrorText error={login.error} />
+              <Button type="submit" disabled={login.isPending}>
+                {login.isPending ? 'Tekshirilmoqda…' : 'Kirish'}
+              </Button>
+            </form>
+          )}
         </CardContent>
       </Card>
     </main>

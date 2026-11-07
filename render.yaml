@@ -32,6 +32,11 @@ services:
         sync: false
       - key: PASSWORD_PEPPER
         sync: false
+      # Ixtiyoriy: superadmin kirish kodi va kunlik eslatmalar (scripts/render/telegram-chat-id.sh).
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
 
   - type: web
     name: divine-uz-web
