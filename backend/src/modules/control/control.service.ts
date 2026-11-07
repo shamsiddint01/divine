@@ -123,7 +123,10 @@ export class ControlService {
       (await this.prisma.controlSite.findUnique({
         where: { id },
         include: {
-          payments: { orderBy: [{ paidAt: 'desc' }, { createdAt: 'desc' }], take: LICENSE_PAYMENTS },
+          payments: {
+            orderBy: [{ paidAt: 'desc' }, { createdAt: 'desc' }],
+            take: LICENSE_PAYMENTS,
+          },
         },
       })) ?? notFound();
     try {
