@@ -78,6 +78,10 @@ export function ProductPicker({
     return { product: p, price, blocked: price === null || compareQty(left, '0') <= 0 };
   });
 
+  // Filtrsiz ro'yxat ham eng ko'p sotilganlardan boshlanadi: tez tugmadagi tovar ikki marta chiqmasin.
+  const quickIds = new Set(search || groupId ? [] : quickItems.map((item) => item.product.id));
+  const cards = (data?.data ?? []).filter((p) => !quickIds.has(p.id));
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const digit = /^Digit([1-9])$/.exec(event.code)?.[1];
@@ -175,12 +179,21 @@ export function ProductPicker({
                 disabled={blocked}
                 onClick={() => onPick(product)}
                 className={cn(
-                  'flex min-h-12 items-center gap-2 rounded-md border bg-card px-2.5 py-1.5 text-left text-sm transition-colors',
+                  'relative flex min-h-12 items-center gap-2 rounded-md border bg-card px-2.5 py-1.5 text-left text-sm transition-colors',
+                  inCart[product.id] && 'border-primary/60 bg-primary/[0.04]',
                   blocked
                     ? 'cursor-not-allowed opacity-60'
                     : 'hover:border-primary/50 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none',
                 )}
               >
+                {inCart[product.id] ? (
+                  <span className="absolute -top-2 -right-2 rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
+                    <span className="sr-only">
+                      {t.sales.cart.inCart(formatQuantity(inCart[product.id] ?? '0'))}
+                    </span>
+                    <span aria-hidden>×{formatQuantity(inCart[product.id] ?? '0')}</span>
+                  </span>
+                ) : null}
                 <kbd className="hidden shrink-0 rounded border bg-muted px-1 font-mono text-[11px] text-muted-foreground xl:block">
                   {t.sales.quickHint(index + 1)}
                 </kbd>
@@ -219,7 +232,7 @@ export function ProductPicker({
             <Skeleton key={i} className="h-24" />
           ))}
         </div>
-      ) : data?.data.length === 0 ? (
+      ) : cards.length === 0 && quickIds.size === 0 ? (
         <EmptyState
           icon={PackageSearch}
           title={t.sales.productsEmpty}
@@ -227,7 +240,7 @@ export function ProductPicker({
         />
       ) : (
         <div className={cn(PRODUCT_GRID, isFetching && 'opacity-60')}>
-          {data?.data.map((p) => {
+          {cards.map((p) => {
             const left = inCart[p.id] ? subQty(p.stock, inCart[p.id] ?? '0') : p.stock;
             const out = compareQty(left, '0') <= 0;
             const taken = inCart[p.id];
