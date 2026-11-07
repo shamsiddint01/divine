@@ -247,26 +247,26 @@ model ProductGroup {
 }
 
 model Product {
-  id           String        @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  name         String        @db.VarChar(200)
-  groupId      String        @map("group_id") @db.Uuid
+  id             String        @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  name           String        @db.VarChar(200)
+  groupId        String        @map("group_id") @db.Uuid
   /// Ixtiyoriy, berilsa barcha mahsulotlar (arxivlanganlar ham) orasida unique (D-05, D-09).
-  barcode      String?       @unique @db.VarChar(64)
-  costPrice    Decimal       @map("cost_price") @db.Decimal(18, 2)
-  salePrice    Decimal?       @map("sale_price") @db.Decimal(18, 2)
+  barcode        String?       @unique @db.VarChar(64)
+  costPrice      Decimal       @map("cost_price") @db.Decimal(18, 2)
+  salePrice      Decimal?      @map("sale_price") @db.Decimal(18, 2)
   /// Optom narxi (D-25). Kamida bittasi bo\'lishi shart: `products_price_required`.
-  wholesalePrice Decimal? @map("wholesale_price") @db.Decimal(18, 2)
-  unit         ProductUnit   @default(DONA)
-  allowDecimal Boolean       @default(false) @map("allow_decimal")
+  wholesalePrice Decimal?      @map("wholesale_price") @db.Decimal(18, 2)
+  unit           ProductUnit   @default(DONA)
+  allowDecimal   Boolean       @default(false) @map("allow_decimal")
   /// NULL — global sozlama (`low_stock_default_threshold`).
-  minStock     Decimal?      @map("min_stock") @db.Decimal(14, 3)
-  status       ProductStatus @default(ACTIVE)
-  createdById  String        @map("created_by") @db.Uuid
-  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  minStock       Decimal?      @map("min_stock") @db.Decimal(14, 3)
+  status         ProductStatus @default(ACTIVE)
+  createdById    String        @map("created_by") @db.Uuid
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  group              ProductGroup        @relation(fields: [groupId], references: [id], onDelete: Restrict)
-  createdBy          User                @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  group              ProductGroup          @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  createdBy          User                  @relation(fields: [createdById], references: [id], onDelete: Restrict)
   stock              WarehouseStock[]
   salesTotals        WarehouseSalesTotal[]
   inventoryMovements InventoryMovement[]
@@ -291,7 +291,7 @@ model Warehouse {
   createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt   DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  createdBy          User                @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdBy          User                  @relation(fields: [createdById], references: [id], onDelete: Restrict)
   users              UserWarehouse[]
   stock              WarehouseStock[]
   salesTotals        WarehouseSalesTotal[]
@@ -449,25 +449,25 @@ model Customer {
 
 /// O'zgarmas (D-03, D-07): UPDATE/DELETE trigger bilan rad etiladi.
 model Sale {
-  id                    String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  id                    String        @id @default(dbgenerated("uuidv7()")) @db.Uuid
   /// IDENTITY; UI'da `S-000123`.
-  number                BigInt     @unique @default(autoincrement())
-  soldAt                DateTime   @default(now()) @map("sold_at") @db.Timestamptz(3)
-  userId                String     @map("user_id") @db.Uuid
-  warehouseId           String     @map("warehouse_id") @db.Uuid
-  customerId            String     @map("customer_id") @db.Uuid
-  customerNameSnapshot  String     @map("customer_name_snapshot") @db.VarChar(150)
-  customerPhoneSnapshot String?    @map("customer_phone_snapshot") @db.VarChar(13)
-  totalQuantity         Decimal    @map("total_quantity") @db.Decimal(14, 3)
-  totalAmount           Decimal    @map("total_amount") @db.Decimal(18, 2)
-  totalCost             Decimal    @map("total_cost") @db.Decimal(18, 2)
-  status                SaleStatus @default(COMPLETED)
+  number                BigInt        @unique @default(autoincrement())
+  soldAt                DateTime      @default(now()) @map("sold_at") @db.Timestamptz(3)
+  userId                String        @map("user_id") @db.Uuid
+  warehouseId           String        @map("warehouse_id") @db.Uuid
+  customerId            String        @map("customer_id") @db.Uuid
+  customerNameSnapshot  String        @map("customer_name_snapshot") @db.VarChar(150)
+  customerPhoneSnapshot String?       @map("customer_phone_snapshot") @db.VarChar(13)
+  totalQuantity         Decimal       @map("total_quantity") @db.Decimal(14, 3)
+  totalAmount           Decimal       @map("total_amount") @db.Decimal(18, 2)
+  totalCost             Decimal       @map("total_cost") @db.Decimal(18, 2)
+  status                SaleStatus    @default(COMPLETED)
   priceType             SalePriceType @default(RETAIL) @map("price_type")
   /// `Idempotency-Key` header (REQ-145).
-  idempotencyKey        String     @unique @map("idempotency_key") @db.Uuid
+  idempotencyKey        String        @unique @map("idempotency_key") @db.Uuid
   /// Kanonik payload SHA-256 — kalitni boshqa payload bilan qayta ishlatishni aniqlash uchun.
-  requestHash           String     @map("request_hash") @db.Char(64)
-  createdAt             DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  requestHash           String        @map("request_hash") @db.Char(64)
+  createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user      User       @relation(fields: [userId], references: [id], onDelete: Restrict)
   warehouse Warehouse  @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
@@ -652,10 +652,17 @@ model Setting {
 
 /// Saytning to'lov muddati (superadmin yozadi). Bitta qator; yo'q bo'lsa — sayt cheklanmagan.
 model SiteLicense {
-  id        Int      @id @default(1) @db.SmallInt
-  ownerName String   @map("owner_name") @db.VarChar(200)
-  paidUntil DateTime @map("paid_until") @db.Date
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id          Int       @id @default(1) @db.SmallInt
+  ownerName   String    @map("owner_name") @db.VarChar(200)
+  paidUntil   DateTime  @map("paid_until") @db.Date
+  agreedPrice Decimal?  @map("agreed_price") @db.Decimal(18, 2)
+  balance     Decimal   @default(0) @db.Decimal(18, 2)
+  lastPaidAt  DateTime? @map("last_paid_at") @db.Date
+  manualBlock Boolean   @default(false) @map("manual_block")
+  graceUntil  DateTime? @map("grace_until") @db.Date
+  /// Oxirgi to'lovlar (panel yuboradi): admin to'lov bo'limi uchun.
+  payments    Json      @default("[]")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@map("site_license")
 }
@@ -696,10 +703,14 @@ model ControlSite {
   paidUntil       DateTime  @map("paid_until") @db.Date
   notes           String?   @db.VarChar(1000)
   licenseSyncedAt DateTime? @map("license_synced_at") @db.Timestamptz(3)
+  balance         Decimal   @default(0) @db.Decimal(18, 2)
+  manualBlock     Boolean   @default(false) @map("manual_block")
+  graceUntil      DateTime? @map("grace_until") @db.Date
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   payments ControlPayment[]
+  events   ControlEvent[]
 
   @@map("control_sites")
 }
@@ -717,4 +728,18 @@ model ControlPayment {
 
   @@index([siteId, paidAt])
   @@map("control_payments")
+}
+
+/// Superadmin harakatlari jurnali.
+model ControlEvent {
+  id         BigInt   @id @default(autoincrement())
+  occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  siteId     String?  @map("site_id") @db.Uuid
+  action     String   @db.VarChar(64)
+  details    Json     @default("{}")
+
+  site ControlSite? @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([occurredAt])
+  @@map("control_events")
 }
