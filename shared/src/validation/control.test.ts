@@ -16,7 +16,12 @@ describe('to‘lov muddati', () => {
 });
 
 describe('balans', () => {
-  const base = { paidUntil: '2026-12-06', balance: '0.00', agreedPrice: '100000', paidAt: '2026-12-01' };
+  const base = {
+    paidUntil: '2026-12-06',
+    balance: '0.00',
+    agreedPrice: '100000',
+    paidAt: '2026-12-01',
+  };
 
   it('to‘liq narx — bir oy; ortig‘i keyingi oyga qoladi', () => {
     expect(applyPayment({ ...base, amount: '100000' })).toEqual({
