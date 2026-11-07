@@ -390,7 +390,9 @@ describe('balans, qo‘lda blok, yengillik, jurnal', () => {
 
   it('qo‘lda blok saytni yopadi; yengillik muddat o‘tgan saytni ochadi', async () => {
     const site = (await panel('post', '/sites').send(newSite()).expect(201)).body;
-    const blocked = await panel('patch', `/sites/${site.id}`).send({ manualBlock: true }).expect(200);
+    const blocked = await panel('patch', `/sites/${site.id}`)
+      .send({ manualBlock: true })
+      .expect(200);
     expect(blocked.body.status).toBe('EXPIRED');
     await login(t, { login: admin.login, password: PASSWORD }).expect(403);
     await panel('patch', `/sites/${site.id}`)
@@ -406,7 +408,9 @@ describe('balans, qo‘lda blok, yengillik, jurnal', () => {
 
   it('bosh sahifa hisobi va harakatlar jurnali', async () => {
     const site = (
-      await panel('post', '/sites').send(newSite({ agreedPrice: '100000' })).expect(201)
+      await panel('post', '/sites')
+        .send(newSite({ agreedPrice: '100000' }))
+        .expect(201)
     ).body;
     await panel('post', `/sites/${site.id}/payments`)
       .send({ amount: '100000', paidAt: TODAY })
