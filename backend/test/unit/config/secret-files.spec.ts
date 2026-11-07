@@ -34,6 +34,7 @@ describe('loadSecretFiles (*_FILE)', () => {
         'PASSWORD_PEPPER',
         'PASSWORD_PEPPER_V2',
         'REDIS_URL',
+        'TELEGRAM_BOT_TOKEN',
       ].sort(),
     );
   });
