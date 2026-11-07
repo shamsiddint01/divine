@@ -84,7 +84,7 @@ export class SiteControlController {
 
   @Get('status')
   @ApiOperation({ summary: 'Sayt holati: oxirgi bekap' })
-  async status() {
+  async siteStatus() {
     return { backup: await this.backups.last() };
   }
 
