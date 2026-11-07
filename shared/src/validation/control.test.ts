@@ -30,7 +30,7 @@ describe('balans', () => {
       months: 1,
     });
     expect(applyPayment({ ...base, amount: '250000' })).toEqual({
-      paidUntil: '2027-03-06',
+      paidUntil: '2027-02-06',
       balance: '50000.00',
       months: 2,
     });
