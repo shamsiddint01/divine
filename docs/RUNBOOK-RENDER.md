@@ -46,7 +46,14 @@ Admin paroli terminalda bir marta chiqadi. Render qiymatlari `.env.render.secret
 
 ## Bekap
 
-Neon'dan to'liq nusxa trafik sarflaydi (oyiga 5 GB). Katta bazada haftalik oling.
+- Har kecha 02:00 (Toshkent) `.github/workflows/backup.yml`: `pg_dump` → AES256 bilan shifrlash → GitHub artifact (30 kun).
+  Natija saytga (`/site-control/backup-report`) yuboriladi, superadmin paneli "Bekap" ustunida ko'rsatadi.
+- GitHub kalitlari: `scripts/render/backup-secrets.sh` chiqaradi (`BACKUP_DATABASE_URL`, `BACKUP_PASSPHRASE`,
+  `SITE_CONTROL_TOKEN`). `BACKUP_PASSPHRASE` `.env.render.secrets`da: usiz nusxani ochib bo'lmaydi.
+- Qo'lda: GitHub → Actions → Bekap → Run workflow.
+- Tiklash: artifact'ni yuklab, `scripts/render/decrypt-backup.sh divine.dump.gpg`, keyin **yangi** bazaga
+  `pg_restore --no-owner --no-privileges -d "<yangi baza>" divine.dump`. Ishlab turgan bazaga tiklamang.
+- Neon'dan to'liq nusxa trafik sarflaydi (oyiga 5 GB): baza kattalashsa, kunlikdan haftalikka o'ting.
 
 ## Superadmin paneli
 
