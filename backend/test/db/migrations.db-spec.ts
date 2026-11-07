@@ -6,6 +6,7 @@ import { runPrisma } from './support/global-setup.js';
 const TABLES = [
   'audit_logs',
   'control_admins',
+  'control_events',
   'control_payments',
   'control_sites',
   'credit_installments',
@@ -162,6 +163,7 @@ describe('FK delete strategiyasi (tarix yo‘qolmaydi)', () => {
       .map((r) => `${r.tbl}.${r.col}:${r.rule}`)
       .sort();
     expect(nonRestrict).toEqual([
+      'control_events.site_id:c',
       'control_payments.site_id:c',
       'incoming_items.incoming_id:c', // faqat DRAFT kirim o'chiriladi (trigger)
       'role_permissions.permission_id:c',

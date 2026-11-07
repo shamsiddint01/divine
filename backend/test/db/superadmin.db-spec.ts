@@ -73,6 +73,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   t.clock.set(BASE_TIME);
   await t.prisma.siteLicense.deleteMany();
+  await t.prisma.controlEvent.deleteMany();
   await t.prisma.controlSite.deleteMany();
   await t.prisma.siteAccessRequest.deleteMany();
 });
@@ -99,7 +100,7 @@ describe('sayt: to‘lov muddati va avtomatik blok', () => {
       .get('/api/v1/site/license')
       .set({ Authorization: `Bearer ${accessToken}` })
       .expect(200);
-    expect(res.body).toEqual({ ownerName: 'Ali Valiyev', paidUntil: TOMORROW, daysLeft: 1 });
+    expect(res.body).toMatchObject({ ownerName: 'Ali Valiyev', paidUntil: TOMORROW, daysLeft: 1 });
     await setLicense(TODAY).expect(204);
     await login(t, { login: admin.login, password: PASSWORD }).expect(200);
   });
@@ -348,6 +349,80 @@ describe('so‘rovlar cheklovi va rad etish', () => {
     expect((await ask()).status).toBeGreaterThanOrEqual(400);
     t.clock.advance(60_000);
     await ask().expect(201);
+  });
+});
+
+describe('balans, qo‘lda blok, yengillik, jurnal', () => {
+  it('ortiqcha to‘lov keyingi oyga, kami balansda; admin to‘lov bo‘limida ko‘radi', async () => {
+    const site = (
+      await panel('post', '/sites')
+        .send(newSite({ agreedPrice: '100000', paidUntil: '2026-10-20' }))
+        .expect(201)
+    ).body;
+    const paid = await panel('post', `/sites/${site.id}/payments`)
+      .send({ amount: '250000', paidAt: TODAY })
+      .expect(201);
+    expect(paid.body).toMatchObject({
+      paidUntil: '2026-12-20',
+      balance: '50000.00',
+      amountDue: '50000.00',
+    });
+    const partial = await panel('post', `/sites/${site.id}/payments`)
+      .send({ amount: '30000', paidAt: TODAY })
+      .expect(201);
+    expect(partial.body).toMatchObject({ paidUntil: '2026-12-20', balance: '80000.00' });
+
+    const license = await server()
+      .get('/api/v1/site/license')
+      .set({ Authorization: `Bearer ${await signIn()}` })
+      .expect(200);
+    expect(license.body).toMatchObject({
+      agreedPrice: '100000.00',
+      balance: '80000.00',
+      amountDue: '20000.00',
+      lastPaidAt: TODAY,
+      payments: [
+        { amount: '250000.00', paidUntil: '2026-12-20' },
+        { amount: '30000.00', paidUntil: '2026-12-20' },
+      ],
+    });
+  });
+
+  it('qo‘lda blok saytni yopadi; yengillik muddat o‘tgan saytni ochadi', async () => {
+    const site = (await panel('post', '/sites').send(newSite()).expect(201)).body;
+    const blocked = await panel('patch', `/sites/${site.id}`).send({ manualBlock: true }).expect(200);
+    expect(blocked.body.status).toBe('EXPIRED');
+    await login(t, { login: admin.login, password: PASSWORD }).expect(403);
+    await panel('patch', `/sites/${site.id}`)
+      .send({ manualBlock: false, paidUntil: YESTERDAY })
+      .expect(200);
+    await login(t, { login: admin.login, password: PASSWORD }).expect(403);
+    const grace = await panel('patch', `/sites/${site.id}`)
+      .send({ graceUntil: '2026-10-16' })
+      .expect(200);
+    expect(grace.body).toMatchObject({ status: 'ACTIVE', daysLeft: 7, graceUntil: '2026-10-16' });
+    await login(t, { login: admin.login, password: PASSWORD }).expect(200);
+  });
+
+  it('bosh sahifa hisobi va harakatlar jurnali', async () => {
+    const site = (
+      await panel('post', '/sites').send(newSite({ agreedPrice: '100000' })).expect(201)
+    ).body;
+    await panel('post', `/sites/${site.id}/payments`)
+      .send({ amount: '100000', paidAt: TODAY })
+      .expect(201);
+    const dashboard = (await panel('get', '/sites/dashboard').expect(200)).body;
+    expect(dashboard).toMatchObject({
+      sites: { total: 1, active: 1, expired: 0 },
+      revenueThisMonth: '100000.00',
+    });
+    const events = (await panel('get', `/sites/events?siteId=${site.id}`).expect(200)).body;
+    expect(events.map((e: { action: string }) => e.action)).toEqual([
+      'PAYMENT_ADDED',
+      'SITE_CREATED',
+    ]);
+    const health = (await panel('get', '/sites/health').expect(200)).body;
+    expect(health).toEqual([{ id: site.id, ok: true, ms: expect.any(Number) }]);
   });
 });
 
