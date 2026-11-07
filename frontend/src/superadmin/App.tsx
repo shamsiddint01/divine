@@ -689,12 +689,19 @@ function HealthDot({ ok, ms }: { ok: boolean | undefined; ms: number | null | un
 const BACKUP_STALE_MS = 36 * 3600_000;
 
 /** Oxirgi bekap: yashil — 36 soat ichida muvaffaqiyatli, sariq — eski, qizil — xato yoki yo'q. */
-function BackupBadge({ health }: { health: ControlSiteHealthDto | undefined }) {
+function BackupBadge({
+  health,
+  checkedAt,
+}: {
+  health: ControlSiteHealthDto | undefined;
+  /** Holat qachon olingan: bekap shu paytga nisbatan eski hisoblanadi. */
+  checkedAt: number;
+}) {
   if (!health) return <span className="text-xs text-muted-foreground">…</span>;
   if (!health.ok) return <span className="text-xs text-muted-foreground">Sayt javob bermadi</span>;
   const backup = health.backup;
   if (!backup) return <Badge className="bg-destructive/15 text-destructive">Bekap yo‘q</Badge>;
-  const stale = Date.now() - Date.parse(backup.at) > BACKUP_STALE_MS;
+  const stale = checkedAt - Date.parse(backup.at) > BACKUP_STALE_MS;
   const className = !backup.ok
     ? 'bg-destructive/15 text-destructive'
     : stale
@@ -709,7 +716,7 @@ function BackupBadge({ health }: { health: ControlSiteHealthDto | undefined }) {
 }
 
 function SitesScreen({ sites }: { sites: ControlSiteDto[] }) {
-  const { data: health } = useQuery({
+  const { data: health, dataUpdatedAt } = useQuery({
     queryKey: ['health'],
     queryFn: panelApi.health,
     refetchInterval: 60_000,
@@ -782,7 +789,7 @@ function SitesScreen({ sites }: { sites: ControlSiteDto[] }) {
                     <span className="block text-xs text-muted-foreground">{daysLabel(site)}</span>
                   </TableCell>
                   <TableCell>
-                    <BackupBadge health={healthOf(site.id)} />
+                    <BackupBadge health={healthOf(site.id)} checkedAt={dataUpdatedAt} />
                   </TableCell>
                   <TableCell className="text-right">
                     {formatMoney(site.agreedPrice, { withCurrency: true })}
