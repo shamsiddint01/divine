@@ -10,7 +10,7 @@ import { t } from '@/i18n/uz';
 import { useMediaQuery } from '@/shared/hooks/use-media-query';
 import { BrandLogo } from '@/shared/ui/brand-logo';
 // "Bepul sinab ko'rish" / "Bepul boshlash" — o'z-o'zidan ro'yxatdan o'tish yo'q, Telegram kanal orqali.
-import { PHONE_HREF, TELEGRAM_URL } from '@/shared/lib/contacts';
+import { PHONE_HREF, TELEGRAM_URL, TRIAL_BOT_URL } from '@/shared/lib/contacts';
 import './landing.css';
 
 const SECTIONS = [
@@ -37,7 +37,7 @@ function Brand() {
 function TelegramButton({ label, className }: { label: string; className?: string }) {
   return (
     <a
-      href={TELEGRAM_URL}
+      href={TRIAL_BOT_URL}
       target="_blank"
       rel="noopener noreferrer"
       className={`ld-btn ld-btn--primary ${className ?? ''}`}

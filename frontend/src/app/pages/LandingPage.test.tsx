@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { t } from '@/i18n/uz';
 import { PAGE, renderApp } from '@/test/render-app';
 
-const TELEGRAM = 'https://t.me/+BvvsmvXvWZQ1YjAy';
+const TRIAL_BOT = 'https://t.me/divine_uzbot';
 
 describe('landing sahifa (/welcome)', () => {
   it('login’siz ochiladi va "Kirish" /login ga olib boradi', async () => {
@@ -22,7 +22,7 @@ describe('landing sahifa (/welcome)', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe('/login'));
   });
 
-  it('"Bepul sinab ko‘rish" va "Bepul boshlash" Telegram kanalni yangi oynada ochadi', async () => {
+  it('"Bepul sinab ko‘rish" va "Bepul boshlash" Telegram botni yangi oynada ochadi', async () => {
     renderApp('/welcome', { loggedOut: true });
     // Hero va yakuniy blokdagi "Bepul sinab ko'rish" + headerdagi "Bepul boshlash".
     const tryFree = await screen.findAllByRole(
@@ -33,7 +33,7 @@ describe('landing sahifa (/welcome)', () => {
     expect(tryFree).toHaveLength(2);
     const start = screen.getByRole('link', { name: new RegExp(t.landing.start) });
     for (const link of [...tryFree, start]) {
-      expect(link).toHaveAttribute('href', TELEGRAM);
+      expect(link).toHaveAttribute('href', TRIAL_BOT);
       expect(link).toHaveAttribute('target', '_blank');
       expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
     }
@@ -58,12 +58,12 @@ describe('landing sahifa (/welcome)', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
-  it('yakuniy CTA Telegram kanalni ochadi; JS kuzatuvchisi bo‘lmasa hech narsa yashirilmaydi', async () => {
+  it('yakuniy CTA Telegram botni ochadi; JS kuzatuvchisi bo‘lmasa hech narsa yashirilmaydi', async () => {
     renderApp('/welcome', { loggedOut: true });
     const final = await screen.findByRole('region', { name: t.landing.final.title }, PAGE);
     expect(
       within(final).getByRole('link', { name: new RegExp(t.landing.tryFree) }),
-    ).toHaveAttribute('href', TELEGRAM);
+    ).toHaveAttribute('href', TRIAL_BOT);
     // jsdom'da IntersectionObserver yo'q — scroll effekti ulanmaydi, kontent ko'rinib turadi.
     expect(final.closest('.ld')).not.toHaveAttribute('data-reveal-ready');
   });

@@ -114,7 +114,7 @@ describe('login sahifasi (mock auth)', () => {
     expect(screen.getByLabelText(t.auth.password, { selector: 'input' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: new RegExp(t.landing.tryFree) })).toHaveAttribute(
       'href',
-      'https://t.me/+BvvsmvXvWZQ1YjAy',
+      'https://t.me/divine_uzbot',
     );
     await userEvent.click(screen.getByRole('link', { name: t.auth.backHome }));
     await waitFor(() => expect(router.state.location.pathname).toBe('/welcome'));

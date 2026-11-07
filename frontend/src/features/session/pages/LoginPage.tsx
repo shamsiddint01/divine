@@ -22,7 +22,7 @@ import { MOCK_DEMO_PASSWORD } from '@/mocks/handlers/auth.constants';
 import { t } from '@/i18n/uz';
 import { FormField } from '@/shared/components/FormField';
 import { ApiError } from '@/shared/lib/api-client';
-import { PHONE_HREF, TELEGRAM_URL } from '@/shared/lib/contacts';
+import { PHONE_HREF, TELEGRAM_URL, TRIAL_BOT_URL } from '@/shared/lib/contacts';
 import { authMode } from '@/shared/lib/api-mode';
 import { applyFieldErrors } from '@/shared/lib/mutation';
 import { cn } from '@/shared/lib/utils';
@@ -330,7 +330,7 @@ export function LoginPage() {
             <p className="mt-6 text-center text-sm text-muted-foreground">
               {t.auth.noAccount}{' '}
               <a
-                href={TELEGRAM_URL}
+                href={TRIAL_BOT_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="rounded-sm font-medium text-primary outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50"
