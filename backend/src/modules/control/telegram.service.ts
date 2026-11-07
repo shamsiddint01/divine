@@ -18,7 +18,7 @@ export class TelegramService {
   }
 
   async send(text: string): Promise<void> {
-    let ok = false;
+    let reason = 'Telegram javob bermadi';
     try {
       const response = await fetch(
         `https://api.telegram.org/bot${this.config.TELEGRAM_BOT_TOKEN}/sendMessage`,
@@ -29,15 +29,27 @@ export class TelegramService {
           body: JSON.stringify({ chat_id: this.config.TELEGRAM_CHAT_ID, text }),
         },
       );
-      ok = response.ok;
+      if (response.ok) return;
+      const body = (await response.json().catch(() => null)) as { description?: string } | null;
+      reason = describe(response.status, body?.description);
     } catch {
-      // Pastda: xato xabari token'siz.
+      // Tarmoq xatosi: `reason` o'zgarmaydi. Xabarda token yo'q.
     }
-    if (!ok) {
-      this.logger.warn('Telegram xabari yuborilmadi');
-      throw new AppError(ErrorCode.SERVICE_UNAVAILABLE, {
-        message: 'Telegram’ga xabar yuborib bo‘lmadi, birozdan keyin qayta urinib ko‘ring',
-      });
-    }
+    this.logger.warn(`Telegram xabari yuborilmadi: ${reason}`);
+    throw new AppError(ErrorCode.SERVICE_UNAVAILABLE, {
+      message: `Telegram’ga xabar yuborib bo‘lmadi: ${reason}`,
+    });
   }
+}
+
+/** Telegram javobi → egasiga tushunarli sabab (token va chat ID qiymatlarisiz). */
+function describe(status: number, description = ''): string {
+  if (status === 401 || status === 404) return 'bot tokeni noto‘g‘ri (Render: TELEGRAM_BOT_TOKEN)';
+  if (/chat not found/i.test(description)) {
+    return 'chat topilmadi: botga Start bosing va TELEGRAM_CHAT_ID ni tekshiring';
+  }
+  if (/blocked|deactivated|initiate/i.test(description)) {
+    return 'bot sizga yoza olmayapti: botni oching va Start bosing';
+  }
+  return description || `Telegram xatosi ${status}`;
 }
