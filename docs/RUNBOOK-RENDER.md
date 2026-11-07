@@ -63,3 +63,11 @@ Admin paroli terminalda bir marta chiqadi. Render qiymatlari `.env.render.secret
 - Sayt muddatni o'zida saqlaydi (`site_license`) va o'zi bloklaydi: panel uxlasa ham blok ishlaydi.
 - **Migratsiya koddan oldin:** auto-sync har o'zgarishni `main`ga chiqaradi va Render darhol ishga tushiradi.
   Yangi jadvalga bog'liq kod bo'lsa, avval Neon'ga migratsiya qiling.
+
+## Telegram
+
+- Render'dagi `divine-uz-api` → Environment: `TELEGRAM_BOT_TOKEN` va `TELEGRAM_CHAT_ID`. Ikkalasi bo'lsa — superadmin
+  kirishida Telegram kodi (5 daqiqa, 5 urinish) va har kuni 09:00 eslatma (`.github/workflows/reminders.yml`).
+- Chat ID: botga `/start` yozib, `scripts/render/telegram-chat-id.sh`.
+- Telegram ishlamay qolsa yoki bot yo'qolsa: Render'da shu ikki o'zgaruvchini o'chiring — kirish parol bilan qoladi.
+
