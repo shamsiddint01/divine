@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module.js';
 import { LicenseModule } from '../license/license.module.js';
 import { ControlTokenGuard } from './control-token.guard.js';
+import { BackupStatusService } from './backup-status.service.js';
 import { SiteAccessService } from './site-access.service.js';
 import { SiteControlController, SiteController } from './site.controller.js';
 
@@ -9,6 +10,6 @@ import { SiteControlController, SiteController } from './site.controller.js';
 @Module({
   imports: [AuthModule, LicenseModule],
   controllers: [SiteController, SiteControlController],
-  providers: [SiteAccessService, ControlTokenGuard],
+  providers: [SiteAccessService, BackupStatusService, ControlTokenGuard],
 })
 export class SiteModule {}

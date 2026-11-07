@@ -1,6 +1,8 @@
 import { Controller, Delete, Get, HttpCode, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
+  type BackupReportInput,
+  backupReportSchema,
   Permission,
   type SiteAccessRequestDto,
   type SiteLicenseDto,
@@ -19,6 +21,7 @@ import {
 import { ZodBody } from '../../common/validation/zod-validation.pipe.js';
 import { LicenseService } from '../license/license.service.js';
 import { ControlTokenGuard } from './control-token.guard.js';
+import { BackupStatusService } from './backup-status.service.js';
 import { SiteAccessService } from './site-access.service.js';
 
 /** Sayt foydalanuvchilari uchun: to'lov eslatmasi va superadmin so'rovi bildirishnomasi. */
@@ -62,6 +65,7 @@ export class SiteControlController {
   constructor(
     private readonly license: LicenseService,
     private readonly access: SiteAccessService,
+    private readonly backups: BackupStatusService,
   ) {}
 
   @Put('license')
@@ -69,6 +73,19 @@ export class SiteControlController {
   @ApiOperation({ summary: 'Egasi nomi va to‘lov muddatini yozish' })
   setLicense(@ZodBody(siteLicenseSchema) body: SiteLicenseInput) {
     return this.license.set(body);
+  }
+
+  @Post('backup-report')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Kechki bekap natijasi (GitHub Actions)' })
+  backupReport(@ZodBody(backupReportSchema) body: BackupReportInput) {
+    return this.backups.report(body);
+  }
+
+  @Get('status')
+  @ApiOperation({ summary: 'Sayt holati: oxirgi bekap' })
+  async status() {
+    return { backup: await this.backups.last() };
   }
 
   @Post('access-requests')

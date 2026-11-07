@@ -292,18 +292,25 @@ export class ControlService {
 
   /** Sayt ishlayaptimi: `/health` javob beradimi. Uxlayotgan bepul server uyg'onguncha javobsiz. */
   async health(): Promise<ControlSiteHealthDto[]> {
-    const sites = await this.prisma.controlSite.findMany({ select: { id: true, apiUrl: true } });
+    const sites = await this.prisma.controlSite.findMany({
+      select: { id: true, apiUrl: true, apiToken: true },
+    });
     return Promise.all(
       sites.map(async (site) => {
         const started = Date.now();
+        let ok = false;
+        let ms: number | null = null;
         try {
           const response = await fetch(`${site.apiUrl}/api/v1/health`, {
             signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
           });
-          return { id: site.id, ok: response.ok, ms: response.ok ? Date.now() - started : null };
+          ok = response.ok;
+          ms = ok ? Date.now() - started : null;
         } catch {
-          return { id: site.id, ok: false, ms: null };
+          // Javob yo'q: uxlayotgan yoki ishlamayotgan sayt.
         }
+        const backup = ok ? await this.sites.status(site).then((s) => s.backup, () => null) : null;
+        return { id: site.id, ok, ms, backup };
       }),
     );
   }

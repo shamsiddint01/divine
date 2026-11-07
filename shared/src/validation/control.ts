@@ -40,6 +40,13 @@ export const siteLicenseSchema = z.strictObject({
   payments: z.array(siteLicensePaymentSchema).max(24).optional(),
 });
 
+/** GitHub Actions bekap natijasi (`POST /site-control/backup-report`). */
+export const backupReportSchema = z.strictObject({
+  ok: z.boolean(),
+  sizeBytes: z.number().int().min(0).optional(),
+  runUrl: z.url().optional(),
+});
+
 export const siteViewVerifySchema = z.strictObject({
   code: z.string().regex(/^\d{6}$/, { error: 'Kod 6 ta raqamdan iborat' }),
 });
@@ -142,6 +149,7 @@ export function amountDue(agreedPrice: string, balance: string): string {
 }
 
 export type SiteLicenseInput = z.infer<typeof siteLicenseSchema>;
+export type BackupReportInput = z.infer<typeof backupReportSchema>;
 export type SiteViewVerifyInput = z.infer<typeof siteViewVerifySchema>;
 export type ControlLoginInput = z.infer<typeof controlLoginSchema>;
 export type ControlSiteCreateInput = z.infer<typeof controlSiteCreateSchema>;

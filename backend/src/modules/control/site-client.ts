@@ -3,6 +3,7 @@ import {
   ErrorCode,
   ERROR_MESSAGES_UZ,
   isApiErrorBody,
+  type BackupStatusDto,
   type SiteLicenseInput,
   type SiteViewRequestStatus,
 } from '@divine/shared';
@@ -56,6 +57,10 @@ export class SiteClient {
 
   requestView(site: Target): Promise<{ id: string; expiresAt: string }> {
     return this.call(site, 'POST', '/access-requests');
+  }
+
+  status(site: Target): Promise<{ backup: BackupStatusDto | null }> {
+    return this.call(site, 'GET', '/status');
   }
 
   viewStatus(site: Target, id: string): Promise<{ status: SiteViewRequestStatus }> {

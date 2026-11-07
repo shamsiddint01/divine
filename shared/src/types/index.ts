@@ -638,11 +638,20 @@ export interface ControlDashboardDto {
   expectedThisMonth: string;
 }
 
+export interface BackupStatusDto {
+  ok: boolean;
+  at: string;
+  sizeBytes: number | null;
+  runUrl: string | null;
+}
+
 export interface ControlSiteHealthDto {
   id: string;
   ok: boolean;
   /** Javob vaqti; javob bo'lmasa `null`. */
   ms: number | null;
+  /** Oxirgi bekap (sayt javob bersa); hech qachon bo'lmagan — `null`. */
+  backup: BackupStatusDto | null;
 }
 
 export interface ControlSiteDetailDto extends ControlSiteDto {
