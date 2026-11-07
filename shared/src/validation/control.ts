@@ -23,9 +23,21 @@ const nullableNotes = z.preprocess(
   z.string().trim().max(1000).nullable(),
 );
 
+export const siteLicensePaymentSchema = z.strictObject({
+  amount: moneySchema,
+  paidAt: dateOnlySchema,
+  paidUntil: dateOnlySchema,
+});
+
 export const siteLicenseSchema = z.strictObject({
   ownerName: entityNameSchema,
   paidUntil: dateOnlySchema,
+  agreedPrice: moneySchema.nullable().optional(),
+  balance: moneySchema.optional(),
+  lastPaidAt: dateOnlySchema.nullable().optional(),
+  manualBlock: z.boolean().optional(),
+  graceUntil: dateOnlySchema.nullable().optional(),
+  payments: z.array(siteLicensePaymentSchema).max(24).optional(),
 });
 
 export const siteViewVerifySchema = z.strictObject({
@@ -53,7 +65,15 @@ export const controlSiteCreateSchema = z.strictObject({
   apiToken: z.string().trim().min(32).max(200),
 });
 
-export const controlSiteUpdateSchema = z.strictObject(controlSiteFields).partial();
+export const controlSiteUpdateSchema = z
+  .strictObject({
+    ...controlSiteFields,
+    /** Muddatdan qat'i nazar sayt yopiq (egasining qarori, 2026-11-07). */
+    manualBlock: z.boolean(),
+    /** Yengillik: shu kungacha muddat o'tgan bo'lsa ham ishlaydi. */
+    graceUntil: dateOnlySchema.nullable(),
+  })
+  .partial();
 
 export const controlPaymentSchema = z.strictObject({
   amount: positiveMoneySchema,
@@ -76,6 +96,49 @@ export function addOneMonth(date: string): string {
  */
 export function nextPaidUntil(currentPaidUntil: string, paidAt: string): string {
   return addOneMonth(currentPaidUntil > paidAt ? currentPaidUntil : paidAt);
+}
+
+const toCents = (value: string): bigint => {
+  const [whole = '0', fraction = ''] = value.split('.');
+  return BigInt(whole) * 100n + BigInt(fraction.padEnd(2, '0').slice(0, 2) || '0');
+};
+const fromCents = (cents: bigint): string =>
+  `${cents / 100n}.${String(cents % 100n).padStart(2, '0')}`;
+
+/**
+ * To'lov balansga tushadi; har to'liq kelishilgan narx — bir oy (egasining qarori, 2026-11-07).
+ * Ortig'i keyingi oyga qoladi, kami narx yig'ilguncha balansda turadi. Narx 0 bo'lsa — har to'lov bir oy.
+ */
+export function applyPayment(input: {
+  paidUntil: string;
+  balance: string;
+  agreedPrice: string;
+  paidAt: string;
+  amount: string;
+}): { paidUntil: string; balance: string; months: number } {
+  const price = toCents(input.agreedPrice);
+  let balance = toCents(input.balance) + toCents(input.amount);
+  let paidUntil = input.paidUntil;
+  let months = 0;
+  const extend = () => {
+    paidUntil = months === 0 ? nextPaidUntil(paidUntil, input.paidAt) : addOneMonth(paidUntil);
+    months += 1;
+  };
+  if (price === 0n) {
+    extend();
+    return { paidUntil, balance: fromCents(balance), months };
+  }
+  while (balance >= price && months < 120) {
+    balance -= price;
+    extend();
+  }
+  return { paidUntil, balance: fromCents(balance), months };
+}
+
+/** Keyingi oy uchun yana qancha to'lash kerak. */
+export function amountDue(agreedPrice: string, balance: string): string {
+  const due = toCents(agreedPrice) - toCents(balance);
+  return fromCents(due > 0n ? due : 0n);
 }
 
 export type SiteLicenseInput = z.infer<typeof siteLicenseSchema>;

@@ -560,11 +560,24 @@ export interface CreditReminderDto {
 }
 
 /** `GET /site/license`: eslatma uchun. `null` — sayt cheklanmagan. */
+export interface SiteLicensePaymentDto {
+  amount: string;
+  paidAt: DateOnlyString;
+  paidUntil: DateOnlyString;
+}
+
 export interface SiteLicenseDto {
   ownerName: string;
   paidUntil: DateOnlyString;
-  /** Bugundan `paidUntil`gacha (0 — bugun oxirgi kun). */
+  /** Bugundan amaldagi muddatgacha (yengillik bilan; 0 — bugun oxirgi kun). */
   daysLeft: number;
+  agreedPrice: string | null;
+  balance: string;
+  /** Keyingi oy uchun yana qancha to'lash kerak. */
+  amountDue: string | null;
+  lastPaidAt: DateOnlyString | null;
+  graceUntil: DateOnlyString | null;
+  payments: SiteLicensePaymentDto[];
 }
 
 /** Superadmin ko'rmoqchi: adminga chiqadigan bildirishnoma. */
@@ -602,6 +615,34 @@ export interface ControlSiteDto {
   daysLeft: number;
   /** Oxirgi o'zgarish saytga yetib bordimi (sayt uxlab yotgan bo'lishi mumkin). */
   synced: boolean;
+  balance: string;
+  amountDue: string;
+  manualBlock: boolean;
+  graceUntil: DateOnlyString | null;
+}
+
+export interface ControlEventDto {
+  id: string;
+  occurredAt: string;
+  siteId: string | null;
+  siteName: string | null;
+  action: string;
+  details: Record<string, unknown>;
+}
+
+export interface ControlDashboardDto {
+  sites: { total: number; active: number; expiring: number; expired: number };
+  /** Shu oyda yozilgan to'lovlar. */
+  revenueThisMonth: string;
+  /** Muddati shu oy tugaydigan saytlardan kutilayotgan summa. */
+  expectedThisMonth: string;
+}
+
+export interface ControlSiteHealthDto {
+  id: string;
+  ok: boolean;
+  /** Javob vaqti; javob bo'lmasa `null`. */
+  ms: number | null;
 }
 
 export interface ControlSiteDetailDto extends ControlSiteDto {
