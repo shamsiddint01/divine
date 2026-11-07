@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, HttpCode, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Req, Get, HttpCode, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   type BackupReportInput,
@@ -80,6 +80,21 @@ export class SiteControlController {
   @ApiOperation({ summary: 'Kechki bekap natijasi (GitHub Actions)' })
   backupReport(@ZodBody(backupReportSchema) body: BackupReportInput) {
     return this.backups.report(body);
+  }
+
+  /** Diagnostika: so'rov qaysi proxy'lardan o'tganini ko'rish (`TRUST_PROXY` uchun). */
+  @Get('request-info')
+  @ApiOperation({ summary: 'So‘rov IP zanjiri (diagnostika)' })
+  requestInfo(@Req() req: Request) {
+    return {
+      ip: req.ip ?? null,
+      ips: req.ips,
+      remoteAddress: req.socket.remoteAddress ?? null,
+      forwardedFor: req.headers['x-forwarded-for'] ?? null,
+      realIp: req.headers['x-real-ip'] ?? null,
+      cfConnectingIp: req.headers['cf-connecting-ip'] ?? null,
+      trueClientIp: req.headers['true-client-ip'] ?? null,
+    };
   }
 
   @Get('status')
