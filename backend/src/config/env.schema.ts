@@ -1,3 +1,4 @@
+import { parseTrustProxy } from './trusted-proxies.js';
 import { z } from 'zod';
 
 const booleanString = z
@@ -32,7 +33,13 @@ export const envSchema = z
       )
       .refine((origins) => !origins.includes('*'), "CORS_ORIGINS'da '*' ishlatib bo'lmaydi"),
     /** Reverse proxy hop'lari soni (Nginx/Caddy ortida 1). Rate limit to'g'ri IP'ni ko'rishi uchun. */
-    TRUST_PROXY: z.coerce.number().int().min(0).max(10).default(0),
+    TRUST_PROXY: z
+      .union([z.number().int().min(0).max(10), z.string().min(1)])
+      .default(0)
+      .transform(parseTrustProxy)
+      .refine((value) => (typeof value === 'number' ? value <= 10 : value.length > 0), {
+        message: "TRUST_PROXY: hop'lar soni (0–10) yoki proxy ro'yxati",
+      }),
 
     LOG_LEVEL: z
       .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])

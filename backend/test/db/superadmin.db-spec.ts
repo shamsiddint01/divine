@@ -1,6 +1,7 @@
 import type { AddressInfo } from 'node:net';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { parseTrustProxy } from '../../src/config/trusted-proxies.js';
 import { PasswordHasher } from '../../src/modules/auth/password/password-hasher.js';
 import { controlApiToken } from '../../src/modules/site/control-token.guard.js';
 import {
@@ -467,6 +468,33 @@ describe('rollar va audit', () => {
       where: { action: { in: ['SITE_LICENSE_UPDATED', 'SITE_VIEW_REQUESTED'] } },
     });
     expect(after - before).toBe(2);
+  });
+});
+
+describe('foydalanuvchi IP manzili (TRUST_PROXY ro‘yxati)', () => {
+  it('sayt orqali ham, to‘g‘ridan ham foydalanuvchi IP topiladi; soxta zanjir yordam bermaydi', async () => {
+    const app = await createAuthApp({
+      config: { TRUST_PROXY: parseTrustProxy('loopback,uniquelocal,cloudflare,render') },
+    });
+    const ipOf = async (forwardedFor: string) =>
+      (
+        await request(app.app.getHttpServer())
+          .get('/api/v1/site-control/request-info')
+          .set('x-control-token', controlApiToken(app.config))
+          .set('X-Forwarded-For', forwardedFor)
+          .expect(200)
+      ).body.ip;
+    // 2026-11-07 da Render'da o'lchangan zanjirlar.
+    expect(
+      await ipOf(
+        '213.230.97.152, 104.22.160.59, 104.22.160.59,74.220.48.206, 172.69.109.248, 10.28.109.65',
+      ),
+    ).toBe('213.230.97.152');
+    expect(await ipOf('213.230.97.152, 162.158.172.85, 10.30.24.100')).toBe('213.230.97.152');
+    expect(await ipOf('1.2.3.4, 213.230.97.152, 162.158.172.85, 10.30.24.100')).toBe(
+      '213.230.97.152',
+    );
+    await app.app.close();
   });
 });
 

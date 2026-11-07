@@ -18,7 +18,8 @@ services:
       - key: API_PORT
         value: '10000'
       - key: TRUST_PROXY
-        value: '1'
+        # Hop soni yo'lga qarab farq qiladi (sayt orqali 5, to'g'ridan 2): ishonchli proxy'lar ro'yxati.
+        value: loopback,uniquelocal,cloudflare,render
       - key: CORS_ORIGINS
         value: https://divine-uz-web.onrender.com,https://divine-uz-superadmin.onrender.com
       - key: CONTROL_PANEL_ENABLED

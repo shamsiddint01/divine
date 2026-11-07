@@ -41,8 +41,9 @@ Admin paroli terminalda bir marta chiqadi. Render qiymatlari `.env.render.secret
 
 - `https://divine-uz-api.onrender.com/api/v1/health` — `database` va `redis` `up`.
 - Saytga kirish, sahifani yangilash (refresh cookie), sotuv, nasiya.
-- `TRUST_PROXY`: audit logdagi IP foydalanuvchiniki bo'lishi kerak. Render proxy'si bo'lsa, qiymatni oshiring,
-  aks holda login limiti (daqiqasiga 10) hamma uchun umumiy bo'lib qoladi.
+- `TRUST_PROXY=loopback,uniquelocal,cloudflare,render`: sayt orqali so'rov 5 ta, API'ga to'g'ridan 2 ta proxy'dan
+  o'tadi (2026-11-07 o'lchovi), shuning uchun hop soni emas, ishonchli proxy'lar ro'yxati. Tekshirish:
+  `GET /api/v1/site-control/request-info` (`x-control-token`) — `ip` foydalanuvchiniki bo'lishi kerak.
 
 ## Bekap
 
