@@ -48,7 +48,10 @@ function eventText(event: ControlEventDto) {
   if (event.action === 'SITE_UPDATED') {
     if (d.manualBlock === true) return 'Qo‘lda bloklandi';
     if (d.manualBlock === false) return 'Blok olib tashlandi';
-    if ('graceUntil' in d) return d.graceUntil ? `Yengillik: ${formatDate(String(d.graceUntil))} gacha` : 'Yengillik bekor qilindi';
+    if ('graceUntil' in d)
+      return d.graceUntil
+        ? `Yengillik: ${formatDate(String(d.graceUntil))} gacha`
+        : 'Yengillik bekor qilindi';
   }
   return label;
 }
@@ -617,7 +620,10 @@ function DashboardCards() {
   if (!data) return null;
   const cards = [
     { label: 'Shu oy tushum', value: formatMoney(data.revenueThisMonth, { withCurrency: true }) },
-    { label: 'Shu oy kutilmoqda', value: formatMoney(data.expectedThisMonth, { withCurrency: true }) },
+    {
+      label: 'Shu oy kutilmoqda',
+      value: formatMoney(data.expectedThisMonth, { withCurrency: true }),
+    },
     { label: 'Faol saytlar', value: `${data.sites.active} / ${data.sites.total}` },
     {
       label: 'Tugayapti / bloklangan',
