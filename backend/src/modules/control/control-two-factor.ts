@@ -2,6 +2,8 @@ import { createHash, randomInt, randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { ErrorCode } from '@divine/shared';
 import { AppError } from '../../common/errors/app-error.js';
+import { InjectConfig } from '../../config/config.module.js';
+import type { AppConfig } from '../../config/env.schema.js';
 import { RedisService } from '../../infrastructure/redis/redis.service.js';
 import { TelegramService } from './telegram.service.js';
 
@@ -25,10 +27,11 @@ export class ControlTwoFactor {
   constructor(
     private readonly redis: RedisService,
     private readonly telegram: TelegramService,
+    @InjectConfig() private readonly config: AppConfig,
   ) {}
 
   get enabled(): boolean {
-    return this.telegram.enabled;
+    return this.config.CONTROL_TWO_FACTOR && this.telegram.enabled;
   }
 
   async start(adminId: string): Promise<string> {

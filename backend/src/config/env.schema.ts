@@ -74,7 +74,9 @@ export const envSchema = z
     CONTROL_PANEL_ENABLED: booleanString.default(false),
     /** Panel shu saytni boshqaradigan kalit. Berilmasa — JWT_ACCESS_SECRET'dan hosil qilinadi. */
     CONTROL_API_TOKEN: secret(32).optional(),
-    /** Ikkalasi berilsa: superadmin kirishida Telegram kodi va kunlik eslatmalar. */
+    /** Superadmin kirishida Telegram kodi. Vaqtincha o'chiq (egasining qarori, 2026-11-08); eslatmalar ishlaydi. */
+    CONTROL_TWO_FACTOR: booleanString.default(false),
+    /** Ikkalasi berilsa: kunlik eslatmalar va (CONTROL_TWO_FACTOR bo'lsa) kirish kodi. */
     TELEGRAM_BOT_TOKEN: z.string().min(20).optional(),
     TELEGRAM_CHAT_ID: z
       .string()
