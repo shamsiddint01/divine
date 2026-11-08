@@ -155,6 +155,14 @@ function LoginScreen() {
       } else await done();
     },
   });
+  const verify = useMutation({
+    mutationFn: (code: string) => panelApi.verify(challengeId ?? '', code),
+    onSuccess: done,
+    onError: (error) => {
+      // Kod eskirgan yoki urinishlar tugagan: paroldan qaytadan.
+      if (error instanceof PanelError && error.status === 401) setChallengeId(null);
+    },
+  });
   if (paused) {
     return (
       <main className="flex min-h-svh items-center justify-center bg-background p-4">
@@ -167,14 +175,6 @@ function LoginScreen() {
       </main>
     );
   }
-  const verify = useMutation({
-    mutationFn: (code: string) => panelApi.verify(challengeId ?? '', code),
-    onSuccess: done,
-    onError: (error) => {
-      // Kod eskirgan yoki urinishlar tugagan: paroldan qaytadan.
-      if (error instanceof PanelError && error.status === 401) setChallengeId(null);
-    },
-  });
   return (
     <main className="flex min-h-svh items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm">
