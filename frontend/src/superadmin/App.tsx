@@ -137,12 +137,12 @@ function ErrorText({ error }: { error: unknown }) {
   );
 }
 
-const TWO_FACTOR_NOTICE_MS = 5_000;
+const TWO_FACTOR_NOTICE_SECONDS = 5;
 
 function LoginScreen() {
   const queryClient = useQueryClient();
   const [challengeId, setChallengeId] = useState<string | null>(null);
-  const [paused, setPaused] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const done = () => queryClient.invalidateQueries({ queryKey: SITES_KEY });
   const login = useMutation({
     mutationFn: panelApi.login,
@@ -150,8 +150,16 @@ function LoginScreen() {
       if (result.codeRequired && result.challengeId) setChallengeId(result.challengeId);
       else if (result.twoFactorPaused) {
         // Egasining so'rovi (2026-11-08): xabar 5 soniya ko'rinadi, keyin panel ochiladi.
-        setPaused(true);
-        setTimeout(() => void done(), TWO_FACTOR_NOTICE_MS);
+        let left = TWO_FACTOR_NOTICE_SECONDS;
+        setCountdown(left);
+        const timer = setInterval(() => {
+          left -= 1;
+          setCountdown(left);
+          if (left <= 0) {
+            clearInterval(timer);
+            void done();
+          }
+        }, 1_000);
       } else await done();
     },
   });
@@ -163,13 +171,16 @@ function LoginScreen() {
       if (error instanceof PanelError && error.status === 401) setChallengeId(null);
     },
   });
-  if (paused) {
+  if (countdown !== null) {
     return (
       <main className="flex min-h-svh items-center justify-center bg-background p-4">
         <Card className="w-full max-w-sm">
           <CardContent role="status" className="space-y-2 py-2 text-center">
             <p className="font-medium">Ikkinchi tasdiq vaqtincha olib tashlandi</p>
-            <p className="text-sm text-muted-foreground">5 soniyadan keyin panel ochiladi…</p>
+            <p className="text-5xl font-semibold tabular-nums" aria-live="polite">
+              {Math.max(countdown, 1)}
+            </p>
+            <p className="text-sm text-muted-foreground">soniyadan keyin panel ochiladi</p>
           </CardContent>
         </Card>
       </main>
