@@ -69,12 +69,12 @@ export class ControlAuthController {
     @ZodBody(controlLoginSchema) body: ControlLoginInput,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<{ codeRequired: boolean; challengeId?: string }> {
+  ): Promise<{ codeRequired: boolean; challengeId?: string; twoFactorPaused?: boolean }> {
     assertCsrfSafe(req, this.config);
     const result = await this.control.login(body);
     if ('challengeId' in result) return { codeRequired: true, challengeId: result.challengeId };
     this.setSession(res, result.token);
-    return { codeRequired: false };
+    return { codeRequired: false, twoFactorPaused: result.twoFactorPaused };
   }
 
   @Post('verify')

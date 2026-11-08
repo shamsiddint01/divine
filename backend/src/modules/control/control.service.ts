@@ -19,6 +19,8 @@ import { AppError } from '../../common/errors/app-error.js';
 import { Clock } from '../../common/time/clock.js';
 import { tashkentToday } from '../../common/time/tashkent-time.js';
 import type { ControlSite } from '../../generated/prisma/client.js';
+import { InjectConfig } from '../../config/config.module.js';
+import type { AppConfig } from '../../config/env.schema.js';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import { PasswordHasher } from '../auth/password/password-hasher.js';
 import { TokenService } from '../auth/token.service.js';
@@ -47,13 +49,19 @@ export class ControlService {
     private readonly sites: SiteClient,
     private readonly twoFactor: ControlTwoFactor,
     private readonly telegram: TelegramService,
+    @InjectConfig() private readonly config: AppConfig,
   ) {}
 
   /** Parol to'g'ri bo'lsa: Telegram sozlangan — kod yuboriladi, aks holda darhol sessiya. */
-  async login(input: ControlLoginInput): Promise<{ token: string } | { challengeId: string }> {
+  async login(
+    input: ControlLoginInput,
+  ): Promise<{ token: string; twoFactorPaused: boolean } | { challengeId: string }> {
     const adminId = await this.checkPassword(input);
     if (this.twoFactor.enabled) return { challengeId: await this.twoFactor.start(adminId) };
-    return { token: await this.tokens.signControlToken(adminId, this.clock.now()) };
+    return {
+      token: await this.tokens.signControlToken(adminId, this.clock.now()),
+      twoFactorPaused: !this.config.CONTROL_TWO_FACTOR,
+    };
   }
 
   async verifyCode(challengeId: string, code: string): Promise<string> {

@@ -50,7 +50,11 @@ async function request<T>(path: string, method = 'GET', body?: unknown): Promise
 
 export const panelApi = {
   login: (input: ControlLoginInput) =>
-    request<{ codeRequired: boolean; challengeId?: string }>('/auth/login', 'POST', input),
+    request<{ codeRequired: boolean; challengeId?: string; twoFactorPaused?: boolean }>(
+      '/auth/login',
+      'POST',
+      input,
+    ),
   verify: (challengeId: string, code: string) =>
     request<void>('/auth/verify', 'POST', { challengeId, code }),
   logout: () => request<void>('/auth/logout', 'POST'),

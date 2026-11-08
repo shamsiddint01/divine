@@ -152,7 +152,7 @@ describe('panel: saytlar va to‘lovlar', () => {
       .set('X-Forwarded-For', uniqueIp())
       .send({ login: 'egasi', password: PANEL_PASSWORD })
       .expect(200);
-    expect(res.body).toEqual({ codeRequired: false });
+    expect(res.body).toEqual({ codeRequired: false, twoFactorPaused: true });
     panelCookie = String(res.headers['set-cookie']).split(';')[0]!;
   });
 
@@ -510,6 +510,7 @@ describe('Telegram: kirish kodi va kunlik eslatma', () => {
         CONTROL_PANEL_ENABLED: true,
         TELEGRAM_BOT_TOKEN: '123456:test-token-abcdefghijk',
         TELEGRAM_CHAT_ID: '987654321',
+        CONTROL_TWO_FACTOR: true,
       },
     });
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {

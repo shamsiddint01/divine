@@ -137,17 +137,36 @@ function ErrorText({ error }: { error: unknown }) {
   );
 }
 
+const TWO_FACTOR_NOTICE_MS = 5_000;
+
 function LoginScreen() {
   const queryClient = useQueryClient();
   const [challengeId, setChallengeId] = useState<string | null>(null);
+  const [paused, setPaused] = useState(false);
   const done = () => queryClient.invalidateQueries({ queryKey: SITES_KEY });
   const login = useMutation({
     mutationFn: panelApi.login,
     onSuccess: async (result) => {
       if (result.codeRequired && result.challengeId) setChallengeId(result.challengeId);
-      else await done();
+      else if (result.twoFactorPaused) {
+        // Egasining so'rovi (2026-11-08): xabar 5 soniya ko'rinadi, keyin panel ochiladi.
+        setPaused(true);
+        setTimeout(() => void done(), TWO_FACTOR_NOTICE_MS);
+      } else await done();
     },
   });
+  if (paused) {
+    return (
+      <main className="flex min-h-svh items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-sm">
+          <CardContent role="status" className="space-y-2 py-2 text-center">
+            <p className="font-medium">Ikkinchi tasdiq vaqtincha olib tashlandi</p>
+            <p className="text-sm text-muted-foreground">5 soniyadan keyin panel ochiladi…</p>
+          </CardContent>
+        </Card>
+      </main>
+    );
+  }
   const verify = useMutation({
     mutationFn: (code: string) => panelApi.verify(challengeId ?? '', code),
     onSuccess: done,
