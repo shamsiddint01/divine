@@ -26,7 +26,7 @@ import { PasswordHasher } from '../auth/password/password-hasher.js';
 import { TokenService } from '../auth/token.service.js';
 import { ControlTwoFactor } from './control-two-factor.js';
 import { SiteClient } from './site-client.js';
-import { TelegramService } from './telegram.service.js';
+import { TelegramService } from '../telegram/telegram.service.js';
 
 const DAY_MS = 86_400_000;
 const HEALTH_TIMEOUT_MS = 8_000;

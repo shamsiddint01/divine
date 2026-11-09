@@ -17,21 +17,39 @@ export class TelegramService {
     return Boolean(this.config.TELEGRAM_BOT_TOKEN && this.config.TELEGRAM_CHAT_ID);
   }
 
-  async send(text: string): Promise<void> {
+  /** Xabar yuboradi va Telegram'dagi `message_id`ni qaytaradi (javobni murojaatga bog'lash uchun). */
+  async send(text: string, options: { replyTo?: number } = {}): Promise<number | null> {
+    const result = await this.call<{ message_id?: number }>('sendMessage', {
+      chat_id: this.config.TELEGRAM_CHAT_ID,
+      text,
+      ...(options.replyTo ? { reply_parameters: { message_id: options.replyTo } } : {}),
+    });
+    return result?.message_id ?? null;
+  }
+
+  /** Egasi Telegram'da javob yozsa, Telegram shu manzilga yuboradi (`secret` sarlavhada qaytadi). */
+  async setWebhook(url: string, secret: string): Promise<void> {
+    await this.call('setWebhook', { url, secret_token: secret, allowed_updates: ['message'] });
+  }
+
+  private async call<T>(method: string, body: object): Promise<T | null> {
     let reason = 'Telegram javob bermadi';
     try {
       const response = await fetch(
-        `https://api.telegram.org/bot${this.config.TELEGRAM_BOT_TOKEN}/sendMessage`,
+        `https://api.telegram.org/bot${this.config.TELEGRAM_BOT_TOKEN}/${method}`,
         {
           method: 'POST',
           signal: AbortSignal.timeout(TELEGRAM_TIMEOUT_MS),
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: this.config.TELEGRAM_CHAT_ID, text }),
+          body: JSON.stringify(body),
         },
       );
-      if (response.ok) return;
-      const body = (await response.json().catch(() => null)) as { description?: string } | null;
-      reason = describe(response.status, body?.description);
+      const payload = (await response.json().catch(() => null)) as {
+        result?: T;
+        description?: string;
+      } | null;
+      if (response.ok) return payload?.result ?? null;
+      reason = describe(response.status, payload?.description);
     } catch {
       // Tarmoq xatosi: `reason` o'zgarmaydi. Xabarda token yo'q.
     }

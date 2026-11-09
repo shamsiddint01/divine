@@ -180,6 +180,7 @@ model User {
   createdCreditPayments    CreditPayment[]
   deletedExpenses          Expense[]           @relation("ExpenseDeletedBy")
   auditLogs                AuditLog[]
+  supportTickets           SupportTicket[]
   updatedSettings          Setting[]
 
   @@index([roleId])
@@ -742,4 +743,58 @@ model ControlEvent {
 
   @@index([occurredAt])
   @@map("control_events")
+}
+
+/// Murojaat: foydalanuvchi yozgan (`MANUAL`) yoki sahifa xatosi (`AUTO`, bir xillari `fingerprint` bo'yicha jamlanadi).
+model SupportTicket {
+  id                String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  number            BigInt   @unique @default(autoincrement())
+  kind              String   @default("MANUAL") @db.VarChar(16)
+  status            String   @default("NEW") @db.VarChar(16)
+  userId            String?  @map("user_id") @db.Uuid
+  userLogin         String?  @map("user_login") @db.VarChar(64)
+  message           String   @db.VarChar(2000)
+  page              String?  @db.VarChar(300)
+  errorCode         String?  @map("error_code") @db.VarChar(64)
+  requestId         String?  @map("request_id") @db.VarChar(64)
+  userAgent         String?  @map("user_agent") @db.VarChar(300)
+  fingerprint       String?  @db.Char(64)
+  occurrences       Int      @default(1)
+  telegramMessageId BigInt?  @map("telegram_message_id")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user    User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  replies SupportReply[]
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+  @@index([fingerprint])
+  @@index([telegramMessageId])
+  @@map("support_tickets")
+}
+
+model SupportReply {
+  id        String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  ticketId  String   @map("ticket_id") @db.Uuid
+  /// `USER` — saytdagi foydalanuvchi, `SUPPORT` — egasi (panel yoki Telegram).
+  author    String   @db.VarChar(16)
+  body      String   @db.VarChar(2000)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
+  @@map("support_replies")
+}
+
+/// Savol-javob bahosi ("Yordam berdimi?").
+model SupportFeedback {
+  id        BigInt   @id @default(autoincrement())
+  topic     String   @db.VarChar(64)
+  helpful   Boolean
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([topic])
+  @@map("support_feedback")
 }

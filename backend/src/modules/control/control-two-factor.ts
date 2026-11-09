@@ -5,7 +5,7 @@ import { AppError } from '../../common/errors/app-error.js';
 import { InjectConfig } from '../../config/config.module.js';
 import type { AppConfig } from '../../config/env.schema.js';
 import { RedisService } from '../../infrastructure/redis/redis.service.js';
-import { TelegramService } from './telegram.service.js';
+import { TelegramService } from '../telegram/telegram.service.js';
 
 const TTL_SECONDS = 5 * 60;
 const MAX_ATTEMPTS = 5;
