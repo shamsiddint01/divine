@@ -213,12 +213,18 @@ export class SupportService {
       this.prisma.supportReply.create({ data: { ticketId: id, author: 'USER', body } }),
       this.prisma.supportTicket.update({ where: { id }, data: { status: 'NEW' } }),
     ]);
-    await this.notify(`Murojaat #${ticket.number} — ${ctx.login} javob yozdi:\n${body}`, ticket.telegramMessageId);
+    await this.notify(
+      `Murojaat #${ticket.number} — ${ctx.login} javob yozdi:\n${body}`,
+      ticket.telegramMessageId,
+    );
     return this.get(id);
   }
 
   private async get(id: string): Promise<SupportTicketDto> {
-    const row = await this.prisma.supportTicket.findUnique({ where: { id }, include: this.include });
+    const row = await this.prisma.supportTicket.findUnique({
+      where: { id },
+      include: this.include,
+    });
     if (!row) throw new AppError(ErrorCode.NOT_FOUND);
     return this.toDto(row);
   }
@@ -247,7 +253,10 @@ export class SupportService {
   }
 
   async setStatus(id: string, status: SupportStatus): Promise<SupportTicketDto> {
-    const { count } = await this.prisma.supportTicket.updateMany({ where: { id }, data: { status } });
+    const { count } = await this.prisma.supportTicket.updateMany({
+      where: { id },
+      data: { status },
+    });
     if (count === 0) throw new AppError(ErrorCode.NOT_FOUND);
     return this.get(id);
   }
@@ -310,7 +319,8 @@ export class SupportService {
   }
 
   async registerWebhook(url: string): Promise<{ ok: boolean }> {
-    if (!this.telegram.enabled) throw new AppError(ErrorCode.BAD_REQUEST, { message: 'Telegram sozlanmagan' });
+    if (!this.telegram.enabled)
+      throw new AppError(ErrorCode.BAD_REQUEST, { message: 'Telegram sozlanmagan' });
     await this.telegram.setWebhook(url, telegramWebhookSecret(this.config));
     return { ok: true };
   }
