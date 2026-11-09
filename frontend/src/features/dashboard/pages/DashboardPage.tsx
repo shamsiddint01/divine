@@ -1,3 +1,4 @@
+import { OnboardingCard } from '@/features/support/components/OnboardingCard';
 import {
   Boxes,
   PackageCheck,
@@ -151,6 +152,7 @@ function AdminDashboard() {
           </>
         }
       />
+      <OnboardingCard summary={data} />
 
       {error && !data ? (
         <ErrorState message={error.message} onRetry={() => refetch()} />

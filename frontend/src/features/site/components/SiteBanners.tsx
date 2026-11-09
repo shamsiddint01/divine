@@ -1,5 +1,6 @@
 import { LICENSE_CONTACT_PHONE, LICENSE_WARNING_DAYS, Permission } from '@divine/shared';
-import { Eye, ShieldQuestion, TriangleAlert } from 'lucide-react';
+import { Eye, Megaphone, ShieldQuestion, TriangleAlert } from 'lucide-react';
+import { useAnnouncement } from '@/features/support/api/support';
 import { useHasAnyPermission } from '@/features/session/hooks/use-permissions';
 import { t } from '@/i18n/uz';
 import { readViewToken } from '@/shared/lib/view-session';
@@ -7,6 +8,22 @@ import { Button } from '@/shared/ui/button';
 import { useDenySiteAccess, useSiteAccessRequest, useSiteLicense } from '../api/site';
 
 const BANNER = 'flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-4 py-2.5 text-sm sm:px-6';
+
+/** Egasining e'loni (masalan, texnik ishlar): hamma foydalanuvchiga. */
+function AnnouncementBanner() {
+  const { data } = useAnnouncement();
+  if (!data) return null;
+  const maintenance = data.kind === 'MAINTENANCE';
+  return (
+    <div
+      role="status"
+      className={`${BANNER} ${maintenance ? 'border-amber-500/30 bg-amber-500/10' : 'border-primary/30 bg-primary/10'}`}
+    >
+      <Megaphone className={`size-4 shrink-0 ${maintenance ? 'text-amber-500' : 'text-primary'}`} aria-hidden />
+      <span>{data.text}</span>
+    </div>
+  );
+}
 
 function LicenseBanner() {
   const { data } = useSiteLicense();
@@ -54,6 +71,7 @@ export function SiteBanners() {
   }
   return (
     <>
+      <AnnouncementBanner />
       <LicenseBanner />
       <AccessRequestBanner />
     </>
