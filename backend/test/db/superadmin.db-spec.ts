@@ -556,7 +556,8 @@ describe('Telegram: kirish kodi va kunlik eslatma', () => {
 
   it('5 xato urinishdan keyin kod ishlamaydi', async () => {
     const res = await tgLogin();
-    const code = /kodi: (\d{6})/.exec(sent.at(-1) ?? '')?.[1]!;
+    const code = /kodi: (\d{6})/.exec(sent.at(-1) ?? '')?.[1] ?? '';
+    expect(code).toMatch(/^\d{6}$/);
     const wrong = code === '000000' ? '111111' : '000000';
     for (let i = 0; i < 5; i += 1) await tgVerify(res.body.challengeId, wrong).expect(401);
     await tgVerify(res.body.challengeId, code).expect(401);
