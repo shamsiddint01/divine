@@ -77,8 +77,7 @@ export const panelApi = {
     request<ControlSiteDetailDto>(`/sites/${id}/payments`, 'POST', input),
   deletePayment: (id: string, paymentId: string) =>
     request<ControlSiteDetailDto>(`/sites/${id}/payments/${paymentId}`, 'DELETE'),
-  tickets: () =>
-    request<{ tickets: ControlTicketDto[]; unreachable: string[] }>('/sites/tickets'),
+  tickets: () => request<{ tickets: ControlTicketDto[]; unreachable: string[] }>('/sites/tickets'),
   replyTicket: (siteId: string, ticketId: string, body: string) =>
     request<SupportTicketDto>(`/sites/${siteId}/tickets/${ticketId}/replies`, 'POST', { body }),
   ticketStatus: (siteId: string, ticketId: string, status: SupportStatus) =>
