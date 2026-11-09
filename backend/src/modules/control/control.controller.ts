@@ -1,18 +1,12 @@
-import {
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  Param,
-  Patch,
-  Post,
-  Query,
-  Req,
-  Res,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
+  type AnnouncementInput,
+  announcementSchema,
+  type SupportReplyInput,
+  supportReplySchema,
+  type SupportStatusInput,
+  supportStatusSchema,
   type ControlLoginInput,
   controlLoginSchema,
   type ControlVerifyInput,
@@ -156,6 +150,12 @@ export class ControlSitesController {
     return this.control.health();
   }
 
+  @Get('tickets')
+  @ApiOperation({ summary: 'Murojaatlar (hamma saytlar)' })
+  tickets() {
+    return this.control.tickets();
+  }
+
   @Get('events')
   @ApiOperation({ summary: 'Harakatlar jurnali' })
   events(@Query('siteId') siteId?: string) {
@@ -190,6 +190,46 @@ export class ControlSitesController {
   @ApiOperation({ summary: 'Adashib yozilgan to‘lovni o‘chirish' })
   deletePayment(@Param('id') id: string, @Param('paymentId') paymentId: string) {
     return this.control.deletePayment(id, paymentId);
+  }
+
+  @Post(':id/tickets/:ticketId/replies')
+  @ApiOperation({ summary: 'Murojaatga javob' })
+  replyTicket(
+    @Param('id') id: string,
+    @Param('ticketId') ticketId: string,
+    @ZodBody(supportReplySchema) body: SupportReplyInput,
+  ) {
+    return this.control.replyTicket(id, ticketId, body.body);
+  }
+
+  @Patch(':id/tickets/:ticketId')
+  @ApiOperation({ summary: 'Murojaat holati' })
+  ticketStatus(
+    @Param('id') id: string,
+    @Param('ticketId') ticketId: string,
+    @ZodBody(supportStatusSchema) body: SupportStatusInput,
+  ) {
+    return this.control.ticketStatus(id, ticketId, body.status);
+  }
+
+  @Get(':id/feedback')
+  @ApiOperation({ summary: 'Savol-javob baholari' })
+  feedback(@Param('id') id: string) {
+    return this.control.feedback(id);
+  }
+
+  @Put(':id/announcement')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Saytga e’lon' })
+  setAnnouncement(@Param('id') id: string, @ZodBody(announcementSchema) body: AnnouncementInput) {
+    return this.control.setAnnouncement(id, body);
+  }
+
+  @Delete(':id/announcement')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'E’lonni olib tashlash' })
+  clearAnnouncement(@Param('id') id: string) {
+    return this.control.setAnnouncement(id, null);
   }
 
   @Post(':id/sync')

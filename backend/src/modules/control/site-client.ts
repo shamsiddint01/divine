@@ -3,7 +3,11 @@ import {
   ErrorCode,
   ERROR_MESSAGES_UZ,
   isApiErrorBody,
+  type AnnouncementInput,
   type BackupStatusDto,
+  type SupportFeedbackSummaryDto,
+  type SupportStatus,
+  type SupportTicketDto,
   type SiteLicenseInput,
   type SiteViewRequestStatus,
 } from '@divine/shared';
@@ -61,6 +65,28 @@ export class SiteClient {
 
   status(site: Target): Promise<{ backup: BackupStatusDto | null }> {
     return this.call(site, 'GET', '/status');
+  }
+
+  tickets(site: Target): Promise<SupportTicketDto[]> {
+    return this.call(site, 'GET', '/support/tickets');
+  }
+
+  replyTicket(site: Target, id: string, body: string): Promise<SupportTicketDto> {
+    return this.call(site, 'POST', `/support/tickets/${id}/replies`, { body });
+  }
+
+  ticketStatus(site: Target, id: string, status: SupportStatus): Promise<SupportTicketDto> {
+    return this.call(site, 'PATCH', `/support/tickets/${id}`, { status });
+  }
+
+  feedback(site: Target): Promise<SupportFeedbackSummaryDto[]> {
+    return this.call(site, 'GET', '/support/feedback');
+  }
+
+  setAnnouncement(site: Target, input: AnnouncementInput | null): Promise<void> {
+    return input
+      ? this.call(site, 'PUT', '/support/announcement', input)
+      : this.call(site, 'DELETE', '/support/announcement');
   }
 
   viewStatus(site: Target, id: string): Promise<{ status: SiteViewRequestStatus }> {

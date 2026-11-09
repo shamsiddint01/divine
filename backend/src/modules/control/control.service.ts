@@ -10,7 +10,10 @@ import {
   ErrorCode,
   amountDue,
   applyPayment,
+  type AnnouncementInput,
   type ControlDashboardDto,
+  type ControlTicketDto,
+  type SupportStatus,
   type ControlEventDto,
   type ControlSiteHealthDto,
   LICENSE_WARNING_DAYS,
@@ -373,5 +376,51 @@ export class ControlService {
         return { id: site.id, ok, ms, backup };
       }),
     );
+  }
+
+  private async siteOf(id: string) {
+    return (await this.prisma.controlSite.findUnique({ where: { id } })) ?? notFound();
+  }
+
+  /** Hamma saytdagi murojaatlar: javob bermagan sayt o'tkazib yuboriladi (uxlayotgan bo'lishi mumkin). */
+  async tickets(): Promise<{ tickets: ControlTicketDto[]; unreachable: string[] }> {
+    const sites = await this.prisma.controlSite.findMany({ orderBy: { name: 'asc' } });
+    const unreachable: string[] = [];
+    const lists = await Promise.all(
+      sites.map(async (site) => {
+        try {
+          const items = await this.sites.tickets(site);
+          return items.map((ticket) => ({ ...ticket, siteId: site.id, siteName: site.name }));
+        } catch {
+          unreachable.push(site.name);
+          return [];
+        }
+      }),
+    );
+    const tickets = lists.flat().sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    return { tickets, unreachable };
+  }
+
+  async replyTicket(siteId: string, ticketId: string, body: string) {
+    const site = await this.siteOf(siteId);
+    const ticket = await this.sites.replyTicket(site, ticketId, body);
+    await this.event(siteId, 'TICKET_REPLIED', { number: ticket.number });
+    return ticket;
+  }
+
+  async ticketStatus(siteId: string, ticketId: string, status: SupportStatus) {
+    const site = await this.siteOf(siteId);
+    const ticket = await this.sites.ticketStatus(site, ticketId, status);
+    await this.event(siteId, 'TICKET_STATUS', { number: ticket.number, status });
+    return ticket;
+  }
+
+  async feedback(siteId: string) {
+    return this.sites.feedback(await this.siteOf(siteId));
+  }
+
+  async setAnnouncement(siteId: string, input: AnnouncementInput | null): Promise<void> {
+    await this.sites.setAnnouncement(await this.siteOf(siteId), input);
+    await this.event(siteId, input ? 'ANNOUNCEMENT_SET' : 'ANNOUNCEMENT_CLEARED', input ?? {});
   }
 }
