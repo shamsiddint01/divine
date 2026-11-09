@@ -38,7 +38,9 @@ export function WhatsNewDialog() {
     <Dialog open={open} onOpenChange={(next) => !next && close()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{t.support.newsTitle}: {latest.title}</DialogTitle>
+          <DialogTitle>
+            {t.support.newsTitle}: {latest.title}
+          </DialogTitle>
           <DialogDescription>{latest.date}</DialogDescription>
         </DialogHeader>
         <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">

@@ -46,9 +46,7 @@ function FaqTab() {
     <div className="space-y-4">
       <SearchInput value={search} onChange={setSearch} placeholder={t.support.search} />
       {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          {t.support.notFound}
-        </p>
+        <p className="text-sm text-muted-foreground">{t.support.notFound}</p>
       ) : null}
       <div className="space-y-2">
         {items.map((item) => (
@@ -114,9 +112,7 @@ function NewTicketTab({ onSent }: { onSent: () => void }) {
         <CardContent className="space-y-3 py-6 text-center">
           <CircleCheck className="mx-auto size-10 text-emerald-500" />
           <p className="font-medium">{t.support.sent(sent)}</p>
-          <p className="text-sm text-muted-foreground">
-            {t.support.sentHint}
-          </p>
+          <p className="text-sm text-muted-foreground">{t.support.sentHint}</p>
           <div className="flex justify-center gap-2">
             <Button variant="outline" onClick={() => setSent(null)}>
               {t.support.writeAgain}
@@ -141,9 +137,7 @@ function NewTicketTab({ onSent }: { onSent: () => void }) {
               maxLength={2000}
               placeholder={t.support.messagePlaceholder}
             />
-            <p className="text-xs text-muted-foreground">
-              {t.support.messageHint}
-            </p>
+            <p className="text-xs text-muted-foreground">{t.support.messageHint}</p>
           </div>
           {page || errorCode ? (
             <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
@@ -202,8 +196,19 @@ function TicketCard({ ticket }: { ticket: SupportTicketDto }) {
             );
           }}
         >
-          <Textarea name="body" rows={1} required maxLength={2000} placeholder={t.support.replyPlaceholder} />
-          <Button type="submit" size="icon" aria-label={t.support.replySend} disabled={reply.isPending}>
+          <Textarea
+            name="body"
+            rows={1}
+            required
+            maxLength={2000}
+            placeholder={t.support.replyPlaceholder}
+          />
+          <Button
+            type="submit"
+            size="icon"
+            aria-label={t.support.replySend}
+            disabled={reply.isPending}
+          >
             <Send />
           </Button>
         </form>
@@ -306,14 +311,9 @@ export function SupportPage() {
     setParams(next === 'faq' ? {} : { tab: next }, { replace: true });
   return (
     <>
-      <PageHeader
-        title={t.support.title}
-        description={t.support.description}
-      />
+      <PageHeader title={t.support.title} description={t.support.description} />
       {apiMode !== 'http' ? (
-        <p className="text-sm text-muted-foreground">
-          {t.support.demo}
-        </p>
+        <p className="text-sm text-muted-foreground">{t.support.demo}</p>
       ) : null}
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="flex-wrap">
