@@ -152,7 +152,8 @@ describe('panel: saytlar va to‘lovlar', () => {
       .set('X-Forwarded-For', uniqueIp())
       .send({ login: 'egasi', password: PANEL_PASSWORD })
       .expect(200);
-    expect(res.body).toEqual({ codeRequired: false, twoFactorPaused: true });
+    // Telegram sozlanmagan test ilovasi: kod so'ralmaydi, "vaqtincha o'chirilgan" xabari ham yo'q.
+    expect(res.body).toEqual({ codeRequired: false, twoFactorPaused: false });
     panelCookie = String(res.headers['set-cookie']).split(';')[0]!;
   });
 
