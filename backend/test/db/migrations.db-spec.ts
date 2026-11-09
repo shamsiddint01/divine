@@ -38,6 +38,8 @@ const TABLES = [
   'warehouse_stock',
   'warehouses',
 ];
+/** Holati o'zgaradi, lekin o'chirilmaydi: murojaat tarixi qoladi. */
+const NO_DELETE = ['support_tickets'];
 const IMMUTABLE = [
   'audit_logs',
   'control_events',
@@ -217,7 +219,7 @@ describe('divine_app roli (ilova runtime huquqlari)', () => {
       expect({ t: row.t, upd: row.upd, del: row.del, trunc: row.trunc }).toEqual({
         t: row.t,
         upd: !immutable,
-        del: !immutable,
+        del: !immutable && !NO_DELETE.includes(row.t),
         trunc: false,
       });
     }
