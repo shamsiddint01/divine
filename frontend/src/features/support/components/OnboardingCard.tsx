@@ -23,7 +23,11 @@ export function OnboardingCard({ summary }: { summary: DashboardSummaryDto | und
   if (closed || !summary || !warehouses) return null;
   const steps = [
     { done: warehouses.length > 0, label: 'Ombor yarating', to: '/warehouses' },
-    { done: summary.warehouse.productCount > 0, label: 'Mahsulot va qoldiq qo‘shing', to: '/products' },
+    {
+      done: summary.warehouse.productCount > 0,
+      label: 'Mahsulot va qoldiq qo‘shing',
+      to: '/products',
+    },
     { done: summary.allTime.salesCount > 0, label: 'Birinchi sotuvni qiling', to: '/sales' },
   ];
   if (steps.every((step) => step.done)) return null;

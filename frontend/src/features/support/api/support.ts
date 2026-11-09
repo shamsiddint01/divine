@@ -44,7 +44,8 @@ export function useReplyTicket() {
 export function useAnnouncement() {
   return useQuery({
     queryKey: ['support', 'announcement'],
-    queryFn: ({ signal }) => apiRequest<AnnouncementDto | null>('/support/announcement', { signal }),
+    queryFn: ({ signal }) =>
+      apiRequest<AnnouncementDto | null>('/support/announcement', { signal }),
     enabled: live,
     staleTime: 5 * 60_000,
   });

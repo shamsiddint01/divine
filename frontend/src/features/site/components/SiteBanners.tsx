@@ -19,7 +19,10 @@ function AnnouncementBanner() {
       role="status"
       className={`${BANNER} ${maintenance ? 'border-amber-500/30 bg-amber-500/10' : 'border-primary/30 bg-primary/10'}`}
     >
-      <Megaphone className={`size-4 shrink-0 ${maintenance ? 'text-amber-500' : 'text-primary'}`} aria-hidden />
+      <Megaphone
+        className={`size-4 shrink-0 ${maintenance ? 'text-amber-500' : 'text-primary'}`}
+        aria-hidden
+      />
       <span>{data.text}</span>
     </div>
   );

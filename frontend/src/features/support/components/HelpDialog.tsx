@@ -36,7 +36,13 @@ export function HelpButton() {
 
   return (
     <>
-      <Button variant="ghost" size="icon" aria-label="Yordam" title="Yordam (?)" onClick={() => setOpen(true)}>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label="Yordam"
+        title="Yordam (?)"
+        onClick={() => setOpen(true)}
+      >
         <CircleHelp />
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>

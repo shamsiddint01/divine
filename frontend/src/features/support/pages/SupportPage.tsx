@@ -14,7 +14,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Label } from '@/shared/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
 import { Textarea } from '@/shared/ui/textarea';
-import { sendFeedback, useAnnouncement, useCreateTicket, useMyTickets, useReplyTicket } from '../api/support';
+import {
+  sendFeedback,
+  useAnnouncement,
+  useCreateTicket,
+  useMyTickets,
+  useReplyTicket,
+} from '../api/support';
 import { CHANGELOG, FAQ } from '../content';
 
 const TABS = ['faq', 'new', 'mine', 'contact', 'news'] as const;
@@ -189,7 +195,10 @@ function TicketCard({ ticket }: { ticket: SupportTicketDto }) {
             event.preventDefault();
             const form = event.currentTarget;
             const body = String(new FormData(form).get('body') ?? '');
-            reply.mutate({ id: ticket.id, body }, { onSuccess: () => form.reset(), onError: toastError });
+            reply.mutate(
+              { id: ticket.id, body },
+              { onSuccess: () => form.reset(), onError: toastError },
+            );
           }}
         >
           <Textarea name="body" rows={1} required maxLength={2000} placeholder="Javob yozish…" />
@@ -226,7 +235,10 @@ function ContactTab() {
           <CardTitle className="text-base">Bog‘lanish</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
-          <a className="flex items-center gap-2 font-medium text-primary" href={`tel:${LICENSE_CONTACT_PHONE}`}>
+          <a
+            className="flex items-center gap-2 font-medium text-primary"
+            href={`tel:${LICENSE_CONTACT_PHONE}`}
+          >
             <Phone className="size-4" />
             {LICENSE_CONTACT_PHONE}
           </a>
@@ -267,7 +279,8 @@ function NewsTab() {
         <Card key={entry.id} className="gap-2">
           <CardHeader>
             <CardTitle className="text-base">
-              {entry.title} <span className="text-sm font-normal text-muted-foreground">· {entry.date}</span>
+              {entry.title}{' '}
+              <span className="text-sm font-normal text-muted-foreground">· {entry.date}</span>
             </CardTitle>
           </CardHeader>
           <CardContent>

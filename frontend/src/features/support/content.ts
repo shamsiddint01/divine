@@ -86,13 +86,16 @@ export const FAQ: FaqItem[] = [
 
 /** "?" belgisi: har bo'lim uchun qisqa yo'riq. */
 export const PAGE_HELP: Partial<Record<NavItem['key'], string>> = {
-  dashboard: 'Bugungi savdo, ombor holati va kam qolgan mahsulotlar. Raqam ustiga bosib batafsil ko‘ring.',
+  dashboard:
+    'Bugungi savdo, ombor holati va kam qolgan mahsulotlar. Raqam ustiga bosib batafsil ko‘ring.',
   sales:
     'Yangi sotuv: tovarni skanerlang yoki tanlang, keyin "Yopish" (F9) yoki "Nasiya" (F4). "Sotuvlar tarixi"da cheklarni qayta ochasiz.',
-  customers: 'Mijozlar ro‘yxati va har birining xarid tarixi. Sotuvda ism yozilsa, mijoz o‘zi qo‘shiladi.',
+  customers:
+    'Mijozlar ro‘yxati va har birining xarid tarixi. Sotuvda ism yozilsa, mijoz o‘zi qo‘shiladi.',
   products:
     'Mahsulot qo‘shish, narx va shtrix-kod. Mahsulotni bosib tafsilotini oching: qoldiq qo‘shish va tarix shu yerda.',
-  productGroups: 'Mahsulotlarni guruhlash (masalan, Oziq-ovqat). Kassada guruh bo‘yicha saralanadi.',
+  productGroups:
+    'Mahsulotlarni guruhlash (masalan, Oziq-ovqat). Kassada guruh bo‘yicha saralanadi.',
   warehouses: 'Omborlar va ulardagi qoldiq. Sotuvchiga faqat biriktirilgan ombor ko‘rinadi.',
   credits: 'Kim, qachon, qancha nasiya olgani va to‘lov jadvali. Mijozni ochib to‘lov yozing.',
   expenses: 'Xarajatlar va ularning kategoriyalari. Sotuvchi faqat o‘z xarajatlarini ko‘radi.',
@@ -130,7 +133,10 @@ export const CHANGELOG: { id: string; date: string; title: string; items: string
     id: '2026-11-08',
     date: '08.11.2026',
     title: 'Tez kassa',
-    items: ['Eng ko‘p sotiladiganlar uchun "Tez tanlash" (Alt+1…9)', 'F2, F3, F4, F9 va + / − tugmalari'],
+    items: [
+      'Eng ko‘p sotiladiganlar uchun "Tez tanlash" (Alt+1…9)',
+      'F2, F3, F4, F9 va + / − tugmalari',
+    ],
   },
   {
     id: '2026-11-07',
