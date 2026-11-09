@@ -7,6 +7,8 @@ services:
     plan: free
     region: frankfurt
     branch: main
+    # Faqat GitHub CI o'tgan commit: tez-tez auto-sync'da eski commit oxirida o'rnatilib qolmaydi (2026-11-09).
+    autoDeployTrigger: checksPass
     buildCommand: scripts/render/build-api.sh
     startCommand: cd backend && node dist/main.js
     # healthCheckPath ataylab yo'q: /api/v1/health har so'rovda Neon va Upstash'ga boradi (bepul limitlar).
@@ -42,6 +44,8 @@ services:
     name: divine-uz-web
     runtime: static
     branch: main
+    # Faqat GitHub CI o'tgan commit: tez-tez auto-sync'da eski commit oxirida o'rnatilib qolmaydi (2026-11-09).
+    autoDeployTrigger: checksPass
     buildCommand: scripts/render/build-web.sh
     staticPublishPath: frontend/dist
     envVars:
@@ -85,6 +89,8 @@ services:
     name: divine-uz-superadmin
     runtime: static
     branch: main
+    # Faqat GitHub CI o'tgan commit: tez-tez auto-sync'da eski commit oxirida o'rnatilib qolmaydi (2026-11-09).
+    autoDeployTrigger: checksPass
     buildCommand: scripts/render/build-superadmin.sh
     staticPublishPath: frontend/dist-superadmin
     envVars:

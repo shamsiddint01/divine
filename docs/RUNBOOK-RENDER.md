@@ -71,3 +71,10 @@ Admin paroli terminalda bir marta chiqadi. Render qiymatlari `.env.render.secret
 - Chat ID: botga `/start` yozib, `scripts/render/telegram-chat-id.sh`.
 - Telegram ishlamay qolsa yoki bot yo'qolsa: Render'da shu ikki o'zgaruvchini o'chiring — kirish parol bilan qoladi.
 
+## Yangilanish (deploy)
+
+- `render.yaml`: `autoDeployTrigger: checksPass` — Render faqat GitHub CI o'tgan commit'ni o'rnatadi. Auto-sync
+  tez-tez commit qilganda CI eski commit'lar tekshiruvini to'xtatadi, shuning uchun faqat eng oxirgisi o'rnatiladi
+  (2026-11-09 da Render 15:36 dagi commit'ni 16:28 dagisidan keyin o'rnatib, Murojaat bo'limini olib qo'ygan edi).
+- Yangilanish ~10–15 daqiqa (CI + build). Tezroq kerak bo'lsa: Render → xizmat → Manual Deploy → Deploy latest commit.
+
