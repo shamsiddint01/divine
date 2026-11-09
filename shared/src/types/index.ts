@@ -657,3 +657,47 @@ export interface ControlSiteHealthDto {
 export interface ControlSiteDetailDto extends ControlSiteDto {
   payments: ControlPaymentDto[];
 }
+
+export interface SupportReplyDto {
+  id: string;
+  author: 'USER' | 'SUPPORT';
+  body: string;
+  createdAt: string;
+}
+
+export interface SupportTicketDto {
+  id: string;
+  number: string;
+  kind: 'MANUAL' | 'AUTO';
+  status: 'NEW' | 'SEEN' | 'RESOLVED';
+  userLogin: string | null;
+  message: string;
+  page: string | null;
+  errorCode: string | null;
+  requestId: string | null;
+  userAgent: string | null;
+  occurrences: number;
+  createdAt: string;
+  updatedAt: string;
+  replies: SupportReplyDto[];
+}
+
+/** Panel: hamma saytlardagi murojaatlar. */
+export interface ControlTicketDto extends SupportTicketDto {
+  siteId: string;
+  siteName: string;
+}
+
+export interface SupportFeedbackSummaryDto {
+  topic: string;
+  helpful: number;
+  notHelpful: number;
+}
+
+/** Saytdagi e'lon (texnik ishlar yoki xabar): hamma foydalanuvchiga banner. */
+export interface AnnouncementDto {
+  kind: 'INFO' | 'MAINTENANCE';
+  text: string;
+  updatedAt: string;
+}
+

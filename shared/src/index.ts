@@ -9,6 +9,7 @@ export * from './validation/auth.js';
 export * from './validation/catalog.js';
 export * from './validation/control.js';
 export * from './validation/credits.js';
+export * from './validation/support.js';
 export * from './validation/customers.js';
 export * from './validation/error-map.js';
 export * from './validation/expenses.js';
