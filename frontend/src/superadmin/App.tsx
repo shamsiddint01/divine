@@ -795,11 +795,24 @@ function HealthDot({ ok, ms }: { ok: boolean | undefined; ms: number | null | un
   );
 }
 
-const TICKET_STATUS: Record<ControlTicketDto['status'], { label: string; className: string }> = {
-  NEW: { label: 'Yangi', className: 'bg-primary/15 text-primary' },
-  SEEN: { label: 'Ko‘rildi', className: 'bg-amber-500/15 text-amber-500' },
-  RESOLVED: { label: 'Hal qilindi', className: 'bg-emerald-500/15 text-emerald-500' },
-};
+/**
+ * Panelda faqat ikki holat (egasining qarori, 2026-11-09): "Hal qilindi" va "Javob berildi".
+ * Javob kutayotgan murojaatda belgi yo'q — ular "N javobsiz" bilan sanaladi.
+ */
+function ticketBadge(ticket: ControlTicketDto): { label: string; className: string } | null {
+  if (ticket.status === 'RESOLVED') {
+    return { label: 'Hal qilindi', className: 'bg-emerald-500/15 text-emerald-500' };
+  }
+  if (ticket.replies.at(-1)?.author === 'SUPPORT') {
+    return { label: 'Javob berildi', className: 'bg-amber-500/15 text-amber-500' };
+  }
+  return null;
+}
+
+function TicketBadge({ ticket }: { ticket: ControlTicketDto }) {
+  const badge = ticketBadge(ticket);
+  return badge ? <Badge className={badge.className}>{badge.label}</Badge> : null;
+}
 
 function TicketSheet({ ticket, onClose }: { ticket: ControlTicketDto; onClose: () => void }) {
   const queryClient = useQueryClient();
@@ -824,9 +837,11 @@ function TicketSheet({ ticket, onClose }: { ticket: ControlTicketDto; onClose: (
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
             <dt className="text-muted-foreground">Holat</dt>
             <dd>
-              <Badge className={TICKET_STATUS[ticket.status].className}>
-                {TICKET_STATUS[ticket.status].label}
-              </Badge>
+              {ticketBadge(ticket) ? (
+                <TicketBadge ticket={ticket} />
+              ) : (
+                <span className="text-muted-foreground">Javob kutilmoqda</span>
+              )}
               {ticket.kind === 'AUTO' ? (
                 <span className="ml-2 text-xs text-muted-foreground">
                   Avtomatik xato · {ticket.occurrences} marta
@@ -890,18 +905,15 @@ function TicketSheet({ ticket, onClose }: { ticket: ControlTicketDto; onClose: (
             </form>
           ) : null}
           <div className="flex flex-wrap gap-2">
-            {(['SEEN', 'RESOLVED'] as const)
-              .filter((next) => next !== ticket.status)
-              .map((next) => (
-                <Button
-                  key={next}
-                  variant="outline"
-                  disabled={status.isPending}
-                  onClick={() => status.mutate(next)}
-                >
-                  {next === 'RESOLVED' ? 'Hal qilindi deb belgilash' : 'Ko‘rildi'}
-                </Button>
-              ))}
+            {ticket.status === 'RESOLVED' ? null : (
+              <Button
+                variant="outline"
+                disabled={status.isPending}
+                onClick={() => status.mutate('RESOLVED')}
+              >
+                Hal qilindi deb belgilash
+              </Button>
+            )}
           </div>
           <ErrorText error={status.error} />
           <section className="grid gap-2">
@@ -923,12 +935,14 @@ function TicketsSection() {
   });
   const tickets = data?.tickets ?? [];
   const current = tickets.find((ticket) => ticket.id === selected);
-  const open = tickets.filter((ticket) => ticket.status !== 'RESOLVED').length;
+  const waiting = tickets.filter((ticket) => ticketBadge(ticket) === null).length;
   return (
     <section className="space-y-2">
       <h2 className="flex items-center gap-2 text-sm font-semibold">
         Murojaatlar
-        {open > 0 ? <Badge className="bg-primary/15 text-primary">{open} ochiq</Badge> : null}
+        {waiting > 0 ? (
+          <Badge className="bg-primary/15 text-primary">{waiting} javobsiz</Badge>
+        ) : null}
       </h2>
       <ErrorText error={error} />
       {data?.unreachable.length ? (
@@ -947,9 +961,16 @@ function TicketsSection() {
                 onClick={() => setSelected(ticket.id)}
                 className="flex w-full items-start gap-3 p-3 text-left hover:bg-muted/50"
               >
-                <Badge className={TICKET_STATUS[ticket.status].className}>
-                  {TICKET_STATUS[ticket.status].label}
-                </Badge>
+                <span className="w-24 shrink-0">
+                  {ticketBadge(ticket) ? (
+                    <TicketBadge ticket={ticket} />
+                  ) : (
+                    <span
+                      className="inline-block size-2 rounded-full bg-primary"
+                      aria-label="Javobsiz"
+                    />
+                  )}
+                </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate">
                     <span className="font-medium">
