@@ -143,7 +143,7 @@ describe('logout va RBAC (UX)', () => {
     const links = within(nav)
       .getAllByRole('link')
       .map((link) => link.textContent);
-    expect(links).toEqual(['Bosh sahifa', 'Sotuvlar', 'Mahsulotlar', 'Xarajatlar']);
+    expect(links).toEqual(['Bosh sahifa', 'Sotuvlar', 'Murojaat', 'Mahsulotlar', 'Xarajatlar']);
     // Telefon pastki menyusi: admin guruhlari yo'q; bitta bo'limli guruh — to'g'ridan-to'g'ri havola.
     const bottom = screen.getByRole('navigation', { name: t.nav.bottomMenu });
     expect(

@@ -31,10 +31,10 @@ describe('asosiy navigatsiya (REQ-151, TZ §16)', () => {
     expect(visible).toHaveLength(NAV_ITEMS.length);
   });
 
-  it('USER faqat Bosh sahifa, Mahsulotlar, Sotuvlar va Xarajatlarni ko‘radi (D-04, D-12, RBAC.md)', () => {
+  it('USER faqat Bosh sahifa, Mahsulotlar, Sotuvlar, Xarajatlar va Murojaatni ko‘radi (D-04, D-12, RBAC.md)', () => {
     const visible = NAV_ITEMS.filter((i) =>
       hasAnyPermission(ROLE_PERMISSIONS[RoleCode.USER], i.anyOf),
     ).map((i) => i.key);
-    expect(visible).toEqual(['dashboard', 'products', 'sales', 'expenses']);
+    expect(visible).toEqual(['dashboard', 'products', 'sales', 'expenses', 'support']);
   });
 });
