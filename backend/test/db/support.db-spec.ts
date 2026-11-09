@@ -2,7 +2,13 @@ import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { controlApiToken } from '../../src/modules/site/control-token.guard.js';
 import { telegramWebhookSecret } from '../../src/modules/support/support.service.js';
-import { type AuthTestApp, createAuthApp, createUser, login, uniqueIp } from './support/auth-app.js';
+import {
+  type AuthTestApp,
+  createAuthApp,
+  createUser,
+  login,
+  uniqueIp,
+} from './support/auth-app.js';
 import { closePool } from './support/db.js';
 
 const PASSWORD = '582913';
@@ -45,8 +51,13 @@ beforeAll(async () => {
     ['seller', (v: string) => (sellerToken = v)],
     ['other', (v: string) => (otherToken = v)],
   ] as const) {
-    const user = await createUser(t, { password: PASSWORD, login: `${name}${Date.now() % 100000}` });
-    setter((await login(t, { login: user.login, password: PASSWORD }).expect(200)).body.accessToken);
+    const user = await createUser(t, {
+      password: PASSWORD,
+      login: `${name}${Date.now() % 100000}`,
+    });
+    setter(
+      (await login(t, { login: user.login, password: PASSWORD }).expect(200)).body.accessToken,
+    );
   }
 });
 
@@ -86,7 +97,10 @@ describe('murojaat', () => {
     const replied = await control('post', `/tickets/${ticket.id}/replies`)
       .send({ body: 'Tuzatdik' })
       .expect(201);
-    expect(replied.body).toMatchObject({ status: 'SEEN', replies: [{ author: 'SUPPORT', body: 'Tuzatdik' }] });
+    expect(replied.body).toMatchObject({
+      status: 'SEEN',
+      replies: [{ author: 'SUPPORT', body: 'Tuzatdik' }],
+    });
     await control('patch', `/tickets/${ticket.id}`).send({ status: 'RESOLVED' }).expect(200);
     const mine = (await api('get', '/support/tickets', sellerToken).expect(200)).body[0];
     expect(mine).toMatchObject({ status: 'RESOLVED', replies: [{ body: 'Tuzatdik' }] });
@@ -125,12 +139,16 @@ describe('murojaat', () => {
       .send(update(CHAT_ID))
       .expect(200);
     const mine = (await api('get', '/support/tickets', sellerToken).expect(200)).body[0];
-    expect(mine.replies).toEqual([expect.objectContaining({ author: 'SUPPORT', body: 'Telegram’dan javob' })]);
+    expect(mine.replies).toEqual([
+      expect.objectContaining({ author: 'SUPPORT', body: 'Telegram’dan javob' }),
+    ]);
   });
 
   it('10 daqiqada 5 tadan ortiq murojaat yuborib bo‘lmaydi', async () => {
     for (let i = 0; i < 5; i += 1) {
-      await api('post', '/support/tickets', sellerToken).send({ message: `m${i}` }).expect(201);
+      await api('post', '/support/tickets', sellerToken)
+        .send({ message: `m${i}` })
+        .expect(201);
     }
     const blocked = await api('post', '/support/tickets', sellerToken).send({ message: 'x' });
     expect(blocked.status).toBe(429);
@@ -154,8 +172,12 @@ describe('murojaat', () => {
   });
 
   it('baho va e’lon', async () => {
-    await api('post', '/support/feedback', sellerToken).send({ topic: 'barcode', helpful: false }).expect(204);
-    await api('post', '/support/feedback', sellerToken).send({ topic: 'barcode', helpful: true }).expect(204);
+    await api('post', '/support/feedback', sellerToken)
+      .send({ topic: 'barcode', helpful: false })
+      .expect(204);
+    await api('post', '/support/feedback', sellerToken)
+      .send({ topic: 'barcode', helpful: true })
+      .expect(204);
     expect((await control('get', '/feedback').expect(200)).body).toEqual([
       { topic: 'barcode', helpful: 1, notHelpful: 1 },
     ]);
@@ -164,10 +186,12 @@ describe('murojaat', () => {
     await control('put', '/announcement')
       .send({ kind: 'MAINTENANCE', text: 'Ertaga 10:00 da texnik ishlar' })
       .expect(204);
-    expect((await api('get', '/support/announcement', sellerToken).expect(200)).body).toMatchObject({
-      kind: 'MAINTENANCE',
-      text: 'Ertaga 10:00 da texnik ishlar',
-    });
+    expect((await api('get', '/support/announcement', sellerToken).expect(200)).body).toMatchObject(
+      {
+        kind: 'MAINTENANCE',
+        text: 'Ertaga 10:00 da texnik ishlar',
+      },
+    );
     await control('delete', '/announcement').expect(204);
     expect((await api('get', '/support/announcement', sellerToken).expect(200)).body).toEqual({});
   });
