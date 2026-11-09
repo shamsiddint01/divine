@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { t } from '@/i18n/uz';
 import { Button } from '@/shared/ui/button';
 import {
   Dialog,
@@ -37,7 +38,7 @@ export function WhatsNewDialog() {
     <Dialog open={open} onOpenChange={(next) => !next && close()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Nima yangi: {latest.title}</DialogTitle>
+          <DialogTitle>{t.support.newsTitle}: {latest.title}</DialogTitle>
           <DialogDescription>{latest.date}</DialogDescription>
         </DialogHeader>
         <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
@@ -46,7 +47,7 @@ export function WhatsNewDialog() {
           ))}
         </ul>
         <DialogFooter>
-          <Button onClick={close}>Tushunarli</Button>
+          <Button onClick={close}>{t.support.gotIt}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

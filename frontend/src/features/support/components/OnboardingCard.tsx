@@ -3,6 +3,7 @@ import { CircleCheck, Circle, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useWarehouses } from '@/features/warehouses/api/warehouses';
+import { t } from '@/i18n/uz';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 
@@ -22,13 +23,13 @@ export function OnboardingCard({ summary }: { summary: DashboardSummaryDto | und
   const { data: warehouses } = useWarehouses();
   if (closed || !summary || !warehouses) return null;
   const steps = [
-    { done: warehouses.length > 0, label: 'Ombor yarating', to: '/warehouses' },
+    { done: warehouses.length > 0, label: t.support.stepWarehouse, to: '/warehouses' },
     {
       done: summary.warehouse.productCount > 0,
-      label: 'Mahsulot va qoldiq qo‘shing',
+      label: t.support.stepProduct,
       to: '/products',
     },
-    { done: summary.allTime.salesCount > 0, label: 'Birinchi sotuvni qiling', to: '/sales' },
+    { done: summary.allTime.salesCount > 0, label: t.support.stepSale, to: '/sales' },
   ];
   if (steps.every((step) => step.done)) return null;
   const close = () => {
@@ -42,8 +43,8 @@ export function OnboardingCard({ summary }: { summary: DashboardSummaryDto | und
   return (
     <Card className="gap-3 border-primary/30">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Boshlash uchun 3 qadam</CardTitle>
-        <Button variant="ghost" size="icon" aria-label="Yopish" onClick={close}>
+        <CardTitle className="text-base">{t.support.onboardingTitle}</CardTitle>
+        <Button variant="ghost" size="icon" aria-label={t.support.close} onClick={close}>
           <X />
         </Button>
       </CardHeader>

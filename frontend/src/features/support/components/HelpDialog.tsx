@@ -2,6 +2,7 @@ import { CircleHelp } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { findNavItem } from '@/app/navigation-context';
+import { t } from '@/i18n/uz';
 import { Button } from '@/shared/ui/button';
 import {
   Dialog,
@@ -39,8 +40,8 @@ export function HelpButton() {
       <Button
         variant="ghost"
         size="icon"
-        aria-label="Yordam"
-        title="Yordam (?)"
+        aria-label={t.support.help}
+        title={t.support.helpTitle}
         onClick={() => setOpen(true)}
       >
         <CircleHelp />
@@ -48,11 +49,11 @@ export function HelpButton() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{section ? section.label : 'Yordam'}</DialogTitle>
-            <DialogDescription>{help ?? 'Divine bo‘yicha qisqa yordam.'}</DialogDescription>
+            <DialogTitle>{section ? section.label : t.support.help}</DialogTitle>
+            <DialogDescription>{help ?? t.support.helpDefault}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <p className="text-sm font-medium">Klaviatura</p>
+            <p className="text-sm font-medium">{t.support.keyboard}</p>
             <ul className="divide-y rounded-lg border text-sm">
               {SHORTCUTS.map((item) => (
                 <li key={item.keys} className="flex items-center justify-between gap-3 px-3 py-2">
@@ -66,11 +67,11 @@ export function HelpButton() {
           </div>
           <div className="flex flex-wrap justify-end gap-2">
             <Button variant="outline" asChild onClick={() => setOpen(false)}>
-              <Link to="/support">Savol-javoblar</Link>
+              <Link to="/support">{t.support.tabs.faq}</Link>
             </Button>
             <Button asChild onClick={() => setOpen(false)}>
               <Link to={`/support?tab=new&page=${encodeURIComponent(pathname)}`}>
-                Muammo haqida xabar berish
+                {t.support.report}
               </Link>
             </Button>
           </div>

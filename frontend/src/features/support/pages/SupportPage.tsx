@@ -2,6 +2,7 @@ import { LICENSE_CONTACT_PHONE, type SupportTicketDto } from '@divine/shared';
 import { CircleCheck, MessageSquare, Phone, Send, ThumbsDown, ThumbsUp } from 'lucide-react';
 import { type FormEvent, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
+import { t } from '@/i18n/uz';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { SearchInput } from '@/shared/components/SearchInput';
 import { apiMode } from '@/shared/lib/api-mode';
@@ -27,9 +28,9 @@ const TABS = ['faq', 'new', 'mine', 'contact', 'news'] as const;
 type Tab = (typeof TABS)[number];
 
 const STATUS: Record<SupportTicketDto['status'], { label: string; className: string }> = {
-  NEW: { label: 'Yuborildi', className: 'bg-primary/15 text-primary' },
-  SEEN: { label: 'Ko‘rildi', className: 'bg-amber-500/15 text-amber-500' },
-  RESOLVED: { label: 'Hal qilindi', className: 'bg-emerald-500/15 text-emerald-500' },
+  NEW: { label: t.support.status.NEW, className: 'bg-primary/15 text-primary' },
+  SEEN: { label: t.support.status.SEEN, className: 'bg-amber-500/15 text-amber-500' },
+  RESOLVED: { label: t.support.status.RESOLVED, className: 'bg-emerald-500/15 text-emerald-500' },
 };
 
 function FaqTab() {
@@ -43,10 +44,10 @@ function FaqTab() {
   }, [search]);
   return (
     <div className="space-y-4">
-      <SearchInput value={search} onChange={setSearch} placeholder="Savolni qidiring…" />
+      <SearchInput value={search} onChange={setSearch} placeholder={t.support.search} />
       {items.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Javob topilmadi. "Murojaat yuborish" bo‘limida savolingizni yozing.
+          {t.support.notFound}
         </p>
       ) : null}
       <div className="space-y-2">
@@ -56,17 +57,17 @@ function FaqTab() {
             <p className="mt-2 text-sm text-muted-foreground">{item.answer}</p>
             <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
               {item.id in rated ? (
-                <span>Rahmat, bahoingiz qabul qilindi</span>
+                <span>{t.support.thanks}</span>
               ) : (
                 <>
-                  <span>Yordam berdimi?</span>
+                  <span>{t.support.helpful}</span>
                   {([true, false] as const).map((helpful) => (
                     <Button
                       key={String(helpful)}
                       variant="ghost"
                       size="icon"
                       className="size-7"
-                      aria-label={helpful ? 'Ha' : 'Yo‘q'}
+                      aria-label={helpful ? t.support.yes : t.support.no}
                       onClick={() => {
                         sendFeedback(item.id, helpful);
                         setRated((prev) => ({ ...prev, [item.id]: helpful }));
@@ -112,15 +113,15 @@ function NewTicketTab({ onSent }: { onSent: () => void }) {
       <Card>
         <CardContent className="space-y-3 py-6 text-center">
           <CircleCheck className="mx-auto size-10 text-emerald-500" />
-          <p className="font-medium">Murojaatingiz #{sent} yuborildi</p>
+          <p className="font-medium">{t.support.sent(sent)}</p>
           <p className="text-sm text-muted-foreground">
-            Tez orada javob beramiz. Javob "Mening murojaatlarim"da ko‘rinadi.
+            {t.support.sentHint}
           </p>
           <div className="flex justify-center gap-2">
             <Button variant="outline" onClick={() => setSent(null)}>
-              Yana yozish
+              {t.support.writeAgain}
             </Button>
-            <Button onClick={onSent}>Murojaatlarim</Button>
+            <Button onClick={onSent}>{t.support.myTickets}</Button>
           </div>
         </CardContent>
       </Card>
@@ -131,29 +132,29 @@ function NewTicketTab({ onSent }: { onSent: () => void }) {
       <CardContent className="pt-6">
         <form className="space-y-4" onSubmit={submit}>
           <div className="space-y-1.5">
-            <Label htmlFor="support-message">Muammo yoki savol</Label>
+            <Label htmlFor="support-message">{t.support.messageLabel}</Label>
             <Textarea
               id="support-message"
               name="message"
               rows={5}
               required
               maxLength={2000}
-              placeholder="Masalan: Sotuvni yopganda xato chiqdi"
+              placeholder={t.support.messagePlaceholder}
             />
             <p className="text-xs text-muted-foreground">
-              Sahifa, xato kodi va qurilmangiz haqida ma’lumot o‘zi qo‘shiladi. Parol yozmang.
+              {t.support.messageHint}
             </p>
           </div>
           {page || errorCode ? (
             <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
-              {page ? `Sahifa: ${page}` : null}
+              {page ? t.support.page(page) : null}
               {page && errorCode ? ' · ' : null}
-              {errorCode ? `Xato: ${errorCode}` : null}
+              {errorCode ? t.support.error(errorCode) : null}
             </p>
           ) : null}
           <Button type="submit" disabled={create.isPending}>
             <Send />
-            {create.isPending ? 'Yuborilmoqda…' : 'Yuborish'}
+            {create.isPending ? t.support.sending : t.support.send}
           </Button>
         </form>
       </CardContent>
@@ -183,7 +184,7 @@ function TicketCard({ ticket }: { ticket: SupportTicketDto }) {
             }
           >
             <p className="mb-1 text-xs text-muted-foreground">
-              {item.author === 'SUPPORT' ? 'Divine yordam' : 'Siz'} ·{' '}
+              {item.author === 'SUPPORT' ? t.support.supportName : t.support.you} ·{' '}
               {formatDateTime(item.createdAt)}
             </p>
             <p className="whitespace-pre-wrap">{item.body}</p>
@@ -201,8 +202,8 @@ function TicketCard({ ticket }: { ticket: SupportTicketDto }) {
             );
           }}
         >
-          <Textarea name="body" rows={1} required maxLength={2000} placeholder="Javob yozish…" />
-          <Button type="submit" size="icon" aria-label="Javob yuborish" disabled={reply.isPending}>
+          <Textarea name="body" rows={1} required maxLength={2000} placeholder={t.support.replyPlaceholder} />
+          <Button type="submit" size="icon" aria-label={t.support.replySend} disabled={reply.isPending}>
             <Send />
           </Button>
         </form>
@@ -213,9 +214,9 @@ function TicketCard({ ticket }: { ticket: SupportTicketDto }) {
 
 function MineTab() {
   const { data, isPending } = useMyTickets();
-  if (isPending) return <p className="text-sm text-muted-foreground">Yuklanmoqda…</p>;
+  if (isPending) return <p className="text-sm text-muted-foreground">{t.support.loading}</p>;
   if (!data || data.length === 0) {
-    return <p className="text-sm text-muted-foreground">Hali murojaat yo‘q.</p>;
+    return <p className="text-sm text-muted-foreground">{t.support.noTickets}</p>;
   }
   return (
     <div className="space-y-3">
@@ -232,7 +233,7 @@ function ContactTab() {
     <div className="grid gap-4 md:grid-cols-2">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Bog‘lanish</CardTitle>
+          <CardTitle className="text-base">{t.support.contactTitle}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <a
@@ -249,13 +250,13 @@ function ContactTab() {
             rel="noopener noreferrer"
           >
             <MessageSquare className="size-4" />
-            Telegram
+            {t.support.telegram}
           </a>
         </CardContent>
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Tizim holati</CardTitle>
+          <CardTitle className="text-base">{t.support.statusTitle}</CardTitle>
         </CardHeader>
         <CardContent className="text-sm">
           {announcement?.kind === 'MAINTENANCE' ? (
@@ -263,7 +264,7 @@ function ContactTab() {
           ) : (
             <p className="flex items-center gap-2 text-emerald-500">
               <CircleCheck className="size-4" />
-              Hammasi ishlayapti
+              {t.support.allGood}
             </p>
           )}
         </CardContent>
@@ -306,21 +307,21 @@ export function SupportPage() {
   return (
     <>
       <PageHeader
-        title="Murojaat"
-        description="Savol-javoblar, muammo haqida xabar berish va murojaatlaringizga javoblar"
+        title={t.support.title}
+        description={t.support.description}
       />
       {apiMode !== 'http' ? (
         <p className="text-sm text-muted-foreground">
-          Demo rejimda murojaat yuborilmaydi: savol-javoblar va yangiliklar ishlaydi.
+          {t.support.demo}
         </p>
       ) : null}
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="flex-wrap">
-          <TabsTrigger value="faq">Savol-javoblar</TabsTrigger>
-          <TabsTrigger value="new">Murojaat yuborish</TabsTrigger>
-          <TabsTrigger value="mine">Mening murojaatlarim</TabsTrigger>
-          <TabsTrigger value="contact">Bog‘lanish</TabsTrigger>
-          <TabsTrigger value="news">Yangiliklar</TabsTrigger>
+          <TabsTrigger value="faq">{t.support.tabs.faq}</TabsTrigger>
+          <TabsTrigger value="new">{t.support.tabs.new}</TabsTrigger>
+          <TabsTrigger value="mine">{t.support.tabs.mine}</TabsTrigger>
+          <TabsTrigger value="contact">{t.support.tabs.contact}</TabsTrigger>
+          <TabsTrigger value="news">{t.support.tabs.news}</TabsTrigger>
         </TabsList>
         <TabsContent value="faq">
           <FaqTab />
