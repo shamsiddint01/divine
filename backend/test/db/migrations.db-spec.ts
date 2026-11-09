@@ -171,6 +171,8 @@ describe('FK delete strategiyasi (tarix yo‘qolmaydi)', () => {
       'incoming_items.incoming_id:c', // faqat DRAFT kirim o'chiriladi (trigger)
       'role_permissions.permission_id:c',
       'role_permissions.role_id:c',
+      'support_replies.ticket_id:c',
+      'support_tickets.user_id:n', // user o'chsa ham murojaat qoladi
       'user_sessions.replaced_by_id:n', // SET NULL: rotation zanjiri
       'user_sessions.user_id:c',
     ]);
