@@ -1,3 +1,4 @@
+import { HelpButton } from '@/features/support/components/HelpDialog';
 import {
   Bell,
   HandCoins,
@@ -192,6 +193,7 @@ export function Topbar() {
         <div className="hidden sm:block">
           <ApiStatusBadge />
         </div>
+        <HelpButton />
         {canSeeLowStock ? <NotificationsMenu /> : null}
         <UserMenu />
       </div>

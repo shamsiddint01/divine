@@ -7,6 +7,7 @@ import {
   FolderTree,
   HandCoins,
   House,
+  LifeBuoy,
   LayoutDashboard,
   Package,
   Settings,
@@ -98,6 +99,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     anyOf: [Permission.REPORTS_READ],
   },
   {
+    key: 'support',
+    path: '/support',
+    label: t.nav.support,
+    icon: LifeBuoy,
+    anyOf: [Permission.DASHBOARD_ADMIN, Permission.DASHBOARD_OWN],
+  },
+  {
     key: 'billing',
     path: '/billing',
     label: t.nav.billing,
@@ -129,7 +137,7 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     title: t.nav.sectionMain,
     shortTitle: t.nav.sectionMain,
     icon: House,
-    keys: ['dashboard', 'sales', 'customers'],
+    keys: ['dashboard', 'sales', 'customers', 'support'],
   },
   {
     key: 'catalog',

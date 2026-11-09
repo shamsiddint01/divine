@@ -15,6 +15,7 @@ describe('asosiy navigatsiya (REQ-151, TZ §16)', () => {
       'Nasiya',
       'Xarajatlar',
       'Hisobotlar',
+      'Murojaat',
       'To‘lov',
       'Sozlamalar',
     ]);

@@ -44,6 +44,7 @@ const CustomerDetailPage = page(
 const CreditsPage = page(() => import('@/features/credits/pages/CreditsPage'), 'CreditsPage');
 const ExpensesPage = page(() => import('@/features/expenses/pages/ExpensesPage'), 'ExpensesPage');
 const ReportsPage = page(() => import('@/features/reports/pages/ReportsPage'), 'ReportsPage');
+const SupportPage = page(() => import('@/features/support/pages/SupportPage'), 'SupportPage');
 const BillingPage = page(() => import('@/features/site/pages/BillingPage'), 'BillingPage');
 const SettingsPage = page(() => import('@/features/settings/pages/SettingsPage'), 'SettingsPage');
 
@@ -92,6 +93,7 @@ export const routes: RouteObject[] = [
       { path: 'reports', element: <ReportsPage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: 'billing', element: <BillingPage /> },
+      { path: 'support', element: <SupportPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

@@ -23,6 +23,7 @@ export const uz = {
     reports: 'Hisobotlar',
     settings: 'Sozlamalar',
     billing: 'To‘lov',
+    support: 'Murojaat',
     mainMenu: 'Asosiy menyu',
     openMenu: 'Menyuni ochish',
     closeMenu: 'Menyuni yopish',

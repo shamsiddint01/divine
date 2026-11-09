@@ -159,6 +159,16 @@ async function authorizedRequest<T>(
       authSession.notifyExpired();
     } else if (error.status === 401) {
       authSession.notifyExpired();
+    } else if (error.status >= 500 && !path.startsWith('/support')) {
+      // Server xatosi egasiga o'zi boradi (Murojaat bo'limi); aylanma import bo'lmasin — dinamik.
+      void import('@/features/support/api/support').then(({ reportError }) =>
+        reportError({
+          message: error.message,
+          page: window.location.pathname,
+          errorCode: error.code,
+          requestId: error.requestId ?? undefined,
+        }),
+      );
     } else if (error.code === ErrorCode.LICENSE_EXPIRED) {
       // To'lov muddati ish paytida tugadi: login sahifasi sababini ko'rsatadi.
       authSession.notifyExpired();

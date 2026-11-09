@@ -34,6 +34,7 @@ export const BACKEND_READY_PREFIXES = [
   '/dashboard',
   '/settings',
   '/site/',
+  '/support',
   '/audit-logs',
 ] as const;
 

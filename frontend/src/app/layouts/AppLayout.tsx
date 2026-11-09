@@ -2,6 +2,7 @@ import { Suspense, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { useCurrentUser } from '@/features/session/api/session';
 import { SiteBanners } from '@/features/site/components/SiteBanners';
+import { WhatsNewDialog } from '@/features/support/components/WhatsNewDialog';
 import { hasAny, usePermissions } from '@/features/session/hooks/use-permissions';
 import { playSplashOnce } from '@/shared/lib/splash';
 import { Skeleton } from '@/shared/ui/skeleton';
@@ -62,6 +63,7 @@ export function AppLayout() {
         </main>
       </div>
       <MobileNav />
+      <WhatsNewDialog />
     </div>
   );
 }
