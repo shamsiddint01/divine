@@ -101,7 +101,14 @@ describe('murojaat', () => {
       status: 'SEEN',
       replies: [{ author: 'SUPPORT', body: 'Tuzatdik' }],
     });
+    // Panel javobi botdagi murojaat xabariga ham boradi.
+    const stored = await t.prisma.supportTicket.findUnique({ where: { id: ticket.id } });
+    expect(sent.at(-1)).toEqual({
+      text: expect.stringContaining('panelda javob berildi:\nTuzatdik'),
+      replyTo: Number(stored!.telegramMessageId),
+    });
     await control('patch', `/tickets/${ticket.id}`).send({ status: 'RESOLVED' }).expect(200);
+    expect(sent.at(-1)?.text).toContain('hal qilindi');
     const mine = (await api('get', '/support/tickets', sellerToken).expect(200)).body[0];
     expect(mine).toMatchObject({ status: 'RESOLVED', replies: [{ body: 'Tuzatdik' }] });
 
@@ -142,6 +149,10 @@ describe('murojaat', () => {
     expect(mine.replies).toEqual([
       expect.objectContaining({ author: 'SUPPORT', body: 'Telegram’dan javob' }),
     ]);
+    // Telegram javobi panel ro'yxatida ham bor; botga faqat tasdiq boradi, javob qayta yuborilmaydi.
+    const panelList = (await control('get', '/tickets').expect(200)).body;
+    expect(panelList[0].replies[0].body).toBe('Telegram’dan javob');
+    expect(sent.some((m) => m.text.includes('panelda javob berildi'))).toBe(false);
   });
 
   it('10 daqiqada 5 tadan ortiq murojaat yuborib bo‘lmaydi', async () => {

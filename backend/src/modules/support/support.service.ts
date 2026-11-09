@@ -267,11 +267,15 @@ export class SupportService {
   }
 
   async setStatus(id: string, status: SupportStatus): Promise<SupportTicketDto> {
-    const { count } = await this.prisma.supportTicket.updateMany({
-      where: { id },
-      data: { status },
-    });
-    if (count === 0) throw new AppError(ErrorCode.NOT_FOUND);
+    const ticket = await this.prisma.supportTicket.findUnique({ where: { id } });
+    if (!ticket) throw new AppError(ErrorCode.NOT_FOUND);
+    await this.prisma.supportTicket.update({ where: { id }, data: { status } });
+    if (status !== ticket.status) {
+      await this.notify(
+        `Murojaat #${ticket.number}: ${STATUS_LABEL[status]}`,
+        ticket.telegramMessageId,
+      );
+    }
     return this.get(id);
   }
 
@@ -288,9 +292,9 @@ export class SupportService {
       where: { telegramMessageId: BigInt(repliedTo) },
     });
     if (!ticket) return;
-    await this.replyAsSupport(ticket.id, message.text.slice(0, 2000));
+    await this.replyAsSupport(ticket.id, message.text.slice(0, 2000), 'TELEGRAM');
     await this.notify(
-      `Javob murojaat #${ticket.number} ga yozildi (${STATUS_LABEL.SEEN}).`,
+      `Javob murojaat #${ticket.number} ga yozildi: foydalanuvchi saytda ko‘radi, panelda ham bor.`,
       BigInt(message.message_id),
     );
   }
