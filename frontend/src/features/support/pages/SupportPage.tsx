@@ -28,12 +28,6 @@ import { CHANGELOG, FAQ } from '../content';
 const TABS = ['faq', 'new', 'mine', 'contact', 'news'] as const;
 type Tab = (typeof TABS)[number];
 
-const STATUS: Record<SupportTicketDto['status'], { label: string; className: string }> = {
-  NEW: { label: t.support.status.NEW, className: 'bg-primary/15 text-primary' },
-  SEEN: { label: t.support.status.SEEN, className: 'bg-amber-500/15 text-amber-500' },
-  RESOLVED: { label: t.support.status.RESOLVED, className: 'bg-emerald-500/15 text-emerald-500' },
-};
-
 function FaqTab() {
   const [search, setSearch] = useState('');
   const [rated, setRated] = useState<Record<string, boolean>>({});
@@ -169,12 +163,13 @@ function NewTicketTab({ onSent }: { onSent: () => void }) {
   );
 }
 
-type MessageState = 'SENT' | 'FAILED' | 'ANSWERED';
+type MessageState = 'SENT' | 'FAILED' | 'ANSWERED' | 'RESOLVED';
 
 const STATE_CLASS: Record<MessageState, string> = {
   SENT: 'bg-primary/15 text-primary',
   FAILED: 'bg-destructive/15 text-destructive',
-  ANSWERED: 'bg-emerald-500/15 text-emerald-500',
+  ANSWERED: 'bg-amber-500/15 text-amber-500',
+  RESOLVED: 'bg-emerald-500/15 text-emerald-500',
 };
 
 function StateBadge({ state }: { state: MessageState }) {
@@ -211,7 +206,8 @@ function UserBubble({
 }
 
 /**
- * Har savolning holati: keyin egasining javobi bo'lsa — "Javob berildi", aks holda "Yuborildi";
+ * Har savolning holati: keyin egasining javobi bo'lsa — "Javob berildi", aks holda "Yuborildi"; egasi
+ * yopgan murojaat — "Hal qilindi";
  * serverga yetmagani — "Yuborilmadi" (matn saqlanadi, qayta yuborsa bo'ladi).
  */
 function TicketCard({ ticket }: { ticket: SupportTicketDto }) {
@@ -222,8 +218,15 @@ function TicketCard({ ticket }: { ticket: SupportTicketDto }) {
   const stateOf = (createdAt: string): MessageState =>
     answeredAfter(createdAt) ? 'ANSWERED' : 'SENT';
   const last = ticket.replies.at(-1);
+  // Murojaat holati: yuborilmagan xabar bo'lsa — shu; egasi "Hal qilindi" desa — shu; aks holda oxirgi xabarga qarab.
   const headerState: MessageState =
-    failed.length > 0 ? 'FAILED' : last?.author === 'SUPPORT' ? 'ANSWERED' : 'SENT';
+    failed.length > 0
+      ? 'FAILED'
+      : ticket.status === 'RESOLVED'
+        ? 'RESOLVED'
+        : last?.author === 'SUPPORT'
+          ? 'ANSWERED'
+          : 'SENT';
   const send = (body: string, onSent?: () => void) =>
     reply.mutate(
       { id: ticket.id, body },

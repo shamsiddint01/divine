@@ -157,7 +157,12 @@ export const uz = {
     },
     status: { NEW: 'Yuborildi', SEEN: 'Ko‘rildi', RESOLVED: 'Hal qilindi' },
     /** Har xabar holati (egasining qarori, 2026-11-09). */
-    state: { SENT: 'Yuborildi', FAILED: 'Yuborilmadi', ANSWERED: 'Javob berildi' },
+    state: {
+      SENT: 'Yuborildi',
+      FAILED: 'Yuborilmadi',
+      ANSWERED: 'Javob berildi',
+      RESOLVED: 'Hal qilindi',
+    },
     retry: 'Qayta yuborish',
     failedHint: 'Internet yoki server bilan aloqa bo‘lmadi. Matn saqlab qolindi.',
     search: 'Savolni qidiring…',
