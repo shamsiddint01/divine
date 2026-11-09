@@ -1,10 +1,11 @@
 import { LICENSE_CONTACT_PHONE, type SupportTicketDto } from '@divine/shared';
 import { CircleCheck, MessageSquare, Phone, Send, ThumbsDown, ThumbsUp } from 'lucide-react';
-import { type FormEvent, useMemo, useState } from 'react';
+import { type FormEvent, type ReactNode, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { t } from '@/i18n/uz';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { SearchInput } from '@/shared/components/SearchInput';
+import { ApiError } from '@/shared/lib/api-client';
 import { apiMode } from '@/shared/lib/api-mode';
 import { TELEGRAM_URL } from '@/shared/lib/contacts';
 import { formatDateTime } from '@/shared/lib/format';
@@ -88,6 +89,7 @@ function NewTicketTab({ onSent }: { onSent: () => void }) {
   const [params] = useSearchParams();
   const create = useCreateTicket();
   const [sent, setSent] = useState<string | null>(null);
+  const [failedText, setFailedText] = useState<string | null>(null);
   const page = params.get('page') ?? undefined;
   const errorCode = params.get('code') ?? undefined;
   const requestId = params.get('request') ?? undefined;
@@ -100,9 +102,14 @@ function NewTicketTab({ onSent }: { onSent: () => void }) {
       {
         onSuccess: (ticket) => {
           form.reset();
+          setFailedText(null);
           setSent(ticket.number);
         },
-        onError: toastError,
+        onError: (error) => {
+          // Limitga yetgan bo'lsa — sababi xabarda; aloqa uzilgan bo'lsa — "Yuborilmadi".
+          if (error instanceof ApiError && error.status === 429) toastError(error);
+          else setFailedText(message);
+        },
       },
     );
   };
@@ -146,6 +153,12 @@ function NewTicketTab({ onSent }: { onSent: () => void }) {
               {errorCode ? t.support.error(errorCode) : null}
             </p>
           ) : null}
+          {failedText ? (
+            <div role="alert" className="flex flex-wrap items-center gap-2 text-sm">
+              <StateBadge state="FAILED" />
+              <span className="text-muted-foreground">{t.support.failedHint}</span>
+            </div>
+          ) : null}
           <Button type="submit" disabled={create.isPending}>
             <Send />
             {create.isPending ? t.support.sending : t.support.send}
@@ -156,44 +169,132 @@ function NewTicketTab({ onSent }: { onSent: () => void }) {
   );
 }
 
+type MessageState = 'SENT' | 'FAILED' | 'ANSWERED';
+
+const STATE_CLASS: Record<MessageState, string> = {
+  SENT: 'bg-primary/15 text-primary',
+  FAILED: 'bg-destructive/15 text-destructive',
+  ANSWERED: 'bg-emerald-500/15 text-emerald-500',
+};
+
+function StateBadge({ state }: { state: MessageState }) {
+  return <Badge className={STATE_CLASS[state]}>{t.support.state[state]}</Badge>;
+}
+
+function UserBubble({
+  body,
+  meta,
+  state,
+  action,
+}: {
+  body: string;
+  meta: string;
+  state: MessageState;
+  action?: ReactNode;
+}) {
+  return (
+    <div
+      className={
+        state === 'FAILED'
+          ? 'rounded-md border border-destructive/30 bg-destructive/5 p-3'
+          : 'rounded-md bg-muted p-3'
+      }
+    >
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">{meta}</p>
+        <StateBadge state={state} />
+      </div>
+      <p className="whitespace-pre-wrap">{body}</p>
+      {action}
+    </div>
+  );
+}
+
+/**
+ * Har savolning holati: keyin egasining javobi bo'lsa — "Javob berildi", aks holda "Yuborildi";
+ * serverga yetmagani — "Yuborilmadi" (matn saqlanadi, qayta yuborsa bo'ladi).
+ */
 function TicketCard({ ticket }: { ticket: SupportTicketDto }) {
   const reply = useReplyTicket();
+  const [failed, setFailed] = useState<string[]>([]);
+  const answeredAfter = (createdAt: string) =>
+    ticket.replies.some((item) => item.author === 'SUPPORT' && item.createdAt > createdAt);
+  const stateOf = (createdAt: string): MessageState =>
+    answeredAfter(createdAt) ? 'ANSWERED' : 'SENT';
+  const last = ticket.replies.at(-1);
+  const headerState: MessageState =
+    failed.length > 0 ? 'FAILED' : last?.author === 'SUPPORT' ? 'ANSWERED' : 'SENT';
+  const send = (body: string, onSent?: () => void) =>
+    reply.mutate(
+      { id: ticket.id, body },
+      {
+        onSuccess: () => {
+          setFailed((prev) => prev.filter((item) => item !== body));
+          onSent?.();
+        },
+        onError: () => setFailed((prev) => (prev.includes(body) ? prev : [...prev, body])),
+      },
+    );
   return (
     <Card className="gap-3">
       <CardHeader className="flex flex-row items-center justify-between gap-2">
         <CardTitle className="text-sm">
           #{ticket.number} · {formatDateTime(ticket.createdAt)}
         </CardTitle>
-        <Badge className={STATUS[ticket.status].className}>{STATUS[ticket.status].label}</Badge>
+        <StateBadge state={headerState} />
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
-        <p className="whitespace-pre-wrap">{ticket.message}</p>
-        {ticket.replies.map((item) => (
-          <div
-            key={item.id}
-            className={
-              item.author === 'SUPPORT'
-                ? 'rounded-md border border-primary/30 bg-primary/5 p-3'
-                : 'rounded-md bg-muted p-3'
+        <UserBubble
+          body={ticket.message}
+          meta={`${t.support.you} · ${formatDateTime(ticket.createdAt)}`}
+          state={stateOf(ticket.createdAt)}
+        />
+        {ticket.replies.map((item) =>
+          item.author === 'SUPPORT' ? (
+            <div key={item.id} className="rounded-md border border-primary/30 bg-primary/5 p-3">
+              <p className="mb-1 text-xs text-muted-foreground">
+                {t.support.supportName} · {formatDateTime(item.createdAt)}
+              </p>
+              <p className="whitespace-pre-wrap">{item.body}</p>
+            </div>
+          ) : (
+            <UserBubble
+              key={item.id}
+              body={item.body}
+              meta={`${t.support.you} · ${formatDateTime(item.createdAt)}`}
+              state={stateOf(item.createdAt)}
+            />
+          ),
+        )}
+        {failed.map((body) => (
+          <UserBubble
+            key={body}
+            body={body}
+            meta={t.support.failedHint}
+            state="FAILED"
+            action={
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-2"
+                disabled={reply.isPending}
+                onClick={() => send(body)}
+              >
+                {t.support.retry}
+              </Button>
             }
-          >
-            <p className="mb-1 text-xs text-muted-foreground">
-              {item.author === 'SUPPORT' ? t.support.supportName : t.support.you} ·{' '}
-              {formatDateTime(item.createdAt)}
-            </p>
-            <p className="whitespace-pre-wrap">{item.body}</p>
-          </div>
+          />
         ))}
         <form
           className="flex gap-2"
           onSubmit={(event) => {
             event.preventDefault();
             const form = event.currentTarget;
-            const body = String(new FormData(form).get('body') ?? '');
-            reply.mutate(
-              { id: ticket.id, body },
-              { onSuccess: () => form.reset(), onError: toastError },
-            );
+            const body = String(new FormData(form).get('body') ?? '').trim();
+            if (!body) return;
+            // Matn yuborilmasa ham yo'qolmaydi: "Yuborilmadi" xabarida qoladi.
+            form.reset();
+            send(body);
           }}
         >
           <Textarea

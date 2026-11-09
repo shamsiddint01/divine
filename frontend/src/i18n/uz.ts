@@ -156,6 +156,10 @@ export const uz = {
       news: 'Yangiliklar',
     },
     status: { NEW: 'Yuborildi', SEEN: 'Ko‘rildi', RESOLVED: 'Hal qilindi' },
+    /** Har xabar holati (egasining qarori, 2026-11-09). */
+    state: { SENT: 'Yuborildi', FAILED: 'Yuborilmadi', ANSWERED: 'Javob berildi' },
+    retry: 'Qayta yuborish',
+    failedHint: 'Internet yoki server bilan aloqa bo‘lmadi. Matn saqlab qolindi.',
     search: 'Savolni qidiring…',
     notFound: 'Javob topilmadi. "Murojaat yuborish" bo‘limida savolingizni yozing.',
     helpful: 'Yordam berdimi?',
