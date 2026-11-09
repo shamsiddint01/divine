@@ -700,4 +700,3 @@ export interface AnnouncementDto {
   text: string;
   updatedAt: string;
 }
-
