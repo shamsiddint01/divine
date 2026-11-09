@@ -13,18 +13,27 @@ import { CHANGELOG } from '../content';
 
 const KEY = 'divine.whats-new-seen';
 
-const seen = () => {
+/**
+ * Avval kirgan foydalanuvchiga yangilanishdan keyin bir marta. Birinchi kirishda ko'rsatilmaydi (yangi
+ * mijozga "Boshlash uchun 3 qadam" bor): joriy versiya shunchaki eslab qolinadi.
+ */
+const shouldOpen = (latestId: string): boolean => {
   try {
-    return localStorage.getItem(KEY);
+    const seen = localStorage.getItem(KEY);
+    if (seen === null) {
+      localStorage.setItem(KEY, latestId);
+      return false;
+    }
+    return seen !== latestId;
   } catch {
-    return CHANGELOG[0]?.id ?? null;
+    return false;
   }
 };
 
 /** "Nima yangi": yangi imkoniyatlar haqida bir marta (har yangilanishda) ko'rsatiladi. */
 export function WhatsNewDialog() {
   const latest = CHANGELOG[0];
-  const [open, setOpen] = useState(() => Boolean(latest) && seen() !== latest?.id);
+  const [open, setOpen] = useState(() => (latest ? shouldOpen(latest.id) : false));
   if (!latest) return null;
   const close = () => {
     try {
