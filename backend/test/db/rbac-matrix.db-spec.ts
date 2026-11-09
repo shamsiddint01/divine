@@ -43,6 +43,13 @@ const USER_ALLOWED = [
   'POST /expense-categories',
   'POST /expenses',
   'POST /sales',
+  // Murojaat bo'limi: har qanday kirgan foydalanuvchi (2026-11-09).
+  'GET /support/announcement',
+  'GET /support/tickets',
+  'POST /support/errors',
+  'POST /support/feedback',
+  'POST /support/tickets',
+  'POST /support/tickets/:id/replies',
 ].sort();
 
 const PASSWORD = '582913';

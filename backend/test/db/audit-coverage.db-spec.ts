@@ -132,7 +132,8 @@ function mutatingRoutes(): string[] {
       if (verb === 'GET' || verb === 'HEAD' || verb === 'OPTIONS') continue;
       const full = `/${[base, path].filter((p) => p && p !== '/').join('/')}`.replace(/\/+/g, '/');
       // Superadmin endpointlari: superadmin.db-spec.
-      if (/^\/(control|site-control|site)(\/|$)/.test(full)) continue;
+      // Murojaatlar biznes amali emas: audit o'rniga o'z tarixi bor (support.db-spec).
+      if (/^\/(control|site-control|site|support)(\/|$)/.test(full)) continue;
       routes.push(`${verb} ${full}`);
     }
   }

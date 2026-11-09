@@ -165,7 +165,7 @@ export class SupportControlController {
 /** Telegram shu yerga yuboradi: `X-Telegram-Bot-Api-Secret-Token` sir bilan tekshiriladi. */
 @ApiTags('Support')
 @Public()
-@Controller('support/telegram')
+@Controller('site-control/telegram')
 export class TelegramWebhookController {
   private readonly secret: Buffer;
 
