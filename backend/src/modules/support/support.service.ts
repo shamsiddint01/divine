@@ -239,7 +239,15 @@ export class SupportService {
     return rows.map((row) => this.toDto(row));
   }
 
-  async replyAsSupport(id: string, body: string): Promise<SupportTicketDto> {
+  /**
+   * Egasining javobi. Panelda yozilsa — Telegram'dagi murojaat xabariga ham yuboriladi (ikkala joyda
+   * bir xil tarix); Telegram'dan kelgan javob esa u yerda allaqachon bor.
+   */
+  async replyAsSupport(
+    id: string,
+    body: string,
+    source: 'PANEL' | 'TELEGRAM' = 'PANEL',
+  ): Promise<SupportTicketDto> {
     const ticket = await this.prisma.supportTicket.findUnique({ where: { id } });
     if (!ticket) throw new AppError(ErrorCode.NOT_FOUND);
     await this.prisma.$transaction([
@@ -249,6 +257,12 @@ export class SupportService {
         data: { status: ticket.status === 'NEW' ? 'SEEN' : ticket.status },
       }),
     ]);
+    if (source === 'PANEL') {
+      await this.notify(
+        `Murojaat #${ticket.number} ga panelda javob berildi:\n${body}`,
+        ticket.telegramMessageId,
+      );
+    }
     return this.get(id);
   }
 
