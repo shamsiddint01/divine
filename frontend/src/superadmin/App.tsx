@@ -1,5 +1,7 @@
 import {
   type ControlEventDto,
+  type ControlTicketDto,
+  type SupportStatus,
   type ControlSiteHealthDto,
   type ControlSiteDetailDto,
   type ControlSiteDto,
@@ -38,6 +40,10 @@ const EVENT_LABELS: Record<string, string> = {
   PAYMENT_DELETED: 'To‘lov o‘chirildi',
   VIEW_REQUESTED: 'Ko‘rish so‘raldi',
   VIEW_OPENED: 'Sayt ko‘rildi',
+  TICKET_REPLIED: 'Murojaatga javob yozildi',
+  TICKET_STATUS: 'Murojaat holati o‘zgardi',
+  ANNOUNCEMENT_SET: 'E’lon qo‘yildi',
+  ANNOUNCEMENT_CLEARED: 'E’lon olib tashlandi',
 };
 
 function eventText(event: ControlEventDto) {
@@ -654,6 +660,11 @@ function SiteSheet({ id, onClose }: { id: string; onClose: () => void }) {
 
               <ViewAccess siteId={id} />
 
+              <section className="grid gap-2">
+                <h3 className="text-sm font-semibold">E’lon (saytda hamma ko‘radi)</h3>
+                <AnnouncementForm siteId={id} />
+              </section>
+
               <section className="grid gap-3">
                 <h3 className="text-sm font-semibold">To‘lov yozish</h3>
                 <PaymentForm site={site} />
@@ -784,6 +795,234 @@ function HealthDot({ ok, ms }: { ok: boolean | undefined; ms: number | null | un
   );
 }
 
+const TICKET_STATUS: Record<ControlTicketDto['status'], { label: string; className: string }> = {
+  NEW: { label: 'Yangi', className: 'bg-primary/15 text-primary' },
+  SEEN: { label: 'Ko‘rildi', className: 'bg-amber-500/15 text-amber-500' },
+  RESOLVED: { label: 'Hal qilindi', className: 'bg-emerald-500/15 text-emerald-500' },
+};
+
+function TicketSheet({ ticket, onClose }: { ticket: ControlTicketDto; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ['tickets'] });
+  const reply = useMutation({
+    mutationFn: (body: string) => panelApi.replyTicket(ticket.siteId, ticket.id, body),
+    onSuccess: refresh,
+  });
+  const status = useMutation({
+    mutationFn: (next: SupportStatus) => panelApi.ticketStatus(ticket.siteId, ticket.id, next),
+    onSuccess: refresh,
+  });
+  return (
+    <Sheet open onOpenChange={(open) => !open && onClose()}>
+      <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+        <SheetHeader>
+          <SheetTitle>
+            #{ticket.number} · {ticket.siteName}
+          </SheetTitle>
+        </SheetHeader>
+        <div className="grid gap-4 px-4 pb-6 text-sm">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
+            <dt className="text-muted-foreground">Holat</dt>
+            <dd>
+              <Badge className={TICKET_STATUS[ticket.status].className}>
+                {TICKET_STATUS[ticket.status].label}
+              </Badge>
+              {ticket.kind === 'AUTO' ? (
+                <span className="ml-2 text-xs text-muted-foreground">
+                  Avtomatik xato · {ticket.occurrences} marta
+                </span>
+              ) : null}
+            </dd>
+            <dt className="text-muted-foreground">Kim</dt>
+            <dd>{ticket.userLogin ?? '—'}</dd>
+            <dt className="text-muted-foreground">Qachon</dt>
+            <dd>{formatTimestamp(ticket.createdAt)}</dd>
+            {ticket.page ? (
+              <>
+                <dt className="text-muted-foreground">Sahifa</dt>
+                <dd className="break-all">{ticket.page}</dd>
+              </>
+            ) : null}
+            {ticket.errorCode ? (
+              <>
+                <dt className="text-muted-foreground">Xato kodi</dt>
+                <dd>{ticket.errorCode}</dd>
+              </>
+            ) : null}
+            {ticket.userAgent ? (
+              <>
+                <dt className="text-muted-foreground">Qurilma</dt>
+                <dd className="text-xs break-all text-muted-foreground">{ticket.userAgent}</dd>
+              </>
+            ) : null}
+          </dl>
+          <p className="rounded-md bg-muted p-3 whitespace-pre-wrap">{ticket.message}</p>
+          {ticket.replies.map((item) => (
+            <div
+              key={item.id}
+              className={
+                item.author === 'SUPPORT'
+                  ? 'rounded-md border border-primary/30 bg-primary/5 p-3'
+                  : 'rounded-md bg-muted p-3'
+              }
+            >
+              <p className="mb-1 text-xs text-muted-foreground">
+                {item.author === 'SUPPORT' ? 'Siz' : (ticket.userLogin ?? 'Foydalanuvchi')} ·{' '}
+                {formatTimestamp(item.createdAt)}
+              </p>
+              <p className="whitespace-pre-wrap">{item.body}</p>
+            </div>
+          ))}
+          {ticket.kind === 'MANUAL' ? (
+            <form
+              className="grid gap-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const form = event.currentTarget;
+                reply.mutate(values(event).body ?? '', { onSuccess: () => form.reset() });
+              }}
+            >
+              <Textarea name="body" rows={3} required maxLength={2000} placeholder="Javob…" />
+              <Button type="submit" disabled={reply.isPending}>
+                {reply.isPending ? 'Yuborilmoqda…' : 'Javob yuborish'}
+              </Button>
+              <ErrorText error={reply.error} />
+            </form>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            {(['SEEN', 'RESOLVED'] as const)
+              .filter((next) => next !== ticket.status)
+              .map((next) => (
+                <Button
+                  key={next}
+                  variant="outline"
+                  disabled={status.isPending}
+                  onClick={() => status.mutate(next)}
+                >
+                  {next === 'RESOLVED' ? 'Hal qilindi deb belgilash' : 'Ko‘rildi'}
+                </Button>
+              ))}
+          </div>
+          <ErrorText error={status.error} />
+          <section className="grid gap-2">
+            <h3 className="font-semibold">Saytni ko‘rish</h3>
+            <ViewAccess siteId={ticket.siteId} />
+          </section>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function TicketsSection() {
+  const [selected, setSelected] = useState<string | null>(null);
+  const { data, error } = useQuery({
+    queryKey: ['tickets'],
+    queryFn: panelApi.tickets,
+    refetchInterval: 60_000,
+  });
+  const tickets = data?.tickets ?? [];
+  const current = tickets.find((ticket) => ticket.id === selected);
+  const open = tickets.filter((ticket) => ticket.status !== 'RESOLVED').length;
+  return (
+    <section className="space-y-2">
+      <h2 className="flex items-center gap-2 text-sm font-semibold">
+        Murojaatlar
+        {open > 0 ? <Badge className="bg-primary/15 text-primary">{open} ochiq</Badge> : null}
+      </h2>
+      <ErrorText error={error} />
+      {data?.unreachable.length ? (
+        <p className="text-xs text-muted-foreground">
+          Javob bermagan saytlar: {data.unreachable.join(', ')}
+        </p>
+      ) : null}
+      {tickets.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Hali murojaat yo‘q</p>
+      ) : (
+        <ul className="divide-y rounded-lg border text-sm">
+          {tickets.slice(0, 30).map((ticket) => (
+            <li key={`${ticket.siteId}-${ticket.id}`}>
+              <button
+                type="button"
+                onClick={() => setSelected(ticket.id)}
+                className="flex w-full items-start gap-3 p-3 text-left hover:bg-muted/50"
+              >
+                <Badge className={TICKET_STATUS[ticket.status].className}>
+                  {TICKET_STATUS[ticket.status].label}
+                </Badge>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate">
+                    <span className="font-medium">
+                      #{ticket.number} {ticket.siteName}
+                    </span>{' '}
+                    · {ticket.kind === 'AUTO' ? 'Avtomatik xato' : (ticket.userLogin ?? '—')}
+                  </span>
+                  <span className="block truncate text-muted-foreground">{ticket.message}</span>
+                </span>
+                <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                  {formatTimestamp(ticket.updatedAt)}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {current ? <TicketSheet ticket={current} onClose={() => setSelected(null)} /> : null}
+    </section>
+  );
+}
+
+function AnnouncementForm({ siteId }: { siteId: string }) {
+  const queryClient = useQueryClient();
+  const save = useMutation({
+    mutationFn: (input: { kind: 'INFO' | 'MAINTENANCE'; text: string } | null) =>
+      panelApi.setAnnouncement(siteId, input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['events'] }),
+  });
+  return (
+    <form
+      className="grid gap-2"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const { kind, text } = values(event);
+        save.mutate({ kind: kind === 'MAINTENANCE' ? 'MAINTENANCE' : 'INFO', text: text ?? '' });
+      }}
+    >
+      <Textarea
+        name="text"
+        rows={2}
+        required
+        maxLength={500}
+        placeholder="Masalan: Ertaga 10:00–11:00 da texnik ishlar"
+      />
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          name="kind"
+          className="h-9 rounded-md border bg-background px-2 text-sm"
+          defaultValue="INFO"
+          aria-label="E’lon turi"
+        >
+          <option value="INFO">Xabar</option>
+          <option value="MAINTENANCE">Texnik ishlar</option>
+        </select>
+        <Button type="submit" disabled={save.isPending}>
+          E’lon qilish
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={save.isPending}
+          onClick={() => save.mutate(null)}
+        >
+          E’lonni olib tashlash
+        </Button>
+      </div>
+      {save.isSuccess ? <p className="text-xs text-emerald-500">Saqlandi</p> : null}
+      <ErrorText error={save.error} />
+    </form>
+  );
+}
+
 const BACKUP_STALE_MS = 36 * 3600_000;
 
 /** Oxirgi bekap: yashil — 36 soat ichida muvaffaqiyatli, sariq — eski, qizil — xato yoki yo'q. */
@@ -901,6 +1140,7 @@ function SitesScreen({ sites }: { sites: ControlSiteDto[] }) {
           ) : null}
         </CardContent>
       </Card>
+      <TicketsSection />
       <section className="space-y-2">
         <h2 className="text-sm font-semibold">Oxirgi harakatlar</h2>
         <EventList />

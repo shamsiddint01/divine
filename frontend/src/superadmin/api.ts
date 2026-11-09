@@ -1,5 +1,10 @@
 import {
+  type AnnouncementInput,
   type ControlDashboardDto,
+  type ControlTicketDto,
+  type SupportFeedbackSummaryDto,
+  type SupportStatus,
+  type SupportTicketDto,
   type ControlEventDto,
   type ControlLoginInput,
   type ControlSiteHealthDto,
@@ -72,6 +77,17 @@ export const panelApi = {
     request<ControlSiteDetailDto>(`/sites/${id}/payments`, 'POST', input),
   deletePayment: (id: string, paymentId: string) =>
     request<ControlSiteDetailDto>(`/sites/${id}/payments/${paymentId}`, 'DELETE'),
+  tickets: () =>
+    request<{ tickets: ControlTicketDto[]; unreachable: string[] }>('/sites/tickets'),
+  replyTicket: (siteId: string, ticketId: string, body: string) =>
+    request<SupportTicketDto>(`/sites/${siteId}/tickets/${ticketId}/replies`, 'POST', { body }),
+  ticketStatus: (siteId: string, ticketId: string, status: SupportStatus) =>
+    request<SupportTicketDto>(`/sites/${siteId}/tickets/${ticketId}`, 'PATCH', { status }),
+  feedback: (siteId: string) => request<SupportFeedbackSummaryDto[]>(`/sites/${siteId}/feedback`),
+  setAnnouncement: (siteId: string, input: AnnouncementInput | null) =>
+    input
+      ? request<void>(`/sites/${siteId}/announcement`, 'PUT', input)
+      : request<void>(`/sites/${siteId}/announcement`, 'DELETE'),
   sync: (id: string) => request<ControlSiteDetailDto>(`/sites/${id}/sync`, 'POST'),
   requestView: (id: string) =>
     request<{ id: string; expiresAt: string }>(`/sites/${id}/view-requests`, 'POST'),
