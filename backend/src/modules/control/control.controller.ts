@@ -120,6 +120,14 @@ export class ControlCronController {
   daily() {
     return this.control.dailyReminder();
   }
+
+  /** Ikkinchi tasdiqni yoqishdan oldin: token va chat ID ishlayaptimi. */
+  @Post('telegram-test')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Telegram’ga sinov xabari' })
+  telegramTest() {
+    return this.control.telegramTest();
+  }
 }
 
 /** Mijoz saytlari, kelishuv, to'lovlar va ko'rish so'rovi. */

@@ -90,6 +90,16 @@ export class ControlService {
     return { sent: true };
   }
 
+  async telegramTest(): Promise<{ ok: boolean; reason?: string }> {
+    if (!this.telegram.enabled) return { ok: false, reason: 'Telegram sozlanmagan' };
+    try {
+      await this.telegram.send('Divine: sinov xabari. Telegram ishlayapti.');
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, reason: error instanceof Error ? error.message : 'xato' };
+    }
+  }
+
   private async checkPassword(input: ControlLoginInput): Promise<string> {
     const admin = await this.prisma.controlAdmin.findUnique({
       where: { login: input.login.toLowerCase() },
