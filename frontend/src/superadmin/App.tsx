@@ -306,14 +306,37 @@ function SiteForm({
         ) : null}
       </Field>
       <Field label="Sayt manzili">
-        <Input name="siteUrl" type="url" defaultValue={site?.siteUrl} required />
+        <Input
+          name="siteUrl"
+          type="url"
+          defaultValue={site?.siteUrl}
+          placeholder="https://dokon-web.onrender.com"
+          autoComplete="off"
+          required
+        />
       </Field>
       <Field label="API manzili">
-        <Input name="apiUrl" type="url" defaultValue={site?.apiUrl} required />
+        <Input
+          name="apiUrl"
+          type="url"
+          defaultValue={site?.apiUrl}
+          placeholder="https://dokon-api.onrender.com"
+          autoComplete="off"
+          required
+        />
       </Field>
       {site ? null : (
         <Field label="Sayt kaliti">
-          <Input name="apiToken" type="password" autoComplete="off" required />
+          {/* Brauzer superadmin parolini bu yerga joylamasin: `new-password` avtomatik to'ldirishni o'chiradi. */}
+          <Input
+            name="apiToken"
+            type="password"
+            autoComplete="new-password"
+            data-1p-ignore
+            data-lpignore="true"
+            minLength={32}
+            required
+          />
           <p className="text-xs text-muted-foreground">
             Superadmin paroli emas: yangi mijoz sayti o‘rnatilganda beriladigan texnik kalit.
           </p>
