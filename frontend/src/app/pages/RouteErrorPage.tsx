@@ -23,7 +23,7 @@ export function RouteErrorPage() {
       <div className="flex justify-center">
         <Button variant="outline" asChild>
           <Link to={`/support?tab=new&code=PAGE_CRASH&page=${encodeURIComponent(pathname)}`}>
-            Muammo haqida xabar berish
+            {t.support.report}
           </Link>
         </Button>
       </div>
