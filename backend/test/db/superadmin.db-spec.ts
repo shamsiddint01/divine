@@ -429,7 +429,16 @@ describe('balans, qo‘lda blok, yengillik, jurnal', () => {
       'SITE_CREATED',
     ]);
     let health = (await panel('get', '/sites/health').expect(200)).body;
-    expect(health).toEqual([{ id: site.id, ok: true, ms: expect.any(Number), backup: null }]);
+    expect(health).toEqual([
+      {
+        id: site.id,
+        ok: true,
+        ms: expect.any(Number),
+        backup: null,
+        version: { commit: null, startedAt: expect.any(String) },
+        maintenance: { enabled: false, message: null },
+      },
+    ]);
 
     await server()
       .post('/api/v1/site-control/backup-report')
