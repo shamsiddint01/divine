@@ -8,7 +8,9 @@
 let accessToken: string | null = null;
 
 type Listener = () => void;
-const expiredListeners = new Set<Listener>();
+/** `message` — sayt yopiq (to'lov muddati yoki texnik ishlar): login sahifasida shu matn chiqadi. */
+type ExpiredListener = (message?: string) => void;
+const expiredListeners = new Set<ExpiredListener>();
 const forbiddenListeners = new Set<Listener>();
 
 export const authSession = {
@@ -17,13 +19,13 @@ export const authSession = {
     accessToken = token;
   },
   /** Refresh ham o'tmadi — foydalanuvchi qayta kirishi kerak. */
-  onExpired(listener: Listener): () => void {
+  onExpired(listener: ExpiredListener): () => void {
     expiredListeners.add(listener);
     return () => expiredListeners.delete(listener);
   },
-  notifyExpired(): void {
+  notifyExpired(message?: string): void {
     accessToken = null;
-    for (const listener of expiredListeners) listener();
+    for (const listener of expiredListeners) listener(message);
   },
   /** 403 — permissionlar o'zgargan bo'lishi mumkin (RBAC §5): `/auth/me` qayta yuklanadi. */
   onForbidden(listener: Listener): () => void {

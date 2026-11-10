@@ -76,6 +76,7 @@ function Notice({
 export function LoginPage() {
   const status = useAuthStore((s) => s.status);
   const reason = useAuthStore((s) => s.reason);
+  const notice = useAuthStore((s) => s.notice);
   const queryClient = useQueryClient();
   const [params] = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
@@ -213,6 +214,11 @@ export function LoginPage() {
               {reason === 'expired' && !login.isError ? (
                 <Notice tone="info" icon={Info}>
                   {t.auth.sessionExpired}
+                </Notice>
+              ) : null}
+              {reason === 'blocked' && notice && !login.isError ? (
+                <Notice tone="error" icon={AlertCircle}>
+                  {notice}
                 </Notice>
               ) : null}
               {reason === 'offline' && !login.isError ? (

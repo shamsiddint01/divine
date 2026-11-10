@@ -11,14 +11,17 @@ interface AuthState {
   status: SessionStatus;
   /**
    * Anonim holatga sabab: sessiya tugagani yoki server bilan aloqa yo'qligi (login sahifasida ko'rsatiladi);
-   * `signedOut` — user o'zi chiqdi: keyingi kirish oldingi userning sahifasiga qaytarmaydi.
+   * `signedOut` — user o'zi chiqdi: keyingi kirish oldingi userning sahifasiga qaytarmaydi;
+   * `blocked` — sayt yopiq (to'lov muddati yoki texnik ishlar), sababi `notice`da.
    */
-  reason: 'expired' | 'offline' | 'signedOut' | null;
-  setStatus: (status: SessionStatus, reason?: AuthState['reason']) => void;
+  reason: 'expired' | 'offline' | 'signedOut' | 'blocked' | null;
+  notice: string | null;
+  setStatus: (status: SessionStatus, reason?: AuthState['reason'], notice?: string | null) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   status: 'checking',
   reason: null,
-  setStatus: (status, reason = null) => set({ status, reason }),
+  notice: null,
+  setStatus: (status, reason = null, notice = null) => set({ status, reason, notice }),
 }));

@@ -38,9 +38,10 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   }, [queryClient]);
 
   useEffect(() => {
-    const offExpired = authSession.onExpired(() => {
+    const offExpired = authSession.onExpired((message) => {
       queryClient.clear();
-      useAuthStore.getState().setStatus('anonymous', 'expired');
+      if (message) useAuthStore.getState().setStatus('anonymous', 'blocked', message);
+      else useAuthStore.getState().setStatus('anonymous', 'expired');
     });
     const offForbidden = authSession.onForbidden(() => {
       void queryClient.invalidateQueries({ queryKey: SESSION_KEY });
@@ -59,7 +60,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     const query = redirect === '/' ? '' : `?redirect=${encodeURIComponent(redirect)}`;
     // Aloqa uzilgan user — to'g'ridan-to'g'ri qayta kirishga (xabar bilan); mehmon va sessiyasi tugagan
     // user — avval tanishtiruv sahifasiga, u yerdan "Kirish" (redirect saqlanadi).
-    const target = reason === 'offline' ? '/login' : '/welcome';
+    const target = reason === 'offline' || reason === 'blocked' ? '/login' : '/welcome';
     return <Navigate to={`${target}${query}`} replace />;
   }
   return children;
