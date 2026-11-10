@@ -35,9 +35,9 @@ export class SiteStatsService {
     const monthStart = new Date(todayStart.getTime() - 29 * DAY_MS);
     const [products, customers, warehouses, total, today, last30Days, lastSale, users] =
       await Promise.all([
-        this.prisma.product.count({ where: { isActive: true } }),
+        this.prisma.product.count({ where: { status: 'ACTIVE' } }),
         this.prisma.customer.count(),
-        this.prisma.warehouse.count({ where: { isActive: true } }),
+        this.prisma.warehouse.count({ where: { status: 'ACTIVE' } }),
         this.prisma.sale.count(),
         this.prisma.sale.count({ where: { soldAt: { gte: todayStart } } }),
         this.prisma.sale.count({ where: { soldAt: { gte: monthStart } } }),

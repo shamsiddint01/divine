@@ -19,6 +19,10 @@ import {
   type SiteLicenseDto,
   type SiteLicenseInput,
   siteLicenseSchema,
+  type SiteMaintenanceInput,
+  siteMaintenanceSchema,
+  type SiteStatsDto,
+  type SiteStatusDto,
   type SiteViewVerifyInput,
   siteViewVerifySchema,
 } from '@divine/shared';
@@ -34,6 +38,7 @@ import { LicenseService } from '../license/license.service.js';
 import { ControlTokenGuard } from './control-token.guard.js';
 import { BackupStatusService } from './backup-status.service.js';
 import { SiteAccessService } from './site-access.service.js';
+import { SiteStatsService } from './site-stats.service.js';
 
 /** Sayt foydalanuvchilari uchun: to'lov eslatmasi va superadmin so'rovi bildirishnomasi. */
 @ApiTags('Site')
@@ -77,6 +82,7 @@ export class SiteControlController {
     private readonly license: LicenseService,
     private readonly access: SiteAccessService,
     private readonly backups: BackupStatusService,
+    private readonly siteStats: SiteStatsService,
   ) {}
 
   @Put('license')
@@ -109,9 +115,33 @@ export class SiteControlController {
   }
 
   @Get('status')
-  @ApiOperation({ summary: 'Sayt holati: oxirgi bekap' })
-  async siteStatus() {
-    return { backup: await this.backups.last() };
+  @ApiOperation({ summary: 'Sayt holati: oxirgi bekap, versiya, texnik ishlar' })
+  async siteStatus(): Promise<SiteStatusDto> {
+    return {
+      backup: await this.backups.last(),
+      version: this.siteStats.version(),
+      maintenance: await this.license.maintenance(),
+    };
+  }
+
+  @Get('stats')
+  @ApiOperation({ summary: 'Sayt ishlatilyaptimi: sonlar va foydalanuvchilar faolligi' })
+  stats(): Promise<SiteStatsDto> {
+    return this.siteStats.stats();
+  }
+
+  @Put('maintenance')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Texnik ishlar rejimi' })
+  setMaintenance(@ZodBody(siteMaintenanceSchema) body: SiteMaintenanceInput) {
+    return this.license.setMaintenance(body);
+  }
+
+  @Post('sessions/revoke-all')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Hamma foydalanuvchini tizimdan chiqarish' })
+  revokeAllSessions() {
+    return this.license.revokeAllSessions();
   }
 
   @Post('access-requests')
