@@ -1,7 +1,10 @@
+import { timingSafeEqual } from 'node:crypto';
 import {
+  Body,
   Controller,
   Delete,
   Get,
+  Headers,
   HttpCode,
   Param,
   Patch,
@@ -52,7 +55,9 @@ import {
   ControlSessionGuard,
 } from './control.guard.js';
 import { ControlTokenGuard } from '../site/control-token.guard.js';
+import { ControlBotService } from './control-bot.service.js';
 import { ControlService, type LoginMeta } from './control.service.js';
+import { telegramPublicWebhookSecret } from '../support/support.service.js';
 
 const loginMeta = (req: Request): LoginMeta => ({
   ip: req.ip ?? null,
@@ -349,5 +354,36 @@ export class ControlSitesController {
     @ZodBody(siteViewVerifySchema) body: SiteViewVerifyInput,
   ) {
     return this.control.verifyView(id, requestId, body.code);
+  }
+}
+
+/** Mijozlar boti (`@divine_uzbot`) Telegram'dan shu yerga yuboradi: sir sarlavhada tekshiriladi. */
+@ApiTags('Control')
+@Public()
+@UseGuards(ControlEnabledGuard)
+@Controller('site-control/telegram')
+export class PublicBotWebhookController {
+  private readonly secret: Buffer;
+
+  constructor(
+    private readonly bot: ControlBotService,
+    @InjectConfig() config: AppConfig,
+  ) {
+    this.secret = Buffer.from(telegramPublicWebhookSecret(config));
+  }
+
+  @Post('public-webhook')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Mijozlar boti yangilanishi (bepul sinab ko‘rish)' })
+  async webhook(
+    @Headers('x-telegram-bot-api-secret-token') header: string | undefined,
+    @Body() update: unknown,
+  ): Promise<{ ok: true }> {
+    const given = Buffer.from(header ?? '');
+    if (given.length !== this.secret.length || !timingSafeEqual(given, this.secret)) {
+      throw new AppError(ErrorCode.FORBIDDEN);
+    }
+    await this.bot.handlePublic(update);
+    return { ok: true };
   }
 }

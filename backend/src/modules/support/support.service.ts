@@ -18,7 +18,7 @@ import type { AppConfig } from '../../config/env.schema.js';
 import type { SupportReply, SupportTicket } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import { RedisService } from '../../infrastructure/redis/redis.service.js';
-import { TelegramService } from '../telegram/telegram.service.js';
+import { PublicTelegramService, TelegramService } from '../telegram/telegram.service.js';
 
 /** Bitta foydalanuvchi 10 daqiqada shuncha murojaat yozadi: tasodifiy takror va spamdan himoya. */
 const TICKET_LIMIT = 5;
@@ -74,6 +74,7 @@ export class SupportService {
     private readonly prisma: PrismaService,
     private readonly clock: Clock,
     private readonly telegram: TelegramService,
+    private readonly publicBot: PublicTelegramService,
     private readonly redis: RedisService,
     @InjectConfig() private readonly config: AppConfig,
   ) {}

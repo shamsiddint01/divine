@@ -4,6 +4,7 @@ import {
   ControlAuthController,
   ControlCronController,
   ControlSitesController,
+  PublicBotWebhookController,
 } from './control.controller.js';
 import { ControlBotService } from './control-bot.service.js';
 import { ControlTwoFactor } from './control-two-factor.js';
@@ -17,7 +18,12 @@ import { SiteClient } from './site-client.js';
 /** Superadmin paneli API'si (`CONTROL_PANEL_ENABLED`). */
 @Module({
   imports: [AuthModule, TelegramModule, SupportModule],
-  controllers: [ControlAuthController, ControlCronController, ControlSitesController],
+  controllers: [
+    ControlAuthController,
+    ControlCronController,
+    ControlSitesController,
+    PublicBotWebhookController,
+  ],
   providers: [
     ControlService,
     ControlBotService,
