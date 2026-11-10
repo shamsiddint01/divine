@@ -78,6 +78,13 @@ export const envSchema = z
     CONTROL_API_TOKEN: secret(32).optional(),
     /** Superadmin kirishida Telegram kodi (2026-11-09 qayta yoqildi). `false` — vaqtincha o'chirish, eslatmalar ishlaydi. */
     CONTROL_TWO_FACTOR: booleanString.default(true),
+    /**
+     * Umumiy demo sayt (alohida deployment): sinov hisoblari vaqt bilan cheklanadi, foydalanuvchi
+     * qo'shish/bloklash yopiq, `/site-control/demo-accounts` yoqiladi. Haqiqiy mijoz saytida — `false`.
+     */
+    DEMO_MODE: booleanString.default(false),
+    /** Superadmin paneliga qo'shilgan demo sayt (`control_sites.id`): bot sinov hisobini shu yerda ochadi. */
+    DEMO_SITE_ID: z.uuid().optional(),
     /** Ikkalasi berilsa: kunlik eslatmalar va (CONTROL_TWO_FACTOR bo'lsa) kirish kodi. */
     TELEGRAM_BOT_TOKEN: z.string().min(20).optional(),
     TELEGRAM_CHAT_ID: z
