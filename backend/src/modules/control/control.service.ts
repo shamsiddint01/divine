@@ -16,12 +16,21 @@ import {
   type SupportStatus,
   type ControlEventDto,
   type ControlSiteHealthDto,
+  type ControlLeadDto,
+  type ControlLeadStatus,
+  type ControlLeadUpdateInput,
+  type ControlLoginDto,
+  type ControlLoginOutcome,
+  type ControlRevenueMonthDto,
+  type SiteMaintenanceInput,
+  describeDevice,
   LICENSE_WARNING_DAYS,
 } from '@divine/shared';
 import { AppError } from '../../common/errors/app-error.js';
 import { Clock } from '../../common/time/clock.js';
 import { tashkentToday } from '../../common/time/tashkent-time.js';
-import type { ControlSite } from '../../generated/prisma/client.js';
+import type { ControlLead, ControlSite } from '../../generated/prisma/client.js';
+import { RedisService } from '../../infrastructure/redis/redis.service.js';
 import { InjectConfig } from '../../config/config.module.js';
 import type { AppConfig } from '../../config/env.schema.js';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
@@ -33,6 +42,33 @@ import { TelegramService } from '../telegram/telegram.service.js';
 
 const DAY_MS = 86_400_000;
 const HEALTH_TIMEOUT_MS = 8_000;
+/** Ishlayaptimi tekshiruvi: uxlayotgan bepul server uyg'onishiga vaqt. */
+const UPTIME_TIMEOUT_MS = 60_000;
+/** Ketma-ket shuncha muvaffaqiyatsiz tekshiruvdan keyin "ishlamayapti" xabari (bir martalik uzilish emas). */
+const UPTIME_FAILURES = 2;
+/** Saytlar ro'yxati xotirada: har 10 daqiqalik tekshiruv bazani (Neon) uyg'otmasin. */
+const UPTIME_SITES_TTL_MS = 6 * 3_600_000;
+const uptimeKey = (id: string) => `divine:control:uptime:${id}`;
+/** Noto'g'ri parol xabari ko'pi bilan shuncha vaqtda bir marta (hujumda Telegram to'lib ketmasin). */
+const BAD_PASSWORD_ALERT_KEY = 'divine:control:alert:bad-password';
+const BAD_PASSWORD_ALERT_SECONDS = 15 * 60;
+const REVENUE_MONTHS = 12;
+const LOGINS_LIMIT = 100;
+const LEADS_LIMIT = 200;
+const money = (value: string) => `${Number(value).toLocaleString('ru-RU')} so‘m`;
+const dotted = (date: string) => date.split('-').reverse().join('.');
+
+export interface LoginMeta {
+  ip: string | null;
+  userAgent: string | null;
+}
+
+export const LEAD_STATUS_LABEL: Record<ControlLeadStatus, string> = {
+  NEW: 'yangi',
+  CALLED: 'qo‘ng‘iroq qilindi',
+  CLIENT: 'mijoz bo‘ldi',
+  REJECTED: 'rad etildi',
+};
 const LICENSE_PAYMENTS = 12;
 const dateOnly = (date: Date) => date.toISOString().slice(0, 10);
 const dateOrNull = (date: Date | null) => (date ? dateOnly(date) : null);
@@ -52,45 +88,201 @@ export class ControlService {
     private readonly sites: SiteClient,
     private readonly twoFactor: ControlTwoFactor,
     private readonly telegram: TelegramService,
+    private readonly redis: RedisService,
     @InjectConfig() private readonly config: AppConfig,
   ) {}
 
   /** Parol to'g'ri bo'lsa: Telegram sozlangan — kod yuboriladi, aks holda darhol sessiya. */
   async login(
     input: ControlLoginInput,
+    meta: LoginMeta,
   ): Promise<{ token: string; twoFactorPaused: boolean } | { challengeId: string }> {
-    const adminId = await this.checkPassword(input);
-    if (this.twoFactor.enabled) return { challengeId: await this.twoFactor.start(adminId) };
+    let adminId: string;
+    try {
+      adminId = await this.checkPassword(input);
+    } catch (error) {
+      await this.recordLogin(null, 'BAD_PASSWORD', meta);
+      throw error;
+    }
+    if (this.twoFactor.enabled) {
+      const challengeId = await this.twoFactor.start(adminId);
+      await this.recordLogin(adminId, 'CODE_SENT', meta);
+      return { challengeId };
+    }
+    await this.recordLogin(adminId, 'SUCCESS', meta);
     return {
       token: await this.tokens.signControlToken(adminId, this.clock.now()),
       twoFactorPaused: !this.config.CONTROL_TWO_FACTOR,
     };
   }
 
-  async verifyCode(challengeId: string, code: string): Promise<string> {
-    const adminId = await this.twoFactor.verify(challengeId, code);
+  async verifyCode(challengeId: string, code: string, meta: LoginMeta): Promise<string> {
+    let adminId: string;
+    try {
+      adminId = await this.twoFactor.verify(challengeId, code);
+    } catch (error) {
+      await this.recordLogin(null, 'BAD_CODE', meta);
+      throw error;
+    }
+    await this.recordLogin(adminId, 'SUCCESS', meta);
     return this.tokens.signControlToken(adminId, this.clock.now());
   }
 
   /**
-   * Kunlik eslatma (09:00, GitHub Actions): bugun-ertaga to'lashi kerak va bloklangan saytlar.
-   * Telegram sozlanmagan yoki xabar yo'q — hech narsa yuborilmaydi.
+   * Kirishlar tarixi (egasining qarori, 2026-11-10). Ogohlantirish Telegram'ga: yangi qurilmadan kirildi,
+   * kod noto'g'ri (demak parol kimgadir ma'lum) yoki noto'g'ri parol (15 daqiqada bir marta).
    */
-  async dailyReminder(): Promise<{ sent: boolean }> {
-    if (!this.telegram.enabled) return { sent: false };
+  private async recordLogin(
+    adminId: string | null,
+    outcome: ControlLoginOutcome,
+    meta: LoginMeta,
+  ): Promise<void> {
+    const userAgent = meta.userAgent?.slice(0, 300) ?? null;
+    const ip = meta.ip?.slice(0, 64) ?? null;
+    const newDevice =
+      outcome === 'SUCCESS' &&
+      (await this.prisma.controlLogin.count({
+        where: { outcome: 'SUCCESS', userAgent, ...(adminId ? { adminId } : {}) },
+      })) === 0;
+    await this.prisma.controlLogin.create({ data: { adminId, outcome, ip, userAgent, newDevice } });
+    const where = `${describeDevice(userAgent)}, IP ${ip ?? '—'}`;
+    let alert: string | null = null;
+    if (newDevice) {
+      alert =
+        `⚠️ Superadmin'ga yangi qurilmadan kirildi: ${where}.\n` +
+        'Siz bo‘lmasangiz, darhol parolni almashtiring.';
+    } else if (outcome === 'BAD_CODE') {
+      alert =
+        `⚠️ Superadmin: parol to‘g‘ri, lekin kod noto‘g‘ri kiritildi (${where}).\n` +
+        'Siz bo‘lmasangiz, parolni almashtiring.';
+    } else if (outcome === 'BAD_PASSWORD') {
+      const first = await this.redis.client.set(
+        BAD_PASSWORD_ALERT_KEY,
+        '1',
+        'EX',
+        BAD_PASSWORD_ALERT_SECONDS,
+        'NX',
+      );
+      if (first) alert = `⚠️ Superadmin'ga noto‘g‘ri parol bilan kirishga urinish: ${where}.`;
+    }
+    if (alert && this.telegram.enabled) await this.telegram.send(alert).catch(() => undefined);
+  }
+
+  async logins(): Promise<ControlLoginDto[]> {
+    const rows = await this.prisma.controlLogin.findMany({
+      orderBy: { occurredAt: 'desc' },
+      take: LOGINS_LIMIT,
+    });
+    return rows.map((row) => ({
+      id: row.id.toString(),
+      occurredAt: row.occurredAt.toISOString(),
+      outcome: row.outcome as ControlLoginOutcome,
+      ip: row.ip,
+      device: describeDevice(row.userAgent),
+      newDevice: row.newDevice,
+    }));
+  }
+
+  /**
+   * Kunlik hisobot (09:00, GitHub Actions; `/bugun` buyrug'i ham shu): to'lovlar, muddati yaqinlashgan
+   * va bloklangan saytlar, javob kutayotgan murojaatlar, yangi arizalar.
+   */
+  async report(kind: 'morning' | 'today'): Promise<string> {
     const sites = await this.list();
+    const today = tashkentToday(this.clock.now());
+    const day =
+      kind === 'today' ? today : dateOnly(new Date(Date.parse(today) - DAY_MS));
+    const payments = await this.prisma.controlPayment.findMany({
+      where: { paidAt: new Date(day) },
+      include: { site: { select: { name: true } } },
+    });
+    const dashboard = await this.dashboard();
+    const tickets = await this.tickets().catch(() => ({ tickets: [], unreachable: [] }));
+    const open = tickets.tickets.filter(
+      (ticket) => ticket.kind === 'MANUAL' && ticket.status !== 'RESOLVED',
+    );
+    const leads = await this.prisma.controlLead.findMany({
+      where: { status: 'NEW' },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    });
     const line = (site: ControlSiteDto) =>
       `• ${site.name} — ${site.ownerName}${site.ownerPhone ? `, ${site.ownerPhone}` : ''}: ` +
-      `${site.paidUntil.split('-').reverse().join('.')}, kerak ${Number(site.amountDue).toLocaleString('ru-RU')} so‘m`;
+      `${dotted(site.paidUntil)}, kerak ${money(site.amountDue)}`;
     const expiring = sites.filter((site) => site.status === 'EXPIRING');
     const expired = sites.filter((site) => site.status === 'EXPIRED');
-    if (expiring.length === 0 && expired.length === 0) return { sent: false };
-    const parts = ['Divine: to‘lovlar'];
-    if (expiring.length > 0)
-      parts.push('', 'Bugun yoki ertaga to‘lashi kerak:', ...expiring.map(line));
-    if (expired.length > 0) parts.push('', 'Bloklangan:', ...expired.map(line));
-    await this.telegram.send(parts.join('\n'));
+    const total = payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+    const parts = [
+      `📊 Divine: ${kind === 'today' ? 'bugungi' : 'kunlik'} hisobot (${dotted(today)})`,
+      '',
+      `💰 ${kind === 'today' ? 'Bugun' : 'Kecha'} tushgan: ` +
+        (payments.length === 0
+          ? 'to‘lov yo‘q'
+          : `${payments.length} ta, ${money(total.toFixed(2))}`),
+      ...payments.map((payment) => `• ${payment.site.name}: ${money(payment.amount.toFixed(2))}`),
+      `📅 Bu oy: tushgan ${money(dashboard.revenueThisMonth)}, kutilmoqda ${money(dashboard.expectedThisMonth)}`,
+    ];
+    if (expiring.length > 0) parts.push('', '⏰ Bugun yoki ertaga to‘lashi kerak:', ...expiring.map(line));
+    if (expired.length > 0) parts.push('', '⛔ Bloklangan:', ...expired.map(line));
+    parts.push('', `💬 Javob kutayotgan murojaatlar: ${open.length}${open.length ? ' (/murojaatlar)' : ''}`);
+    parts.push(`📝 Yangi arizalar: ${leads.length}`);
+    parts.push(...leads.map((lead) => `• #${lead.number} ${lead.name}, ${lead.phone}`));
+    parts.push(`🖥 Saytlar: ${sites.length} ta, faol ${dashboard.sites.active}`);
+    return parts.join('\n');
+  }
+
+  /** Kunlik hisobot har kuni yuboriladi (egasining qarori, 2026-11-10). */
+  async dailyReminder(): Promise<{ sent: boolean }> {
+    if (!this.telegram.enabled) return { sent: false };
+    await this.telegram.send(await this.report('morning'));
     return { sent: true };
+  }
+
+  private uptimeSites: { at: number; sites: Pick<ControlSite, 'id' | 'name' | 'apiUrl'>[] } | null =
+    null;
+
+  /**
+   * Saytlar ishlayaptimi (GitHub Actions har 10 daqiqada). Holat o'zgarganda Telegram'ga xabar:
+   * ketma-ket ikki marta javob bo'lmasa — "ishlamayapti", qayta javob bersa — "yana ishlayapti".
+   * Bazaga tegmaydigan `/health/live` so'raladi: Neon bepul limiti tejaladi.
+   */
+  async uptimeCheck(): Promise<{ checked: number; down: string[] }> {
+    const now = Date.now();
+    if (!this.uptimeSites || now - this.uptimeSites.at > UPTIME_SITES_TTL_MS) {
+      this.uptimeSites = {
+        at: now,
+        sites: await this.prisma.controlSite.findMany({
+          select: { id: true, name: true, apiUrl: true },
+        }),
+      };
+    }
+    const down: string[] = [];
+    await Promise.all(
+      this.uptimeSites.sites.map(async (site) => {
+        const ok = await fetch(`${site.apiUrl}/api/v1/health/live`, {
+          signal: AbortSignal.timeout(UPTIME_TIMEOUT_MS),
+        }).then(
+          (response) => response.ok,
+          () => false,
+        );
+        const key = uptimeKey(site.id);
+        if (ok) {
+          const failures = Number(await this.redis.client.getdel(key));
+          if (failures >= UPTIME_FAILURES) await this.alert(`✅ ${site.name} yana ishlayapti.`);
+          return;
+        }
+        down.push(site.name);
+        const failures = await this.redis.client.incr(key);
+        if (failures === UPTIME_FAILURES) {
+          await this.alert(`🔴 ${site.name} ishlamayapti: ${site.apiUrl} javob bermayapti.`);
+        }
+      }),
+    );
+    return { checked: this.uptimeSites.sites.length, down };
+  }
+
+  private async alert(text: string): Promise<void> {
+    if (this.telegram.enabled) await this.telegram.send(text).catch(() => undefined);
   }
 
   async telegramTest(): Promise<{ ok: boolean; reason?: string }> {
@@ -214,6 +406,7 @@ export class ControlService {
     const site = await this.prisma.controlSite.create({
       data: { ...input, paidUntil: new Date(input.paidUntil) },
     });
+    this.uptimeSites = null;
     await this.event(site.id, 'SITE_CREATED', { name: input.name, ownerName: input.ownerName });
     return this.sync(site.id);
   }
@@ -231,6 +424,7 @@ export class ControlService {
           : {}),
       },
     });
+    this.uptimeSites = null;
     await this.event(id, 'SITE_UPDATED', { ...input });
     return this.sync(id);
   }
@@ -367,13 +561,15 @@ export class ControlService {
         } catch {
           // Javob yo'q: uxlayotgan yoki ishlamayotgan sayt.
         }
-        const backup = ok
-          ? await this.sites.status(site).then(
-              (s) => s.backup,
-              () => null,
-            )
-          : null;
-        return { id: site.id, ok, ms, backup };
+        const status = ok ? await this.sites.status(site).catch(() => null) : null;
+        return {
+          id: site.id,
+          ok,
+          ms,
+          backup: status?.backup ?? null,
+          version: status?.version ?? null,
+          maintenance: status?.maintenance ?? null,
+        };
       }),
     );
   }
@@ -422,5 +618,95 @@ export class ControlService {
   async setAnnouncement(siteId: string, input: AnnouncementInput | null): Promise<void> {
     await this.sites.setAnnouncement(await this.siteOf(siteId), input);
     await this.event(siteId, input ? 'ANNOUNCEMENT_SET' : 'ANNOUNCEMENT_CLEARED', input ?? {});
+  }
+
+  /** Oxirgi 12 oy tushumi (bo'sh oylar ham — grafik uzilmasin). */
+  async revenue(): Promise<ControlRevenueMonthDto[]> {
+    const month = tashkentToday(this.clock.now()).slice(0, 7);
+    const [year, mon] = month.split('-').map(Number) as [number, number];
+    const months = Array.from({ length: REVENUE_MONTHS }, (_, index) =>
+      new Date(Date.UTC(year, mon - REVENUE_MONTHS + index, 1)).toISOString().slice(0, 7),
+    );
+    const rows = await this.prisma.$queryRaw<{ month: string; amount: string; payments: bigint }[]>`
+      SELECT to_char(paid_at, 'YYYY-MM') AS month, sum(amount)::text AS amount, count(*) AS payments
+        FROM control_payments
+       WHERE paid_at >= ${new Date(`${months[0]}-01`)}
+       GROUP BY 1`;
+    const byMonth = new Map(rows.map((row) => [row.month, row]));
+    return months.map((item) => {
+      const row = byMonth.get(item);
+      return {
+        month: item,
+        amount: row ? Number(row.amount).toFixed(2) : '0.00',
+        payments: row ? Number(row.payments) : 0,
+      };
+    });
+  }
+
+  /** Hamma to'lovlar (Excel va kvitansiya uchun). */
+  async allPayments() {
+    const rows = await this.prisma.controlPayment.findMany({
+      orderBy: [{ paidAt: 'desc' }, { createdAt: 'desc' }],
+      include: { site: { select: { name: true, ownerName: true } } },
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      siteId: row.siteId,
+      siteName: row.site.name,
+      ownerName: row.site.ownerName,
+      amount: row.amount.toFixed(2),
+      paidAt: dateOnly(row.paidAt),
+      paidUntil: dateOnly(row.paidUntil),
+      note: row.note,
+    }));
+  }
+
+  async stats(id: string) {
+    return this.sites.stats(await this.siteOf(id));
+  }
+
+  async setMaintenance(id: string, input: SiteMaintenanceInput): Promise<void> {
+    await this.sites.setMaintenance(await this.siteOf(id), input);
+    await this.event(id, input.enabled ? 'MAINTENANCE_ON' : 'MAINTENANCE_OFF', {
+      message: input.message ?? null,
+    });
+  }
+
+  async revokeSessions(id: string): Promise<{ revoked: number }> {
+    const result = await this.sites.revokeSessions(await this.siteOf(id));
+    await this.event(id, 'SESSIONS_REVOKED', result);
+    return result;
+  }
+
+  private toLeadDto(row: ControlLead): ControlLeadDto {
+    return {
+      id: row.id,
+      number: row.number.toString(),
+      name: row.name,
+      phone: row.phone,
+      username: row.username,
+      status: row.status as ControlLeadStatus,
+      note: row.note,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    };
+  }
+
+  async leads(): Promise<ControlLeadDto[]> {
+    const rows = await this.prisma.controlLead.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: LEADS_LIMIT,
+    });
+    return rows.map((row) => this.toLeadDto(row));
+  }
+
+  async updateLead(id: string, input: ControlLeadUpdateInput): Promise<ControlLeadDto> {
+    const { count } = await this.prisma.controlLead.updateMany({ where: { id }, data: input });
+    if (count === 0) notFound();
+    const row = await this.prisma.controlLead.findUniqueOrThrow({ where: { id } });
+    if (input.status) {
+      await this.event(null, 'LEAD_STATUS', { number: row.number.toString(), status: input.status });
+    }
+    return this.toLeadDto(row);
   }
 }
