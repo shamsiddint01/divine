@@ -10,18 +10,18 @@ import {
 } from '@divine/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Eye, Lock, LockOpen, LogOut, Plus, RefreshCw, Timer, Trash2 } from 'lucide-react';
-import { type FormEvent, type ReactNode, useState } from 'react';
+import { useState } from 'react';
 import { DatePicker } from '@/shared/components/DatePicker';
 import { formatDate, formatMoney, formatPhone, todayInTashkent } from '@/shared/lib/format';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Input } from '@/shared/ui/input';
-import { Label } from '@/shared/ui/label';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/ui/sheet';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table';
 import { Textarea } from '@/shared/ui/textarea';
 import { PanelError, panelApi } from './api';
+import { ErrorText, Field, formatTimestamp, values } from './common';
 import { maskDate, parseDayMonthYear, toDayMonthYear } from './date-text';
 
 const SITES_KEY = ['sites'] as const;
@@ -63,16 +63,6 @@ function eventText(event: ControlEventDto) {
   return label;
 }
 
-const formatTimestamp = (iso: string) =>
-  new Date(iso).toLocaleString('uz-UZ', {
-    timeZone: 'Asia/Tashkent',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-
 function EventList({ siteId }: { siteId?: string }) {
   const { data } = useQuery({
     queryKey: ['events', siteId ?? 'all'],
@@ -104,18 +94,6 @@ function daysLabel(site: ControlSiteDto) {
   return `${site.daysLeft} kun qoldi`;
 }
 
-const values = (event: FormEvent<HTMLFormElement>) =>
-  Object.fromEntries(new FormData(event.currentTarget)) as Record<string, string>;
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="grid gap-1.5">
-      <Label>{label}</Label>
-      {children}
-    </div>
-  );
-}
-
 /** Sana `kun.oy.yil`da ko'rinadi (brauzerning `oy/kun/yil` maydoni adashtirgan edi); formaga yashirin qiymat. */
 function DateField({
   name,
@@ -131,15 +109,6 @@ function DateField({
       <input type="hidden" name={name} value={value} />
       <DatePicker value={value} onChange={onChange} disableFuture={false} />
     </>
-  );
-}
-
-function ErrorText({ error }: { error: unknown }) {
-  if (!error) return null;
-  return (
-    <p role="alert" className="text-sm text-destructive">
-      {error instanceof Error ? error.message : 'Xatolik yuz berdi'}
-    </p>
   );
 }
 
