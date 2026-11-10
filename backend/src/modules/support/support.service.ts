@@ -79,11 +79,21 @@ export class SupportService {
 
   private include = { replies: { orderBy: { createdAt: 'asc' as const } } };
 
-  /** Telegram ishlamasa ham murojaat saqlanadi: xabar yuborilmagani faqat logga yoziladi. */
-  private async notify(text: string, replyTo?: bigint | null): Promise<number | null> {
+  /**
+   * Telegram ishlamasa ham murojaat saqlanadi: xabar yuborilmagani faqat logga yoziladi.
+   * `answerTicket` berilsa — xabar ostida "Javob yozish" tugmasi.
+   */
+  private async notify(
+    text: string,
+    replyTo?: bigint | null,
+    answerTicket?: string,
+  ): Promise<number | null> {
     if (!this.telegram.enabled) return null;
     try {
-      return await this.telegram.send(text, replyTo ? { replyTo: Number(replyTo) } : {});
+      return await this.telegram.send(text, {
+        ...(replyTo ? { replyTo: Number(replyTo) } : {}),
+        ...(answerTicket ? { buttons: [[{ text: ANSWER_BUTTON, data: `reply:${answerTicket}` }]] } : {}),
+      });
     } catch {
       this.logger.warn('Murojaat Telegram’ga yuborilmadi');
       return null;
@@ -129,10 +139,12 @@ export class SupportService {
         input.page ? `Sahifa: ${input.page}` : null,
         input.errorCode ? `Xato: ${input.errorCode}` : null,
         '',
-        'Javob berish uchun shu xabarga javob yozing.',
+        'Javob berish uchun «Javob yozish» tugmasini bosing.',
       ]
         .filter((line) => line !== null)
         .join('\n'),
+      null,
+      row.id,
     );
     if (messageId) {
       await this.prisma.supportTicket.update({

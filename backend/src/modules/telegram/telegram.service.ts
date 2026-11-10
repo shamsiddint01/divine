@@ -18,18 +18,39 @@ export class TelegramService {
   }
 
   /** Xabar yuboradi va Telegram'dagi `message_id`ni qaytaradi (javobni murojaatga bog'lash uchun). */
-  async send(text: string, options: { replyTo?: number } = {}): Promise<number | null> {
+  async send(
+    text: string,
+    options: { replyTo?: number; buttons?: { text: string; data: string }[][] } = {},
+  ): Promise<number | null> {
     const result = await this.call<{ message_id?: number }>('sendMessage', {
       chat_id: this.config.TELEGRAM_CHAT_ID,
       text,
       ...(options.replyTo ? { reply_parameters: { message_id: options.replyTo } } : {}),
+      ...(options.buttons
+        ? {
+            reply_markup: {
+              inline_keyboard: options.buttons.map((row) =>
+                row.map((button) => ({ text: button.text, callback_data: button.data })),
+              ),
+            },
+          }
+        : {}),
     });
     return result?.message_id ?? null;
   }
 
+  /** Tugma bosilganini Telegram'ga tasdiqlash (aks holda tugmada soat belgisi aylanib turadi). */
+  async answerCallback(id: string): Promise<void> {
+    await this.call('answerCallbackQuery', { callback_query_id: id });
+  }
+
+  async setCommands(commands: { command: string; description: string }[]): Promise<void> {
+    await this.call('setMyCommands', { commands });
+  }
+
   /** Egasi Telegram'da javob yozsa, Telegram shu manzilga yuboradi (`secret` sarlavhada qaytadi). */
   async setWebhook(url: string, secret: string): Promise<void> {
-    await this.call('setWebhook', { url, secret_token: secret, allowed_updates: ['message'] });
+    await this.call('setWebhook', { url, secret_token: secret, allowed_updates: ['message', 'callback_query'] });
   }
 
   private async call<T>(method: string, body: object): Promise<T | null> {
