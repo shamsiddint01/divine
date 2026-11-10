@@ -3,6 +3,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { normalizeLeadPhone } from '../../src/modules/control/control-bot.service.js';
 import { PasswordHasher } from '../../src/modules/auth/password/password-hasher.js';
+import { RedisService } from '../../src/infrastructure/redis/redis.service.js';
 import { controlApiToken } from '../../src/modules/site/control-token.guard.js';
 import { telegramWebhookSecret } from '../../src/modules/support/support.service.js';
 import {
@@ -151,7 +152,7 @@ beforeEach(async () => {
   await t.prisma.controlEvent.deleteMany();
   await t.prisma.controlSite.deleteMany();
   await t.prisma.controlLead.deleteMany();
-  await t.redis.client.del(`divine:control:lead:${GUEST_CHAT}`);
+  await t.app.get(RedisService).client.del(`divine:control:lead:${GUEST_CHAT}`);
   sent.length = 0;
 });
 
@@ -164,7 +165,7 @@ afterAll(async () => {
 describe('superadmin kirishlar tarixi', () => {
   it('har urinish yoziladi; yangi qurilma, noto‘g‘ri kod va parol haqida ogohlantirish', async () => {
     await t.prisma.controlLogin.deleteMany();
-    await t.redis.client.del('divine:control:alert:bad-password');
+    await t.app.get(RedisService).client.del('divine:control:alert:bad-password');
 
     await panelLogin('noto‘g‘ri-parol').expect(401);
     await panelLogin('yana-noto‘g‘ri').expect(401);
@@ -258,7 +259,11 @@ describe('bepul sinab ko‘rish arizasi (bot)', () => {
     await hook({ message: { message_id: 1, text: '/start', chat: { id: -100, type: 'group' } } });
     expect(sent).toHaveLength(0);
     await hook({
-      callback_query: { id: 'x', data: 'block-yes:00000000-0000-0000-0000-000000000000', message: { chat: { id: GUEST_CHAT } } },
+      callback_query: {
+        id: 'x',
+        data: 'block-yes:00000000-0000-0000-0000-000000000000',
+        message: { chat: { id: GUEST_CHAT } },
+      },
     });
     expect(sent).toHaveLength(0);
   });
@@ -272,9 +277,14 @@ describe('bepul sinab ko‘rish arizasi (bot)', () => {
 
 describe('egasining bot buyruqlari', () => {
   it('/bugun, /qarzdorlar, /saytlar, /blokla (tasdiq bilan)', async () => {
-    const site = (await panel('post', '/sites').send(newSite({ paidUntil: '2026-10-10' })).expect(201))
-      .body;
-    await panel('post', `/sites/${site.id}/payments`).send({ amount: '500000', paidAt: '2026-10-09' }).expect(201);
+    const site = (
+      await panel('post', '/sites')
+        .send(newSite({ paidUntil: '2026-10-10' }))
+        .expect(201)
+    ).body;
+    await panel('post', `/sites/${site.id}/payments`)
+      .send({ amount: '500000', paidAt: '2026-10-09' })
+      .expect(201);
     sent.length = 0;
 
     await ownerText('/bugun');
@@ -327,7 +337,11 @@ describe('sayt: statistika, versiya, texnik ishlar, hammani chiqarish', () => {
     const stats = (await panel('get', `/sites/${site.id}/stats`).expect(200)).body;
     expect(stats).toMatchObject({
       products: expect.any(Number),
-      sales: { today: expect.any(Number), last30Days: expect.any(Number), total: expect.any(Number) },
+      sales: {
+        today: expect.any(Number),
+        last30Days: expect.any(Number),
+        total: expect.any(Number),
+      },
     });
     const me = stats.users.find((user: { login: string }) => user.login === admin.login);
     expect(me).toMatchObject({ role: 'ADMIN', active: true, lastSeenAt: BASE_TIME.toISOString() });
@@ -363,12 +377,17 @@ describe('sayt: statistika, versiya, texnik ishlar, hammani chiqarish', () => {
     expect(health.maintenance).toEqual({ enabled: true, message: '30 daqiqada tugaydi' });
 
     await panel('put', `/sites/${site.id}/maintenance`).send({ enabled: false }).expect(204);
-    await server().get('/api/v1/auth/me').set({ Authorization: `Bearer ${accessToken}` }).expect(200);
+    await server()
+      .get('/api/v1/auth/me')
+      .set({ Authorization: `Bearer ${accessToken}` })
+      .expect(200);
     const events = (await panel('get', `/sites/events?siteId=${site.id}`).expect(200)).body;
     expect(events.map((e: { action: string }) => e.action)).toEqual(
       expect.arrayContaining(['MAINTENANCE_ON', 'MAINTENANCE_OFF']),
     );
-    const audit = await t.prisma.auditLog.findMany({ where: { action: 'SITE_MAINTENANCE_CHANGED' } });
+    const audit = await t.prisma.auditLog.findMany({
+      where: { action: 'SITE_MAINTENANCE_CHANGED' },
+    });
     expect(audit.length).toBeGreaterThanOrEqual(2);
   });
 
@@ -401,7 +420,10 @@ describe('sayt: statistika, versiya, texnik ishlar, hammani chiqarish', () => {
     t.clock.set(new Date(BASE_TIME.getTime() + 4_000));
     const again = (await login(t, { login: admin.login, password: PASSWORD }).expect(200)).body
       .accessToken as string;
-    await server().get('/api/v1/auth/me').set({ Authorization: `Bearer ${again}` }).expect(200);
+    await server()
+      .get('/api/v1/auth/me')
+      .set({ Authorization: `Bearer ${again}` })
+      .expect(200);
     const audit = await t.prisma.auditLog.findFirst({ where: { action: 'SESSIONS_REVOKED' } });
     expect(audit).not.toBeNull();
   });
@@ -410,8 +432,12 @@ describe('sayt: statistika, versiya, texnik ishlar, hammani chiqarish', () => {
 describe('pul: oylik tushum va hamma to‘lovlar', () => {
   it('12 oy, bo‘sh oylar 0; to‘lovlar ro‘yxati sayt nomi bilan', async () => {
     const site = (await panel('post', '/sites').send(newSite()).expect(201)).body;
-    await panel('post', `/sites/${site.id}/payments`).send({ amount: '500000', paidAt: '2026-09-15' }).expect(201);
-    await panel('post', `/sites/${site.id}/payments`).send({ amount: '250000.50', paidAt: '2026-10-01' }).expect(201);
+    await panel('post', `/sites/${site.id}/payments`)
+      .send({ amount: '500000', paidAt: '2026-09-15' })
+      .expect(201);
+    await panel('post', `/sites/${site.id}/payments`)
+      .send({ amount: '250000.50', paidAt: '2026-10-01' })
+      .expect(201);
     const revenue = (await panel('get', '/sites/revenue').expect(200)).body;
     expect(revenue).toHaveLength(12);
     expect(revenue.at(-1)).toEqual({ month: '2026-10', amount: '250000.50', payments: 1 });
@@ -420,14 +446,20 @@ describe('pul: oylik tushum va hamma to‘lovlar', () => {
 
     const payments = (await panel('get', '/sites/payments').expect(200)).body;
     expect(payments.map((p: { paidAt: string }) => p.paidAt)).toEqual(['2026-10-01', '2026-09-15']);
-    expect(payments[0]).toMatchObject({ siteName: 'Do‘kon', ownerName: 'Ali Valiyev', amount: '250000.50' });
+    expect(payments[0]).toMatchObject({
+      siteName: 'Do‘kon',
+      ownerName: 'Ali Valiyev',
+      amount: '250000.50',
+    });
   });
 });
 
 describe('ishlayaptimi tekshiruvi', () => {
   it('ketma-ket 2 marta javob bo‘lmasa bir marta xabar; tirik sayt jim', async () => {
     await panel('post', '/sites').send(newSite()).expect(201);
-    await panel('post', '/sites').send(newSite({ name: 'O‘chiq', apiUrl: 'http://127.0.0.1:1' })).expect(201);
+    await panel('post', '/sites')
+      .send(newSite({ name: 'O‘chiq', apiUrl: 'http://127.0.0.1:1' }))
+      .expect(201);
     // Sayt qo'shilganda `sync` o'chiq saytga ulana olmaydi — bu jim.
     sent.length = 0;
     const check = () =>
