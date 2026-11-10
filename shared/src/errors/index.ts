@@ -13,6 +13,7 @@ export const ErrorCode = {
   SESSION_EXPIRED: 'SESSION_EXPIRED',
   FORBIDDEN: 'FORBIDDEN',
   LICENSE_EXPIRED: 'LICENSE_EXPIRED',
+  SITE_MAINTENANCE: 'SITE_MAINTENANCE',
   READ_ONLY_SESSION: 'READ_ONLY_SESSION',
 
   NOT_FOUND: 'NOT_FOUND',
@@ -59,6 +60,7 @@ export const ERROR_MESSAGES_UZ: Readonly<Record<ErrorCode, string>> = {
   ACCOUNT_BLOCKED: 'Hisobingiz bloklangan. Administratorga murojaat qiling',
   SESSION_EXPIRED: 'Sessiya muddati tugadi. Qaytadan kiring',
   LICENSE_EXPIRED: 'Sizning to‘lov muddatingiz tugadi. Bog‘lanish uchun: +998901333831',
+  SITE_MAINTENANCE: 'Saytda texnik ishlar ketmoqda. Birozdan keyin qayta kiring',
   READ_ONLY_SESSION: 'Bu ko‘rish rejimi: o‘zgartirish mumkin emas',
   FORBIDDEN: 'Bu amalni bajarishga ruxsatingiz yo‘q',
 

@@ -154,6 +154,58 @@ export function amountDue(agreedPrice: string, balance: string): string {
   return fromCents(due > 0n ? due : 0n);
 }
 
+/** Texnik ishlar: yoqilganda foydalanuvchilar kira olmaydi, xabar ko'rsatiladi. */
+export const siteMaintenanceSchema = z.strictObject({
+  enabled: z.boolean(),
+  message: z
+    .preprocess((value) => (value === '' ? null : value), z.string().trim().max(300).nullable())
+    .optional(),
+});
+
+export const CONTROL_LEAD_STATUSES = ['NEW', 'CALLED', 'CLIENT', 'REJECTED'] as const;
+
+export const controlLeadUpdateSchema = z
+  .strictObject({
+    status: z.enum(CONTROL_LEAD_STATUSES),
+    note: nullableNotes,
+  })
+  .partial();
+
+/** User-Agent → qisqa nom ("Chrome, Windows"): kirishlar tarixi va ogohlantirish uchun. */
+export function describeDevice(userAgent: string | null | undefined): string {
+  if (!userAgent) return 'Noma’lum qurilma';
+  const browser =
+    /Edg\//.test(userAgent)
+      ? 'Edge'
+      : /OPR\/|Opera/.test(userAgent)
+        ? 'Opera'
+        : /YaBrowser/.test(userAgent)
+          ? 'Yandex'
+          : /Firefox\//.test(userAgent)
+            ? 'Firefox'
+            : /Chrome\//.test(userAgent)
+              ? 'Chrome'
+              : /Safari\//.test(userAgent)
+                ? 'Safari'
+                : /curl|python|node|axios|Go-http/i.test(userAgent)
+                  ? 'Dastur'
+                  : 'Brauzer';
+  const os = /Android/.test(userAgent)
+    ? 'Android'
+    : /iPhone|iPad|iOS/.test(userAgent)
+      ? 'iPhone'
+      : /Windows/.test(userAgent)
+        ? 'Windows'
+        : /Mac OS X|Macintosh/.test(userAgent)
+          ? 'Mac'
+          : /Linux/.test(userAgent)
+            ? 'Linux'
+            : null;
+  return os ? `${browser}, ${os}` : browser;
+}
+
+export type SiteMaintenanceInput = z.infer<typeof siteMaintenanceSchema>;
+export type ControlLeadUpdateInput = z.infer<typeof controlLeadUpdateSchema>;
 export type SiteLicenseInput = z.infer<typeof siteLicenseSchema>;
 export type BackupReportInput = z.infer<typeof backupReportSchema>;
 export type SiteViewVerifyInput = z.infer<typeof siteViewVerifySchema>;

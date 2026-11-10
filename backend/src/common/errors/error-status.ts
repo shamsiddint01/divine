@@ -17,6 +17,8 @@ const STATUS: Readonly<Record<ErrorCode, number>> = {
 
   [ErrorCode.FORBIDDEN]: 403,
   [ErrorCode.LICENSE_EXPIRED]: 403,
+  // 5xx emas: avtomatik xato xabari (Murojaat) ochilmasin.
+  [ErrorCode.SITE_MAINTENANCE]: 403,
   [ErrorCode.READ_ONLY_SESSION]: 403,
   [ErrorCode.WAREHOUSE_ACCESS_DENIED]: 403,
   [ErrorCode.CANNOT_MODIFY_SELF]: 403,

@@ -645,6 +645,24 @@ export interface BackupStatusDto {
   runUrl: string | null;
 }
 
+/** Saytda qaysi versiya ishlayapti: Render commit'i va server ishga tushgan vaqt. */
+export interface SiteVersionDto {
+  commit: string | null;
+  startedAt: string;
+}
+
+export interface SiteMaintenanceDto {
+  enabled: boolean;
+  message: string | null;
+}
+
+/** `GET /site-control/status`. */
+export interface SiteStatusDto {
+  backup: BackupStatusDto | null;
+  version: SiteVersionDto;
+  maintenance: SiteMaintenanceDto;
+}
+
 export interface ControlSiteHealthDto {
   id: string;
   ok: boolean;
@@ -652,6 +670,63 @@ export interface ControlSiteHealthDto {
   ms: number | null;
   /** Oxirgi bekap (sayt javob bersa); hech qachon bo'lmagan — `null`. */
   backup: BackupStatusDto | null;
+  /** Sayt javob bermasa `null`. */
+  version: SiteVersionDto | null;
+  maintenance: SiteMaintenanceDto | null;
+}
+
+/** Sayt foydalanuvchisi: sayt ishlatilyaptimi — kim oxirgi marta qachon kirdi. */
+export interface SiteUserActivityDto {
+  login: string;
+  fullName: string | null;
+  role: string;
+  active: boolean;
+  lastLoginAt: string | null;
+  /** Oxirgi harakat (sessiya yangilangan vaqt). */
+  lastSeenAt: string | null;
+}
+
+/** `GET /site-control/stats`. */
+export interface SiteStatsDto {
+  products: number;
+  customers: number;
+  warehouses: number;
+  sales: { today: number; last30Days: number; total: number; lastAt: string | null };
+  users: SiteUserActivityDto[];
+}
+
+/** Oylik tushum (`YYYY-MM`). */
+export interface ControlRevenueMonthDto {
+  month: string;
+  amount: string;
+  payments: number;
+}
+
+export type ControlLeadStatus = 'NEW' | 'CALLED' | 'CLIENT' | 'REJECTED';
+
+/** Botdagi bepul sinab ko'rish arizasi. */
+export interface ControlLeadDto {
+  id: string;
+  number: string;
+  name: string;
+  phone: string;
+  username: string | null;
+  status: ControlLeadStatus;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ControlLoginOutcome = 'SUCCESS' | 'CODE_SENT' | 'BAD_PASSWORD' | 'BAD_CODE';
+
+export interface ControlLoginDto {
+  id: string;
+  occurredAt: string;
+  outcome: ControlLoginOutcome;
+  ip: string | null;
+  /** Qisqa nom: "Chrome, Windows". */
+  device: string;
+  newDevice: boolean;
 }
 
 export interface ControlSiteDetailDto extends ControlSiteDto {
