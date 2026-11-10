@@ -4,6 +4,8 @@ import {
   ERROR_MESSAGES_UZ,
   isApiErrorBody,
   type AnnouncementInput,
+  type DemoAccountDto,
+  type DemoAccountInput,
   type SiteMaintenanceInput,
   type SiteStatsDto,
   type SiteStatusDto,
@@ -55,6 +57,10 @@ export class SiteClient {
       });
     }
     return payload as T;
+  }
+
+  createDemoAccount(site: Target, input: DemoAccountInput): Promise<DemoAccountDto> {
+    return this.call(site, 'POST', '/demo-accounts', input);
   }
 
   setLicense(site: Target, license: SiteLicenseInput): Promise<void> {

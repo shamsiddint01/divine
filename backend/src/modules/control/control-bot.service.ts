@@ -1,5 +1,11 @@
 import { Injectable, type OnModuleInit } from '@nestjs/common';
-import { CONTROL_LEAD_STATUSES, type ControlLeadStatus, type ControlSiteDto } from '@divine/shared';
+import {
+  CONTROL_LEAD_STATUSES,
+  type ControlLeadStatus,
+  type ControlSiteDto,
+  DEMO_TRIAL_DAYS,
+  DEMO_TRIAL_MINUTES,
+} from '@divine/shared';
 import { Clock } from '../../common/time/clock.js';
 import { InjectConfig } from '../../config/config.module.js';
 import type { AppConfig } from '../../config/env.schema.js';
@@ -8,6 +14,7 @@ import { RedisService } from '../../infrastructure/redis/redis.service.js';
 import { SupportService } from '../support/support.service.js';
 import { TelegramService } from '../telegram/telegram.service.js';
 import { ControlService, LEAD_STATUS_LABEL } from './control.service.js';
+import { SiteClient } from './site-client.js';
 
 /** Ariza suhbati: ism → telefon. Bir soatda tugatilmasa, qaytadan boshlanadi. */
 const leadKey = (chatId: string) => `divine:control:lead:${chatId}`;
@@ -59,6 +66,7 @@ export class ControlBotService implements OnModuleInit {
     private readonly support: SupportService,
     private readonly telegram: TelegramService,
     private readonly control: ControlService,
+    private readonly sites: SiteClient,
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly clock: Clock,
@@ -258,8 +266,15 @@ export class ControlBotService implements OnModuleInit {
       this.telegram.send(body, { chatId, ...options }).catch(() => undefined);
 
     if (text.startsWith('/start')) {
+      const trial = await this.trialOf({ chatId });
+      if (trial) {
+        await send(this.trialAlready(trial));
+        return;
+      }
       const recent = await this.recentLead(chatId);
       if (recent) {
+        // Ariza bor-u, sinov hisobi hali berilmagan (demo sayt keyin ulangan yoki javob bermagan edi).
+        if (await this.issueTrial(recent, send)) return;
         await send(
           `Arizangiz qabul qilingan (#${recent.number}). Tez orada bog‘lanamiz.\n` +
             `Savol bo‘lsa: ${CONTACT_PHONE}`,
@@ -269,7 +284,7 @@ export class ControlBotService implements OnModuleInit {
       await this.redis.client.set(key, JSON.stringify({ step: 'name' }), 'EX', LEAD_TTL_SECONDS);
       await send(
         'Assalomu alaykum! Divine — do‘kon va omborlar uchun dastur: sotuv, ombor, nasiya va hisobotlar.\n\n' +
-          'Bepul sinab ko‘rish uchun ismingizni yozing.',
+          'Bepul sinab ko‘rish uchun ism va familiyangizni yozing (masalan: Ali Valiyev).',
       );
       return;
     }
@@ -283,8 +298,8 @@ export class ControlBotService implements OnModuleInit {
 
     if (state.step === 'name') {
       const name = text.replace(/\s+/g, ' ').slice(0, 120);
-      if (name.length < 2 || name.startsWith('/')) {
-        await send('Ismingizni yozing.');
+      if (name.length < 3 || name.startsWith('/') || !name.includes(' ')) {
+        await send('Ism va familiyangizni birga yozing. Masalan: Ali Valiyev');
         return;
       }
       await this.redis.client.set(
@@ -310,10 +325,6 @@ export class ControlBotService implements OnModuleInit {
     const lead = await this.prisma.controlLead.create({
       data: { chatId: BigInt(chatId), username, name: state.name ?? '—', phone },
     });
-    await send(
-      `✅ Arizangiz qabul qilindi! Tez orada siz bilan bog‘lanamiz.\nSavol bo‘lsa: ${CONTACT_PHONE}`,
-      { removeKeyboard: true },
-    );
     await this.telegram
       .send(
         this.leadText(
@@ -323,6 +334,86 @@ export class ControlBotService implements OnModuleInit {
         { buttons: this.leadButtons(lead.id) },
       )
       .catch(() => undefined);
+
+    const earlier = await this.trialOf({ phone });
+    if (earlier) {
+      await send(this.trialAlready(earlier), { removeKeyboard: true });
+      return;
+    }
+    if (await this.issueTrial(lead, send, true)) return;
+    await send(
+      `✅ Arizangiz qabul qilindi! Tez orada siz bilan bog‘lanamiz.\nSavol bo‘lsa: ${CONTACT_PHONE}`,
+      { removeKeyboard: true },
+    );
+  }
+
+  /** Bu chat yoki telefon oldin sinov hisobini olganmi (har kimga bitta). */
+  private trialOf(who: { chatId?: string; phone?: string }) {
+    return this.prisma.controlTrial.findFirst({
+      where: {
+        OR: [
+          ...(who.chatId ? [{ chatId: BigInt(who.chatId) }] : []),
+          ...(who.phone ? [{ phone: who.phone }] : []),
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  private trialAlready(trial: { login: string; expiresAt: Date }): string {
+    const open = trial.expiresAt.getTime() > this.clock.now().getTime();
+    return open
+      ? `Sizga sinov hisobi berilgan: login ${trial.login}. Parol birinchi xabarda yuborilgan.\n` +
+          `Yo‘qotgan bo‘lsangiz, bog‘laning: ${CONTACT_PHONE}`
+      : `Sinov muddatingiz tugagan (login ${trial.login}). Davom etish uchun bog‘laning: ${CONTACT_PHONE}`;
+  }
+
+  /**
+   * Umumiy demo saytda shu odamga alohida ADMIN hisob ochadi va Telegram'ga login, parol, manzilni yuboradi.
+   * Demo sayt sozlanmagan yoki javob bermasa — `false` (oddiy ariza oqimi davom etadi, egasiga xabar boradi).
+   */
+  private async issueTrial(
+    lead: { id: string; number: bigint; name: string; phone: string; chatId: bigint },
+    send: (body: string, options?: { removeKeyboard?: boolean }) => Promise<unknown>,
+    removeKeyboard = false,
+  ): Promise<boolean> {
+    const siteId = this.config.DEMO_SITE_ID;
+    if (!siteId) return false;
+    const site = await this.prisma.controlSite.findUnique({ where: { id: siteId } });
+    if (!site) return false;
+    let account;
+    try {
+      account = await this.sites.createDemoAccount(site, {
+        ref: Number(lead.number),
+        name: lead.name,
+      });
+    } catch {
+      await this.say(
+        `⚠️ Ariza #${lead.number}: demo saytda hisob ochilmadi (sayt javob bermadi yoki sozlanmagan). ` +
+          'Mijoz oddiy ariza sifatida qoldi.',
+      );
+      return false;
+    }
+    await this.prisma.controlTrial.create({
+      data: {
+        leadId: lead.id,
+        chatId: lead.chatId,
+        phone: lead.phone,
+        siteId,
+        login: account.login,
+        expiresAt: new Date(account.expiresAt),
+      },
+    });
+    await send(
+      '✅ Sinov sayti tayyor!\n\n' +
+        `Sayt: ${site.siteUrl}\nLogin: ${account.login}\nParol: ${account.password}\n\n` +
+        `Muddat: ${DEMO_TRIAL_DAYS} kun, jami ${DEMO_TRIAL_MINUTES} daqiqa ishlatish mumkin. ` +
+        'Bu hamma uchun umumiy test sayt: foydalanuvchi qo‘shib va bloklab bo‘lmaydi, qolgan hamma narsa ochiq.\n' +
+        `Savol bo‘lsa: ${CONTACT_PHONE}`,
+      removeKeyboard ? { removeKeyboard: true } : {},
+    );
+    await this.say(`🎁 Ariza #${lead.number}: sinov hisobi berildi (${account.login}).`);
+    return true;
   }
 
   private recentLead(chatId: string) {
