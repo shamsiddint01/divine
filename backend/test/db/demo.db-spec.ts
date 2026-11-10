@@ -36,7 +36,7 @@ const realFetch = globalThis.fetch;
 
 const server = () => request(t.app.getHttpServer());
 /** Mijozga — faqat mijozlar botidan; egasiga bildirishnoma — faqat egasining botidan. */
-const toGuest = (chat = GUEST_CHAT) =>
+const toGuest = (chat: number | string = GUEST_CHAT) =>
   sent.filter((item) => item.bot === 'public' && item.chatId === String(chat));
 const toOwner = () => sent.filter((item) => item.bot === 'owner' && item.chatId === CHAT_ID);
 
@@ -54,7 +54,9 @@ const ownerHook = (update: object) =>
     .send(update)
     .expect(200);
 const guest = (message: object, chat: number | string = GUEST_CHAT) =>
-  publicHook({ message: { message_id: 1, chat: { id: Number(chat), type: 'private' }, ...message } }).expect(200);
+  publicHook({
+    message: { message_id: 1, chat: { id: Number(chat), type: 'private' }, ...message },
+  }).expect(200);
 
 const api = (method: 'get' | 'post' | 'patch', path: string, accessToken: string) =>
   server()
@@ -125,7 +127,11 @@ beforeEach(async () => {
   await t.prisma.controlLead.deleteMany();
   await t.prisma.siteLicense.deleteMany();
   const redis = t.app.get(RedisService).client;
-  await redis.del(`divine:control:lead:${GUEST_CHAT}`, `divine:control:lead:${OTHER_CHAT}`);
+  await redis.del(
+    `divine:control:lead:${GUEST_CHAT}`,
+    `divine:control:lead:${OTHER_CHAT}`,
+    `divine:control:lead:${CHAT_ID}`,
+  );
   sent.length = 0;
 });
 
@@ -144,9 +150,7 @@ describe('ikki bot: mijozlar boti va egasining boti', () => {
     expect(sent).toEqual([]);
 
     await guest({ text: '/start' }, CHAT_ID);
-    expect(toGuest(CHAT_ID as unknown as number).at(-1)?.text).toContain(
-      'ism va familiyangizni yozing',
-    );
+    expect(toGuest(CHAT_ID).at(-1)?.text).toContain('ism va familiyangizni yozing');
   });
 
   it('mijozlar boti webhook’i sirsiz ishlamaydi', async () => {
