@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
-import { TelegramService } from './telegram.service.js';
+import { PublicTelegramService, TelegramService } from './telegram.service.js';
 
-/** Egasining Telegram'i: superadmin kodi, eslatmalar va murojaatlar. */
-@Module({ providers: [TelegramService], exports: [TelegramService] })
+/** Egasining Telegram'i (superadmin kodi, eslatmalar, murojaatlar) va mijozlar boti. */
+@Module({
+  providers: [TelegramService, PublicTelegramService],
+  exports: [TelegramService, PublicTelegramService],
+})
 export class TelegramModule {}

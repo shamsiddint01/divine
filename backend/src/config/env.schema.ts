@@ -91,6 +91,11 @@ export const envSchema = z
       .string()
       .regex(/^-?\d+$/)
       .optional(),
+    /**
+     * Mijozlar boti (`@divine_uzbot`): bepul sinab ko'rish arizasi va sinov hisobi. Berilmasa — ariza
+     * egasining botida (`TELEGRAM_BOT_TOKEN`). Berilsa, egasining botiga begonalar yozsa javob yo'q.
+     */
+    TELEGRAM_PUBLIC_BOT_TOKEN: z.string().min(20).optional(),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'production') return;

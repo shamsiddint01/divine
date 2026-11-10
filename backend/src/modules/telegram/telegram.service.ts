@@ -89,7 +89,7 @@ export class TelegramService {
     let reason = 'Telegram javob bermadi';
     try {
       const response = await fetch(
-        `https://api.telegram.org/bot${this.config.TELEGRAM_BOT_TOKEN}/${method}`,
+        `https://api.telegram.org/bot${this.token}/${method}`,
         {
           method: 'POST',
           signal: AbortSignal.timeout(TELEGRAM_TIMEOUT_MS),
@@ -102,7 +102,7 @@ export class TelegramService {
         description?: string;
       } | null;
       if (response.ok) return payload?.result ?? null;
-      reason = describe(response.status, payload?.description);
+      reason = describe(response.status, payload?.description, this.tokenName);
     } catch {
       // Tarmoq xatosi: `reason` o'zgarmaydi. Xabarda token yo'q.
     }
@@ -114,8 +114,8 @@ export class TelegramService {
 }
 
 /** Telegram javobi → egasiga tushunarli sabab (token va chat ID qiymatlarisiz). */
-function describe(status: number, description = ''): string {
-  if (status === 401 || status === 404) return 'bot tokeni noto‘g‘ri (Render: TELEGRAM_BOT_TOKEN)';
+function describe(status: number, description: string | undefined, tokenName: string): string {
+  if (status === 401 || status === 404) return `bot tokeni noto‘g‘ri (Render: ${tokenName})`;
   if (/chat not found/i.test(description)) {
     return 'chat topilmadi: botga Start bosing va TELEGRAM_CHAT_ID ni tekshiring';
   }
@@ -123,4 +123,17 @@ function describe(status: number, description = ''): string {
     return 'bot sizga yoza olmayapti: botni oching va Start bosing';
   }
   return description || `Telegram xatosi ${status}`;
+}
+
+/**
+ * Mijozlar boti (`TELEGRAM_PUBLIC_BOT_TOKEN`, `@divine_uzbot`): faqat begonalar bilan suhbat. Xabar
+ * doim `chatId` bilan yuboriladi; egasiga bildirishnomalar `TelegramService` orqali.
+ */
+@Injectable()
+export class PublicTelegramService extends TelegramService {
+  protected override readonly tokenName = 'TELEGRAM_PUBLIC_BOT_TOKEN';
+
+  protected override get token(): string | undefined {
+    return this.config.TELEGRAM_PUBLIC_BOT_TOKEN;
+  }
 }
