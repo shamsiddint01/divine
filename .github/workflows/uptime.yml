@@ -1,0 +1,32 @@
+# Har 10 daqiqada: mijoz saytlari ishlayaptimi. Sayt ishlamay qolsa yoki qayta ishlasa — egasining
+# Telegram'iga xabar (panel API'si yuboradi). Panel API'sining o'zi javob bermasa, bu ish yiqiladi va
+# GitHub egasiga email yuboradi.
+name: Ishlayaptimi
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+env:
+  API_URL: https://divine-uz-api.onrender.com
+
+jobs:
+  check:
+    name: Saytlar tekshiruvi
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Tekshirish
+        env:
+          TOKEN: ${{ secrets.SITE_CONTROL_TOKEN }}
+        run: |
+          curl -sS --fail --max-time 90 --retry 2 --retry-delay 30 -X POST \
+            "$API_URL/api/v1/control/cron/uptime" -H "x-control-token: $TOKEN"
