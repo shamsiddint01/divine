@@ -3,7 +3,10 @@ import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RedisService } from '../../src/infrastructure/redis/redis.service.js';
 import { controlApiToken } from '../../src/modules/site/control-token.guard.js';
-import { telegramWebhookSecret } from '../../src/modules/support/support.service.js';
+import {
+  telegramPublicWebhookSecret,
+  telegramWebhookSecret,
+} from '../../src/modules/support/support.service.js';
 import {
   type AuthTestApp,
   createAuthApp,
@@ -16,6 +19,7 @@ import { closePool } from './support/db.js';
 // Bepul sinab ko'rish (egasining qarori, 2026-11-10): bot → ism familiya → telefon → umumiy demo saytda
 // alohida ADMIN hisob (7 kun, jami 1 soat); demo saytda foydalanuvchi qo'shish/bloklash yopiq.
 // Bitta ilova ham superadmin, ham demo sayt: panel saytga o'ziga o'zi so'rov yuboradi.
+// Mijozlar boti (`@divine_uzbot`) egasining botidan alohida: ariza va login o'sha yerda.
 
 const CHAT_ID = '987654321';
 const GUEST_CHAT = 66601;
@@ -23,24 +27,34 @@ const OTHER_CHAT = 66602;
 const DEMO_SITE_ID = '0193f0a0-0000-7000-8000-00000000d3d0';
 const BASE_TIME = new Date('2026-10-09T07:00:00.000Z');
 const PASSWORD = '582913';
+const OWNER_TOKEN = '123456:test-token-abcdefghijk';
+const PUBLIC_TOKEN = '654321:public-token-abcdefghijk';
 
 let t: AuthTestApp;
-const sent: { chatId: string; text: string }[] = [];
+const sent: { bot: 'owner' | 'public'; method: string; chatId: string; text: string }[] = [];
 const realFetch = globalThis.fetch;
 
 const server = () => request(t.app.getHttpServer());
-const toGuest = (chat = GUEST_CHAT) => sent.filter((item) => item.chatId === String(chat));
-const toOwner = () => sent.filter((item) => item.chatId === CHAT_ID);
+/** Mijozga — faqat mijozlar botidan; egasiga bildirishnoma — faqat egasining botidan. */
+const toGuest = (chat = GUEST_CHAT) =>
+  sent.filter((item) => item.bot === 'public' && item.chatId === String(chat));
+const toOwner = () => sent.filter((item) => item.bot === 'owner' && item.chatId === CHAT_ID);
 
-const hook = (update: object) =>
+const publicHook = (update: object) =>
+  server()
+    .post('/api/v1/site-control/telegram/public-webhook')
+    .set('x-telegram-bot-api-secret-token', telegramPublicWebhookSecret(t.config))
+    .set('X-Forwarded-For', uniqueIp())
+    .send(update);
+const ownerHook = (update: object) =>
   server()
     .post('/api/v1/site-control/telegram/webhook')
     .set('x-telegram-bot-api-secret-token', telegramWebhookSecret(t.config))
     .set('X-Forwarded-For', uniqueIp())
     .send(update)
     .expect(200);
-const guest = (message: object, chat = GUEST_CHAT) =>
-  hook({ message: { message_id: 1, chat: { id: chat, type: 'private' }, ...message } });
+const guest = (message: object, chat: number | string = GUEST_CHAT) =>
+  publicHook({ message: { message_id: 1, chat: { id: Number(chat), type: 'private' }, ...message } }).expect(200);
 
 const api = (method: 'get' | 'post' | 'patch', path: string, accessToken: string) =>
   server()
@@ -71,7 +85,8 @@ beforeAll(async () => {
       CONTROL_PANEL_ENABLED: true,
       DEMO_MODE: true,
       DEMO_SITE_ID,
-      TELEGRAM_BOT_TOKEN: '123456:test-token-abcdefghijk',
+      TELEGRAM_BOT_TOKEN: OWNER_TOKEN,
+      TELEGRAM_PUBLIC_BOT_TOKEN: PUBLIC_TOKEN,
       TELEGRAM_CHAT_ID: CHAT_ID,
     },
   });
@@ -79,7 +94,12 @@ beforeAll(async () => {
     const url = String(input instanceof Request ? input.url : input);
     if (!url.startsWith('https://api.telegram.org/')) return realFetch(input, init);
     const body = JSON.parse(String(init?.body)) as { chat_id?: string; text?: string };
-    if (body.text) sent.push({ chatId: String(body.chat_id), text: body.text });
+    sent.push({
+      bot: url.includes(PUBLIC_TOKEN) ? 'public' : 'owner',
+      method: url.split('/').at(-1)!,
+      chatId: String(body.chat_id),
+      text: body.text ?? JSON.stringify(body),
+    });
     return new Response(JSON.stringify({ ok: true, result: { message_id: 1 } }), { status: 200 });
   });
   await t.app.listen(0, '127.0.0.1');
@@ -114,6 +134,44 @@ afterAll(async () => {
   await t.prisma.controlSite.deleteMany({ where: { id: DEMO_SITE_ID } });
   await t.app.close();
   await closePool();
+});
+
+describe('ikki bot: mijozlar boti va egasining boti', () => {
+  it('egasining botiga begona yozsa javob yo‘q; mijozlar botida egasi ham mijoz', async () => {
+    await ownerHook({
+      message: { message_id: 1, text: '/start', chat: { id: GUEST_CHAT, type: 'private' } },
+    });
+    expect(sent).toEqual([]);
+
+    await guest({ text: '/start' }, CHAT_ID);
+    expect(toGuest(CHAT_ID as unknown as number).at(-1)?.text).toContain(
+      'ism va familiyangizni yozing',
+    );
+  });
+
+  it('mijozlar boti webhook’i sirsiz ishlamaydi', async () => {
+    await publicHook({ message: { text: '/start' } })
+      .set('x-telegram-bot-api-secret-token', telegramWebhookSecret(t.config))
+      .expect(403);
+  });
+
+  it('webhook ulash: mijozlar botiga /start, egasining botida begonalarga buyruq yo‘q', async () => {
+    const res = await server()
+      .post('/api/v1/site-control/support/telegram-webhook')
+      .set('x-control-token', controlApiToken(t.config))
+      .send({ url: 'https://api.example/api/v1/site-control/telegram/webhook' })
+      .expect(200);
+    expect(res.body).toEqual({ ok: true, publicBot: true });
+    const publicHookSet = sent.find((m) => m.bot === 'public' && m.method === 'setWebhook');
+    expect(publicHookSet?.text).toContain('/api/v1/site-control/telegram/public-webhook');
+    expect(publicHookSet?.text).toContain(telegramPublicWebhookSecret(t.config));
+    const commands = sent.filter((m) => m.method === 'setMyCommands');
+    expect(commands.find((m) => m.bot === 'public')?.text).toContain('"start"');
+    expect(commands.filter((m) => m.bot === 'owner').map((m) => m.text)).toEqual([
+      expect.stringContaining('"commands":[]'),
+      expect.stringContaining('"bugun"'),
+    ]);
+  });
 });
 
 describe('bot: bepul sinab ko‘rish hisobi', () => {
