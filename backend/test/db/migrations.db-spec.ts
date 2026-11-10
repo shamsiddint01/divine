@@ -11,10 +11,12 @@ const TABLES = [
   'control_logins',
   'control_payments',
   'control_sites',
+  'control_trials',
   'credit_installments',
   'credit_payments',
   'credits',
   'customers',
+  'demo_accounts',
   'expense_categories',
   'expenses',
   'incoming',
@@ -40,12 +42,13 @@ const TABLES = [
   'warehouse_stock',
   'warehouses',
 ];
-/** Holati o'zgaradi, lekin o'chirilmaydi: murojaat tarixi qoladi. */
-const NO_DELETE = ['control_leads', 'support_tickets'];
+/** Holati o'zgaradi, lekin o'chirilmaydi: murojaat tarixi va sinov vaqti qoladi. */
+const NO_DELETE = ['control_leads', 'demo_accounts', 'support_tickets'];
 const IMMUTABLE = [
   'audit_logs',
   'control_events',
   'control_logins',
+  'control_trials',
   'inventory_movements',
   'sale_items',
   'sales',
@@ -182,6 +185,7 @@ describe('FK delete strategiyasi (tarix yo‘qolmaydi)', () => {
       'control_events.site_id:c',
       'control_logins.admin_id:n', // admin o'chsa ham kirishlar tarixi qoladi
       'control_payments.site_id:c',
+      'demo_accounts.user_id:c', // sinov vaqti faqat shu userniki
       'incoming_items.incoming_id:c', // faqat DRAFT kirim o'chiriladi (trigger)
       'role_permissions.permission_id:c',
       'role_permissions.role_id:c',
