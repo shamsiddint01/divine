@@ -13,5 +13,6 @@ import { SupportService } from './support.service.js';
   imports: [TelegramModule],
   controllers: [SupportController, SupportControlController, TelegramWebhookController],
   providers: [SupportService, ControlTokenGuard],
+  exports: [SupportService],
 })
 export class SupportModule {}

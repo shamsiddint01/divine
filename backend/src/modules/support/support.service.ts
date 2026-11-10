@@ -31,6 +31,16 @@ const ANSWER_BUTTON = '✍️ Javob yozish';
 const REPLY_TARGET_KEY = 'divine:support:telegram-reply-target';
 const REPLY_TARGET_TTL_SECONDS = 30 * 60;
 const OPEN_LIST_LIMIT = 10;
+/** Egasining bot buyruqlari ("/" yozganda ro'yxat bo'lib chiqadi). */
+const OWNER_COMMANDS = [
+  { command: 'murojaatlar', description: 'Javob kutayotgan murojaatlar' },
+  { command: 'bugun', description: 'Bugungi hisobot' },
+  { command: 'qarzdorlar', description: 'To‘lashi kerak va bloklanganlar' },
+  { command: 'saytlar', description: 'Saytlar holati' },
+  { command: 'arizalar', description: 'Bepul sinab ko‘rish arizalari' },
+  { command: 'blokla', description: 'Saytni bloklash yoki ochish' },
+  { command: 'bekor', description: 'Tanlangan murojaatni bekor qilish' },
+];
 const STATUS_LABEL: Record<SupportStatus, string> = {
   NEW: 'yangi',
   SEEN: 'ko‘rildi',
@@ -38,6 +48,8 @@ const STATUS_LABEL: Record<SupportStatus, string> = {
 };
 
 type TicketRow = SupportTicket & { replies: SupportReply[] };
+/** Boshqa modul (superadmin boti) Telegram xabarini o'zi ishlaydi: `true` — ishlandi, bu yerga kelmaydi. */
+export type TelegramHandler = (update: unknown) => Promise<boolean>;
 
 /** Telegram webhook sirining manbasi: sayt secret'idan, alohida sozlamasiz. */
 export const telegramWebhookSecret = (config: Pick<AppConfig, 'JWT_ACCESS_SECRET'>) =>
@@ -51,6 +63,7 @@ export const telegramWebhookSecret = (config: Pick<AppConfig, 'JWT_ACCESS_SECRET
 @Injectable()
 export class SupportService {
   private readonly logger = new Logger(SupportService.name);
+  private readonly handlers: TelegramHandler[] = [];
 
   constructor(
     private readonly prisma: PrismaService,
@@ -306,7 +319,12 @@ export class SupportService {
    * yoki /murojaatlar), keyingi BITTA xabar shu murojaatga javob bo'ladi. Tanlovsiz xabar hech narsa
    * qilmaydi — faqat qanday javob berishni eslatadi. Faqat egasining chati.
    */
+  addTelegramHandler(handler: TelegramHandler): void {
+    this.handlers.push(handler);
+  }
+
   async telegramUpdate(update: unknown): Promise<void> {
+    for (const handler of this.handlers) if (await handler(update)) return;
     const callback = (update as { callback_query?: TelegramCallback } | null)?.callback_query;
     if (callback) {
       if (String(callback.message?.chat?.id) !== this.config.TELEGRAM_CHAT_ID) return;
@@ -417,10 +435,11 @@ export class SupportService {
     if (!this.telegram.enabled)
       throw new AppError(ErrorCode.BAD_REQUEST, { message: 'Telegram sozlanmagan' });
     await this.telegram.setWebhook(url, telegramWebhookSecret(this.config));
+    // Hammaga — faqat ariza; egasiga — boshqaruv buyruqlari (begonalar ularni ko'rmaydi).
     await this.telegram.setCommands([
-      { command: 'murojaatlar', description: 'Javob kutayotgan murojaatlar' },
-      { command: 'bekor', description: 'Tanlangan murojaatni bekor qilish' },
+      { command: 'start', description: 'Bepul sinab ko‘rish uchun ariza' },
     ]);
+    await this.telegram.setCommands(OWNER_COMMANDS, true);
     return { ok: true };
   }
 }
