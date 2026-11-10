@@ -12,7 +12,7 @@ import type { AppConfig } from '../../config/env.schema.js';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import { RedisService } from '../../infrastructure/redis/redis.service.js';
 import { SupportService } from '../support/support.service.js';
-import { TelegramService } from '../telegram/telegram.service.js';
+import { PublicTelegramService, TelegramService } from '../telegram/telegram.service.js';
 import { ControlService, LEAD_STATUS_LABEL } from './control.service.js';
 import { SiteClient } from './site-client.js';
 
@@ -65,6 +65,7 @@ export class ControlBotService implements OnModuleInit {
   constructor(
     private readonly support: SupportService,
     private readonly telegram: TelegramService,
+    private readonly publicBot: PublicTelegramService,
     private readonly control: ControlService,
     private readonly sites: SiteClient,
     private readonly prisma: PrismaService,
@@ -86,9 +87,21 @@ export class ControlBotService implements OnModuleInit {
     const message = (update as { message?: Message } | null)?.message;
     if (!message?.chat) return false;
     if (this.telegram.isOwnerChat(message.chat.id)) return this.ownerCommand(message.text ?? '');
-    if (message.chat.type !== 'private') return true;
-    await this.lead(message);
+    // Mijozlar boti ulangan bo'lsa, egasining botiga begonalar yozganda javob yo'q (bot sir saqlanadi).
+    if (message.chat.type !== 'private' || this.publicBot.enabled) return true;
+    await this.lead(message, this.telegram);
     return true;
+  }
+
+  /**
+   * Mijozlar boti (`@divine_uzbot`): har kim — egasi ham — oddiy mijoz sifatida ariza qoldiradi.
+   * Egasiga bildirishnomalar egasining botiga boradi.
+   */
+  async handlePublic(update: unknown): Promise<void> {
+    if (!this.publicBot.enabled) return;
+    const message = (update as { message?: Message } | null)?.message;
+    if (!message?.chat || message.chat.type !== 'private') return;
+    await this.lead(message, this.publicBot);
   }
 
   private async callback(callback: Callback): Promise<boolean> {
@@ -258,12 +271,12 @@ export class ControlBotService implements OnModuleInit {
   }
 
   /** Bepul sinab ko'rish arizasi: /start → ism → telefon (tugma yoki matn). */
-  private async lead(message: Message): Promise<void> {
+  private async lead(message: Message, bot: TelegramService): Promise<void> {
     const chatId = String(message.chat!.id);
     const key = leadKey(chatId);
     const text = message.text?.trim() ?? '';
     const send = (body: string, options: { askContact?: string; removeKeyboard?: boolean } = {}) =>
-      this.telegram.send(body, { chatId, ...options }).catch(() => undefined);
+      bot.send(body, { chatId, ...options }).catch(() => undefined);
 
     if (text.startsWith('/start')) {
       const trial = await this.trialOf({ chatId });

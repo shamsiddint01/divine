@@ -115,6 +115,7 @@ export class TelegramService {
 
 /** Telegram javobi → egasiga tushunarli sabab (token va chat ID qiymatlarisiz). */
 function describe(status: number, description: string | undefined, tokenName: string): string {
+  description ??= '';
   if (status === 401 || status === 404) return `bot tokeni noto‘g‘ri (Render: ${tokenName})`;
   if (/chat not found/i.test(description)) {
     return 'chat topilmadi: botga Start bosing va TELEGRAM_CHAT_ID ni tekshiring';

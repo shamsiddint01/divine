@@ -54,6 +54,11 @@ export type TelegramHandler = (update: unknown) => Promise<boolean>;
 /** Telegram webhook sirining manbasi: sayt secret'idan, alohida sozlamasiz. */
 export const telegramWebhookSecret = (config: Pick<AppConfig, 'JWT_ACCESS_SECRET'>) =>
   createHmac('sha256', config.JWT_ACCESS_SECRET).update('divine.uz/telegram-webhook').digest('hex');
+/** Mijozlar botining webhook siri (egasining botidan alohida). */
+export const telegramPublicWebhookSecret = (config: Pick<AppConfig, 'JWT_ACCESS_SECRET'>) =>
+  createHmac('sha256', config.JWT_ACCESS_SECRET)
+    .update('divine.uz/telegram-public-webhook')
+    .digest('hex');
 
 /**
  * Murojaat bo'limi (egasining qarori, 2026-11-09). Murojaatlar saytning o'zida saqlanadi, panel ularni
@@ -431,16 +436,25 @@ export class SupportService {
     });
   }
 
-  async registerWebhook(url: string): Promise<{ ok: boolean }> {
+  async registerWebhook(url: string): Promise<{ ok: boolean; publicBot: boolean }> {
     if (!this.telegram.enabled)
       throw new AppError(ErrorCode.BAD_REQUEST, { message: 'Telegram sozlanmagan' });
     await this.telegram.setWebhook(url, telegramWebhookSecret(this.config));
-    // Hammaga — faqat ariza; egasiga — boshqaruv buyruqlari (begonalar ularni ko'rmaydi).
-    await this.telegram.setCommands([
-      { command: 'start', description: 'Bepul sinab ko‘rish uchun ariza' },
-    ]);
+    const trial = [{ command: 'start', description: 'Bepul sinab ko‘rish' }];
+    if (this.publicBot.enabled) {
+      // Mijozlar boti alohida: ariza o'sha yerda, egasining botida begonalar uchun buyruq yo'q.
+      await this.publicBot.setWebhook(
+        url.replace(/\/webhook$/, '/public-webhook'),
+        telegramPublicWebhookSecret(this.config),
+      );
+      await this.publicBot.setCommands(trial);
+      await this.telegram.setCommands([]);
+    } else {
+      // Hammaga — faqat ariza; egasiga — boshqaruv buyruqlari (begonalar ularni ko'rmaydi).
+      await this.telegram.setCommands(trial);
+    }
     await this.telegram.setCommands(OWNER_COMMANDS, true);
-    return { ok: true };
+    return { ok: true, publicBot: this.publicBot.enabled };
   }
 }
 
