@@ -88,15 +88,12 @@ export class TelegramService {
   private async call<T>(method: string, body: object): Promise<T | null> {
     let reason = 'Telegram javob bermadi';
     try {
-      const response = await fetch(
-        `https://api.telegram.org/bot${this.token}/${method}`,
-        {
-          method: 'POST',
-          signal: AbortSignal.timeout(TELEGRAM_TIMEOUT_MS),
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        },
-      );
+      const response = await fetch(`https://api.telegram.org/bot${this.token}/${method}`, {
+        method: 'POST',
+        signal: AbortSignal.timeout(TELEGRAM_TIMEOUT_MS),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
       const payload = (await response.json().catch(() => null)) as {
         result?: T;
         description?: string;

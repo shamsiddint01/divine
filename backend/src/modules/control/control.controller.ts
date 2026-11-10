@@ -17,6 +17,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
+  ErrorCode,
   type AnnouncementInput,
   announcementSchema,
   type SupportReplyInput,
@@ -42,6 +43,7 @@ import {
 } from '@divine/shared';
 import type { Request, Response } from 'express';
 import { Public } from '../../common/auth/auth.decorators.js';
+import { AppError } from '../../common/errors/app-error.js';
 import { RateLimitGroup } from '../../common/throttling/app-throttler.guard.js';
 import { ZodBody } from '../../common/validation/zod-validation.pipe.js';
 import { InjectConfig } from '../../config/config.module.js';
