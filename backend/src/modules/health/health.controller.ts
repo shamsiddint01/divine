@@ -28,4 +28,12 @@ export class HealthController {
     res.setHeader('Cache-Control', 'no-store');
     return result;
   }
+
+  /** Jarayon tirikmi: bazaga va Redis'ga tegmaydi (har 10 daqiqalik tekshiruv bepul limitni yemasin). */
+  @Get('live')
+  @ApiOperation({ summary: 'Server ishlayaptimi (bazasiz)' })
+  live(@Res({ passthrough: true }) res: Response): { status: 'ok' } {
+    res.setHeader('Cache-Control', 'no-store');
+    return { status: 'ok' };
+  }
 }

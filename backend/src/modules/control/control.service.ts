@@ -53,6 +53,7 @@ const uptimeKey = (id: string) => `divine:control:uptime:${id}`;
 const BAD_PASSWORD_ALERT_KEY = 'divine:control:alert:bad-password';
 const BAD_PASSWORD_ALERT_SECONDS = 15 * 60;
 const REVENUE_MONTHS = 12;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LOGINS_LIMIT = 100;
 const LEADS_LIMIT = 200;
 const money = (value: string) => `${Number(value).toLocaleString('ru-RU')} so‘m`;
@@ -701,6 +702,7 @@ export class ControlService {
   }
 
   async updateLead(id: string, input: ControlLeadUpdateInput): Promise<ControlLeadDto> {
+    if (!UUID.test(id)) notFound();
     const { count } = await this.prisma.controlLead.updateMany({ where: { id }, data: input });
     if (count === 0) notFound();
     const row = await this.prisma.controlLead.findUniqueOrThrow({ where: { id } });
