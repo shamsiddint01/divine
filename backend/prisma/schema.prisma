@@ -162,6 +162,7 @@ model User {
 
   createdUsers             User[]              @relation("UserCreatedBy")
   sessions                 UserSession[]
+  demoAccount              DemoAccount?
   warehouses               UserWarehouse[]     @relation("UserWarehouseUser")
   createdWarehouseLinks    UserWarehouse[]     @relation("UserWarehouseCreatedBy")
   createdProductGroups     ProductGroup[]
@@ -771,6 +772,23 @@ model ControlLead {
   @@map("control_leads")
 }
 
+/// Berilgan sinov hisobi (bot): bitta ariza — bitta sinov. Parol saqlanmaydi, Telegram'da bir marta yuboriladi.
+model ControlTrial {
+  id        String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  /// `control_leads.id` (ataylab FK'siz: ariza o'chirilsa ham sinov tarixi qoladi).
+  leadId    String   @unique @map("lead_id") @db.Uuid
+  chatId    BigInt   @map("chat_id")
+  phone     String   @db.VarChar(32)
+  siteId    String   @map("site_id") @db.Uuid
+  login     String   @db.VarChar(32)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([chatId])
+  @@index([phone])
+  @@map("control_trials")
+}
+
 /// Superadmin kirishlari: natija, IP va qurilma (kiritilgan login saqlanmaydi).
 model ControlLogin {
   id         BigInt   @id @default(autoincrement())
@@ -840,4 +858,17 @@ model SupportFeedback {
 
   @@index([topic])
   @@map("support_feedback")
+}
+
+/// Demo saytdagi sinov hisobi (`DEMO_MODE`): muddat va jami ishlatilgan vaqt. Yozuvi yo'q user — cheklovsiz.
+model DemoAccount {
+  userId      String    @id @map("user_id") @db.Uuid
+  expiresAt   DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedSeconds Int       @default(0) @map("used_seconds")
+  lastSeenAt  DateTime? @map("last_seen_at") @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("demo_accounts")
 }
