@@ -13,7 +13,6 @@ import { AppError } from '../../common/errors/app-error.js';
 import { Clock } from '../../common/time/clock.js';
 import { InjectConfig } from '../../config/config.module.js';
 import type { AppConfig } from '../../config/env.schema.js';
-import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import { TransactionRunner } from '../../infrastructure/prisma/transaction-runner.js';
 import { AuditService } from '../audit/audit.service.js';
 import { generatePassword, PasswordHasher } from '../auth/password/password-hasher.js';
@@ -29,7 +28,6 @@ const META = { ip: null, userAgent: 'superadmin', requestId: null };
 @Injectable()
 export class DemoAccountService {
   constructor(
-    private readonly prisma: PrismaService,
     private readonly transactions: TransactionRunner,
     private readonly hasher: PasswordHasher,
     private readonly audit: AuditService,

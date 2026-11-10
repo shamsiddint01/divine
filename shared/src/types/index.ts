@@ -707,7 +707,7 @@ export interface DemoStatusDto {
   expiresAt: string;
 }
 
-/** `GET /site-control/stats`.
+/** `GET /site-control/stats`. */
 export interface SiteStatsDto {
   products: number;
   customers: number;
