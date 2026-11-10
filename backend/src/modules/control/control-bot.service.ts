@@ -347,8 +347,12 @@ export class ControlBotService implements OnModuleInit {
     );
   }
 
-  /** Bu chat yoki telefon oldin sinov hisobini olganmi (har kimga bitta). */
-  private trialOf(who: { chatId?: string; phone?: string }) {
+  /**
+   * Bu chat yoki telefon oldin sinov hisobini olganmi (har kimga bitta). Demo sayt ulanmagan bo'lsa,
+   * `control_trials`ga umuman murojaat yo'q: migratsiyadan oldin chiqqan kod ham eski oqimda ishlaydi.
+   */
+  private async trialOf(who: { chatId?: string; phone?: string }) {
+    if (!this.config.DEMO_SITE_ID) return null;
     return this.prisma.controlTrial.findFirst({
       where: {
         OR: [
