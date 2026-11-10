@@ -5,6 +5,7 @@ import { PUBLIC_KEY } from '../../common/auth/auth.decorators.js';
 import type { AuthRequest } from '../../common/auth/request-types.js';
 import { AppError } from '../../common/errors/app-error.js';
 import { Clock } from '../../common/time/clock.js';
+import { DemoUsageService } from '../demo/demo-usage.service.js';
 import { LicenseService } from '../license/license.service.js';
 import { AuthRepository } from './auth.repository.js';
 
@@ -18,7 +19,8 @@ const READ_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
  * 2) user DB'dan PK bo'yicha: yo'q → 401; `status != ACTIVE` → `401 ACCOUNT_BLOCKED` (bloklash darhol);
  * 3) `iat >= password_changed_at` (soniya aniqligida) — parol tiklangandan oldingi token → `401 SESSION_EXPIRED`;
  * 4) to'lov muddati o'tgan bo'lsa → `403 LICENSE_EXPIRED`; ko'rish tokeni yozolmaydi → `403 READ_ONLY_SESSION`;
- * 5) `req.accessContext` = { userId, role, permissions, warehouseIds }.
+ * 5) demo saytda sinov hisobining vaqti tugagan bo'lsa → `403 DEMO_TIME_UP`;
+ * 6) `req.accessContext` = { userId, role, permissions, warehouseIds }.
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -32,6 +34,7 @@ export class JwtAuthGuard implements CanActivate {
     private readonly repository: AuthRepository,
     private readonly clock: Clock,
     private readonly license: LicenseService,
+    private readonly demo: DemoUsageService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -60,6 +63,8 @@ export class JwtAuthGuard implements CanActivate {
       if (revokedAt && claims.iat < Math.floor(revokedAt.getTime() / 1000)) {
         throw new AppError(ErrorCode.SESSION_EXPIRED);
       }
+      // Demo saytdagi sinov hisobi: jami 1 soat va 7 kun (egasining qarori, 2026-11-10).
+      await this.demo.touch(user.id);
     }
 
     req.accessContext = {

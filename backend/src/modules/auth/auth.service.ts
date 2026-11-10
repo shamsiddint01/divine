@@ -187,6 +187,7 @@ export class AuthService {
 
     // To'g'ri parolgacha aytilmaydi: muddat tugaganini faqat shu saytning foydalanuvchisi ko'radi.
     await this.license.assertActive();
+    await this.demo.assertCanLogin(candidate.id);
 
     // Pepper rotation: eski versiyadagi hash — tranzaksiyadan oldin (argon2 ~200 ms) hisoblanadi.
     const upgradedHash = this.hasher.needsRehash(candidate.passwordHash)
