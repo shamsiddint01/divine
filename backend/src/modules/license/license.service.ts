@@ -7,6 +7,8 @@ import {
   type SiteLicenseDto,
   type SiteLicenseInput,
   type SiteLicensePaymentDto,
+  type SiteMaintenanceDto,
+  type SiteMaintenanceInput,
 } from '@divine/shared';
 import { AppError } from '../../common/errors/app-error.js';
 import { Clock } from '../../common/time/clock.js';
@@ -27,6 +29,9 @@ interface License {
   manualBlock: boolean;
   graceUntil: string | null;
   payments: SiteLicensePaymentDto[];
+  maintenance: boolean;
+  maintenanceMessage: string | null;
+  sessionsRevokedAt: Date | null;
 }
 
 const dateOnly = (date: Date) => date.toISOString().slice(0, 10);
@@ -68,19 +73,84 @@ export class LicenseService {
           payments: Array.isArray(row.payments)
             ? (row.payments as unknown as SiteLicensePaymentDto[])
             : [],
+          maintenance: row.maintenance,
+          maintenanceMessage: row.maintenanceMessage,
+          sessionsRevokedAt: row.sessionsRevokedAt,
         }
       : null;
     this.cache = { value, at: now };
     return value;
   }
 
-  /** Muddat o'tgan yoki qo'lda yopilgan bo'lsa — `403 LICENSE_EXPIRED`; oxirgi kun butunligicha ishlaydi. */
+  /**
+   * Muddat o'tgan yoki qo'lda yopilgan bo'lsa — `403 LICENSE_EXPIRED`; oxirgi kun butunligicha ishlaydi.
+   * Texnik ishlar paytida — `403 SITE_MAINTENANCE` (superadmin yozgan xabar bilan).
+   */
   async assertActive(): Promise<void> {
     const license = await this.read();
     if (!license) return;
     if (license.manualBlock || tashkentToday(this.clock.now()) > activeUntil(license)) {
       throw new AppError(ErrorCode.LICENSE_EXPIRED);
     }
+    if (license.maintenance) {
+      throw new AppError(ErrorCode.SITE_MAINTENANCE, {
+        ...(license.maintenanceMessage
+          ? { message: `Saytda texnik ishlar ketmoqda: ${license.maintenanceMessage}` }
+          : {}),
+      });
+    }
+  }
+
+  /** "Hammani chiqarish" vaqti: shundan oldin berilgan access token yaroqsiz. */
+  async sessionsRevokedAt(): Promise<Date | null> {
+    return (await this.read())?.sessionsRevokedAt ?? null;
+  }
+
+  async maintenance(): Promise<SiteMaintenanceDto> {
+    const license = await this.read();
+    return {
+      enabled: license?.maintenance ?? false,
+      message: license?.maintenanceMessage ?? null,
+    };
+  }
+
+  /** Muddat yozuvi bo'lmasa (panel hali yubormagan) — 409: avval muddat yuboriladi. */
+  async setMaintenance(input: SiteMaintenanceInput): Promise<void> {
+    const { count } = await this.prisma.siteLicense.updateMany({
+      where: { id: 1 },
+      data: { maintenance: input.enabled, maintenanceMessage: input.message ?? null },
+    });
+    if (count === 0) throw new AppError(ErrorCode.CONFLICT, { message: 'Avval muddatni yuboring' });
+    this.cache = null;
+    await this.recordControl(AuditAction.SITE_MAINTENANCE_CHANGED, {
+      enabled: input.enabled,
+      hasMessage: Boolean(input.message),
+    });
+  }
+
+  /** Hamma sessiya yopiladi: refresh tokenlar bekor, access tokenlar ham (vaqt bo'yicha). */
+  async revokeAllSessions(): Promise<{ revoked: number }> {
+    const now = this.clock.now();
+    const [sessions] = await this.prisma.$transaction([
+      this.prisma.userSession.updateMany({
+        where: { revokedAt: null, expiresAt: { gt: now } },
+        data: { revokedAt: now, revokedReason: 'FORCED_LOGOUT' },
+      }),
+      this.prisma.siteLicense.updateMany({ where: { id: 1 }, data: { sessionsRevokedAt: now } }),
+    ]);
+    this.cache = null;
+    await this.recordControl(AuditAction.SESSIONS_REVOKED, { revoked: sessions.count });
+    return { revoked: sessions.count };
+  }
+
+  private recordControl(action: AuditAction, metadata: Record<string, unknown>) {
+    return this.audit.record({
+      actorId: null,
+      action,
+      entityType: AuditEntityType.SITE,
+      metadata,
+      meta: { ip: null, userAgent: 'superadmin', requestId: null },
+    });
   }
 
   async current(): Promise<SiteLicenseDto | null> {
