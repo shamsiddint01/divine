@@ -171,36 +171,28 @@ export const controlLeadUpdateSchema = z
   })
   .partial();
 
+const BROWSERS: [RegExp, string][] = [
+  [/Edg\//, 'Edge'],
+  [/OPR\/|Opera/, 'Opera'],
+  [/YaBrowser/, 'Yandex'],
+  [/Firefox\//, 'Firefox'],
+  [/Chrome\//, 'Chrome'],
+  [/Safari\//, 'Safari'],
+  [/curl|python|node|axios|Go-http/i, 'Dastur'],
+];
+const SYSTEMS: [RegExp, string][] = [
+  [/Android/, 'Android'],
+  [/iPhone|iPad|iOS/, 'iPhone'],
+  [/Windows/, 'Windows'],
+  [/Mac OS X|Macintosh/, 'Mac'],
+  [/Linux/, 'Linux'],
+];
+
 /** User-Agent → qisqa nom ("Chrome, Windows"): kirishlar tarixi va ogohlantirish uchun. */
 export function describeDevice(userAgent: string | null | undefined): string {
   if (!userAgent) return 'Noma’lum qurilma';
-  const browser =
-    /Edg\//.test(userAgent)
-      ? 'Edge'
-      : /OPR\/|Opera/.test(userAgent)
-        ? 'Opera'
-        : /YaBrowser/.test(userAgent)
-          ? 'Yandex'
-          : /Firefox\//.test(userAgent)
-            ? 'Firefox'
-            : /Chrome\//.test(userAgent)
-              ? 'Chrome'
-              : /Safari\//.test(userAgent)
-                ? 'Safari'
-                : /curl|python|node|axios|Go-http/i.test(userAgent)
-                  ? 'Dastur'
-                  : 'Brauzer';
-  const os = /Android/.test(userAgent)
-    ? 'Android'
-    : /iPhone|iPad|iOS/.test(userAgent)
-      ? 'iPhone'
-      : /Windows/.test(userAgent)
-        ? 'Windows'
-        : /Mac OS X|Macintosh/.test(userAgent)
-          ? 'Mac'
-          : /Linux/.test(userAgent)
-            ? 'Linux'
-            : null;
+  const browser = BROWSERS.find(([pattern]) => pattern.test(userAgent))?.[1] ?? 'Brauzer';
+  const os = SYSTEMS.find(([pattern]) => pattern.test(userAgent))?.[1];
   return os ? `${browser}, ${os}` : browser;
 }
 
