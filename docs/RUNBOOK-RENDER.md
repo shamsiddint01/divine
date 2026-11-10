@@ -71,6 +71,25 @@ Admin paroli terminalda bir marta chiqadi. Render qiymatlari `.env.render.secret
 - Chat ID: botga `/start` yozib, `scripts/render/telegram-chat-id.sh`.
 - Telegram ishlamay qolsa yoki bot yo'qolsa: Render'da shu ikki o'zgaruvchini o'chiring — kirish parol bilan qoladi.
 
+## Demo sayt (bepul sinab ko'rish)
+
+`@divine_uzbot`: `/start` → ism familiya → telefon → umumiy demo saytda shu odamga alohida ADMIN hisob
+(`demo<ariza raqami>`, 6 xonali parol). Bot login, parol va manzilni yuboradi. Hisob 7 kun va jami 1 soat ishlaydi
+(so'rovlar orasidagi vaqt, 5 daqiqadan uzun tanaffus 5 daqiqa hisoblanadi). Demo saytda foydalanuvchi qo'shish,
+o'zgartirish, bloklash va parol tiklash yopiq (`403 DEMO_RESTRICTED`). Bitta chat yoki telefon — bitta sinov.
+
+Tartib muhim (har qadam oldingisidan keyin):
+
+1. `scripts/render/migrate.sh` — asosiy bazaga `control_trials` jadvali.
+2. `scripts/render/setup-demo.sh` — `divine_demo` bazasi, migratsiya, seed, sizning ADMIN hisobingiz, paneldagi
+   "Demo" sayti. Alohida Upstash bazasi bo'lsa, `.env.render`ga `DEMO_REDIS_URL` yozing (bo'lmasa asosiy Redis).
+3. Render → New → Blueprint → `shamsiddint01/divine`, Blueprint Path `render-demo.yaml`. `divine-uz-demo-api`ga
+   `.env.render.demo.secrets`dagi 4 qiymat.
+4. Asosiy `divine-uz-api` → Environment: skript chiqargan `DEMO_SITE_ID`. Shundan keyin bot hisob bera boshlaydi.
+
+`DEMO_SITE_ID` yo'q yoki demo sayt javob bermasa, bot oddiy ariza qabul qiladi va egasiga ⚠️ xabar keladi; odam
+keyin `/start` bossa, shu ariza bo'yicha hisob beriladi.
+
 ## Yangilanish (deploy)
 
 - `render.yaml`: `autoDeployTrigger: checksPass` — Render faqat GitHub CI o'tgan commit'ni o'rnatadi. Auto-sync
