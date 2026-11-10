@@ -4,7 +4,9 @@ import {
   ERROR_MESSAGES_UZ,
   isApiErrorBody,
   type AnnouncementInput,
-  type BackupStatusDto,
+  type SiteMaintenanceInput,
+  type SiteStatsDto,
+  type SiteStatusDto,
   type SupportFeedbackSummaryDto,
   type SupportStatus,
   type SupportTicketDto,
@@ -63,8 +65,20 @@ export class SiteClient {
     return this.call(site, 'POST', '/access-requests');
   }
 
-  status(site: Target): Promise<{ backup: BackupStatusDto | null }> {
+  status(site: Target): Promise<SiteStatusDto> {
     return this.call(site, 'GET', '/status');
+  }
+
+  stats(site: Target): Promise<SiteStatsDto> {
+    return this.call(site, 'GET', '/stats');
+  }
+
+  setMaintenance(site: Target, input: SiteMaintenanceInput): Promise<void> {
+    return this.call(site, 'PUT', '/maintenance', input);
+  }
+
+  revokeSessions(site: Target): Promise<{ revoked: number }> {
+    return this.call(site, 'POST', '/sessions/revoke-all');
   }
 
   tickets(site: Target): Promise<SupportTicketDto[]> {

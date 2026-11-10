@@ -32,6 +32,10 @@ import {
   controlSiteUpdateSchema,
   type SiteViewVerifyInput,
   siteViewVerifySchema,
+  type ControlLeadUpdateInput,
+  controlLeadUpdateSchema,
+  type SiteMaintenanceInput,
+  siteMaintenanceSchema,
 } from '@divine/shared';
 import type { Request, Response } from 'express';
 import { Public } from '../../common/auth/auth.decorators.js';
@@ -48,7 +52,12 @@ import {
   ControlSessionGuard,
 } from './control.guard.js';
 import { ControlTokenGuard } from '../site/control-token.guard.js';
-import { ControlService } from './control.service.js';
+import { ControlService, type LoginMeta } from './control.service.js';
+
+const loginMeta = (req: Request): LoginMeta => ({
+  ip: req.ip ?? null,
+  userAgent: req.headers['user-agent'] ?? null,
+});
 
 const cookieOptions = (config: AppConfig) => ({
   httpOnly: true,
@@ -78,7 +87,7 @@ export class ControlAuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ codeRequired: boolean; challengeId?: string; twoFactorPaused?: boolean }> {
     assertCsrfSafe(req, this.config);
-    const result = await this.control.login(body);
+    const result = await this.control.login(body, loginMeta(req));
     if ('challengeId' in result) return { codeRequired: true, challengeId: result.challengeId };
     this.setSession(res, result.token);
     return { codeRequired: false, twoFactorPaused: result.twoFactorPaused };
@@ -94,7 +103,10 @@ export class ControlAuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
     assertCsrfSafe(req, this.config);
-    this.setSession(res, await this.control.verifyCode(body.challengeId, body.code));
+    this.setSession(
+      res,
+      await this.control.verifyCode(body.challengeId, body.code, loginMeta(req)),
+    );
   }
 
   private setSession(res: Response, token: string): void {
@@ -126,6 +138,14 @@ export class ControlCronController {
   @ApiOperation({ summary: 'Kunlik Telegram eslatmasi' })
   daily() {
     return this.control.dailyReminder();
+  }
+
+  /** Saytlar ishlayaptimi (har 10 daqiqada): holat o'zgarsa Telegram'ga xabar. */
+  @Post('uptime')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Saytlar ishlayaptimi tekshiruvi' })
+  uptime() {
+    return this.control.uptimeCheck();
   }
 
   /** Ikkinchi tasdiqni yoqishdan oldin: token va chat ID ishlayaptimi. */
@@ -173,6 +193,39 @@ export class ControlSitesController {
   @ApiOperation({ summary: 'Harakatlar jurnali' })
   events(@Query('siteId') siteId?: string) {
     return this.control.events(siteId);
+  }
+
+  @Get('revenue')
+  @ApiOperation({ summary: 'Oxirgi 12 oy tushumi' })
+  revenue() {
+    return this.control.revenue();
+  }
+
+  @Get('payments')
+  @ApiOperation({ summary: 'Hamma to‘lovlar (Excel, kvitansiya)' })
+  payments() {
+    return this.control.allPayments();
+  }
+
+  @Get('leads')
+  @ApiOperation({ summary: 'Bepul sinab ko‘rish arizalari' })
+  leads() {
+    return this.control.leads();
+  }
+
+  @Patch('leads/:leadId')
+  @ApiOperation({ summary: 'Ariza holati va izohi' })
+  updateLead(
+    @Param('leadId') leadId: string,
+    @ZodBody(controlLeadUpdateSchema) body: ControlLeadUpdateInput,
+  ) {
+    return this.control.updateLead(leadId, body);
+  }
+
+  @Get('logins')
+  @ApiOperation({ summary: 'Superadmin kirishlar tarixi' })
+  logins() {
+    return this.control.logins();
   }
 
   @Post()
@@ -243,6 +296,26 @@ export class ControlSitesController {
   @ApiOperation({ summary: 'E’lonni olib tashlash' })
   clearAnnouncement(@Param('id') id: string) {
     return this.control.setAnnouncement(id, null);
+  }
+
+  @Get(':id/stats')
+  @ApiOperation({ summary: 'Sayt statistikasi va foydalanuvchilar faolligi' })
+  stats(@Param('id') id: string) {
+    return this.control.stats(id);
+  }
+
+  @Put(':id/maintenance')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Texnik ishlar rejimi' })
+  setMaintenance(@Param('id') id: string, @ZodBody(siteMaintenanceSchema) body: SiteMaintenanceInput) {
+    return this.control.setMaintenance(id, body);
+  }
+
+  @Post(':id/sessions/revoke-all')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Saytdagi hamma foydalanuvchini chiqarish' })
+  revokeSessions(@Param('id') id: string) {
+    return this.control.revokeSessions(id);
   }
 
   @Post(':id/sync')
