@@ -9,12 +9,18 @@ const TELEGRAM_TIMEOUT_MS = 15_000;
 /** Egasining Telegram'iga xabar: superadmin kirish kodi va kunlik eslatmalar. Sozlanmagan — o'chiq. */
 @Injectable()
 export class TelegramService {
-  private readonly logger = new Logger(TelegramService.name);
+  private readonly logger = new Logger(this.constructor.name);
+  /** Qaysi Render o'zgaruvchisi: xato xabarida egasiga aytiladi. */
+  protected readonly tokenName: string = 'TELEGRAM_BOT_TOKEN';
 
-  constructor(@InjectConfig() private readonly config: AppConfig) {}
+  constructor(@InjectConfig() protected readonly config: AppConfig) {}
+
+  protected get token(): string | undefined {
+    return this.config.TELEGRAM_BOT_TOKEN;
+  }
 
   get enabled(): boolean {
-    return Boolean(this.config.TELEGRAM_BOT_TOKEN && this.config.TELEGRAM_CHAT_ID);
+    return Boolean(this.token && this.config.TELEGRAM_CHAT_ID);
   }
 
   /**
