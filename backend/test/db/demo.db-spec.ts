@@ -1,0 +1,253 @@
+import type { AddressInfo } from 'node:net';
+import request from 'supertest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { RedisService } from '../../src/infrastructure/redis/redis.service.js';
+import { controlApiToken } from '../../src/modules/site/control-token.guard.js';
+import { telegramWebhookSecret } from '../../src/modules/support/support.service.js';
+import {
+  type AuthTestApp,
+  createAuthApp,
+  createUser,
+  login,
+  uniqueIp,
+} from './support/auth-app.js';
+import { closePool } from './support/db.js';
+
+// Bepul sinab ko'rish (egasining qarori, 2026-11-10): bot → ism familiya → telefon → umumiy demo saytda
+// alohida ADMIN hisob (7 kun, jami 1 soat); demo saytda foydalanuvchi qo'shish/bloklash yopiq.
+// Bitta ilova ham superadmin, ham demo sayt: panel saytga o'ziga o'zi so'rov yuboradi.
+
+const CHAT_ID = '987654321';
+const GUEST_CHAT = 66601;
+const OTHER_CHAT = 66602;
+const DEMO_SITE_ID = '0193f0a0-0000-7000-8000-00000000d3d0';
+const BASE_TIME = new Date('2026-10-09T07:00:00.000Z');
+const PASSWORD = '582913';
+
+let t: AuthTestApp;
+const sent: { chatId: string; text: string }[] = [];
+const realFetch = globalThis.fetch;
+
+const server = () => request(t.app.getHttpServer());
+const toGuest = (chat = GUEST_CHAT) => sent.filter((item) => item.chatId === String(chat));
+const toOwner = () => sent.filter((item) => item.chatId === CHAT_ID);
+
+const hook = (update: object) =>
+  server()
+    .post('/api/v1/site-control/telegram/webhook')
+    .set('x-telegram-bot-api-secret-token', telegramWebhookSecret(t.config))
+    .set('X-Forwarded-For', uniqueIp())
+    .send(update)
+    .expect(200);
+const guest = (message: object, chat = GUEST_CHAT) =>
+  hook({ message: { message_id: 1, chat: { id: chat, type: 'private' }, ...message } });
+
+const api = (method: 'get' | 'post' | 'patch', path: string, accessToken: string) =>
+  server()
+    [method](`/api/v1${path}`)
+    .set('X-Forwarded-For', uniqueIp())
+    .set({ Authorization: `Bearer ${accessToken}` });
+
+/** Bot orqali sinov hisobi: guest xabaridan login va parol. */
+async function issueTrial(chat = GUEST_CHAT, phone = '901234567') {
+  await guest({ text: '/start' }, chat);
+  await guest({ text: 'Ali Valiyev' }, chat);
+  await guest({ text: phone }, chat);
+  const text = toGuest(chat).at(-1)?.text ?? '';
+  return {
+    text,
+    login: /Login: (\S+)/.exec(text)?.[1] ?? '',
+    password: /Parol: (\d{6})/.exec(text)?.[1] ?? '',
+  };
+}
+
+async function signIn(credentials: { login: string; password: string }) {
+  return (await login(t, credentials).expect(200)).body.accessToken as string;
+}
+
+beforeAll(async () => {
+  t = await createAuthApp({
+    config: {
+      CONTROL_PANEL_ENABLED: true,
+      DEMO_MODE: true,
+      DEMO_SITE_ID,
+      TELEGRAM_BOT_TOKEN: '123456:test-token-abcdefghijk',
+      TELEGRAM_CHAT_ID: CHAT_ID,
+    },
+  });
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+    const url = String(input instanceof Request ? input.url : input);
+    if (!url.startsWith('https://api.telegram.org/')) return realFetch(input, init);
+    const body = JSON.parse(String(init?.body)) as { chat_id?: string; text?: string };
+    if (body.text) sent.push({ chatId: String(body.chat_id), text: body.text });
+    return new Response(JSON.stringify({ ok: true, result: { message_id: 1 } }), { status: 200 });
+  });
+  await t.app.listen(0, '127.0.0.1');
+  const { port } = t.app.getHttpServer().address() as AddressInfo;
+  await t.prisma.controlSite.deleteMany({ where: { id: DEMO_SITE_ID } });
+  await t.prisma.controlSite.create({
+    data: {
+      id: DEMO_SITE_ID,
+      name: 'Demo',
+      siteUrl: 'https://demo.example',
+      apiUrl: `http://127.0.0.1:${port}`,
+      apiToken: controlApiToken(t.config),
+      ownerName: 'Divine',
+      agreedPrice: '0',
+      paidUntil: new Date('2030-01-01'),
+    },
+  });
+});
+
+beforeEach(async () => {
+  t.clock.set(BASE_TIME);
+  await t.prisma.controlTrial.deleteMany();
+  await t.prisma.controlLead.deleteMany();
+  await t.prisma.siteLicense.deleteMany();
+  const redis = t.app.get(RedisService).client;
+  await redis.del(`divine:control:lead:${GUEST_CHAT}`, `divine:control:lead:${OTHER_CHAT}`);
+  sent.length = 0;
+});
+
+afterAll(async () => {
+  vi.restoreAllMocks();
+  await t.prisma.controlSite.deleteMany({ where: { id: DEMO_SITE_ID } });
+  await t.app.close();
+  await closePool();
+});
+
+describe('bot: bepul sinab ko‘rish hisobi', () => {
+  it('ism familiya → telefon → login, parol va manzil; har kimga bitta', async () => {
+    await guest({ text: '/start' });
+    expect(toGuest().at(-1)?.text).toContain('ism va familiyangizni yozing');
+    await guest({ text: 'Ali' });
+    expect(toGuest().at(-1)?.text).toContain('Ism va familiyangizni birga yozing');
+    await guest({ text: 'Ali Valiyev' });
+    await guest({ text: '901234567' });
+
+    const message = toGuest().at(-1)!.text;
+    expect(message).toContain('Sinov sayti tayyor');
+    expect(message).toContain('Sayt: https://demo.example');
+    expect(message).toContain('7 kun, jami 60 daqiqa');
+    const lead = await t.prisma.controlLead.findFirstOrThrow();
+    const loginName = `demo${lead.number}`;
+    expect(message).toContain(`Login: ${loginName}`);
+    expect(toOwner().at(-1)?.text).toContain(`sinov hisobi berildi (${loginName})`);
+
+    const user = await t.prisma.user.findFirstOrThrow({
+      where: { login: loginName },
+      include: { role: true, demoAccount: true },
+    });
+    expect(user).toMatchObject({ fullName: 'Ali Valiyev', role: { code: 'ADMIN' } });
+    expect(user.demoAccount?.expiresAt.toISOString()).toBe('2026-10-16T07:00:00.000Z');
+    expect(await t.prisma.controlTrial.findFirstOrThrow()).toMatchObject({
+      login: loginName,
+      phone: '+998901234567',
+      siteId: DEMO_SITE_ID,
+    });
+
+    const password = /Parol: (\d{6})/.exec(message)![1]!;
+    await signIn({ login: loginName, password });
+
+    // Takror /start — yangi hisob yo'q, berilgani eslatiladi.
+    await guest({ text: '/start' });
+    expect(toGuest().at(-1)?.text).toContain(`Sizga sinov hisobi berilgan: login ${loginName}`);
+    // Boshqa chatdan shu telefon — ikkinchi sinov berilmaydi.
+    await guest({ text: '/start' }, OTHER_CHAT);
+    await guest({ text: 'Vali Aliyev' }, OTHER_CHAT);
+    await guest({ text: '+998 90 123 45 67' }, OTHER_CHAT);
+    expect(toGuest(OTHER_CHAT).at(-1)?.text).toContain('Sizga sinov hisobi berilgan');
+    expect(await t.prisma.controlTrial.count()).toBe(1);
+  });
+
+  it('demo sayt javob bermasa — oddiy ariza, egasiga ogohlantirish', async () => {
+    await t.prisma.controlSite.update({
+      where: { id: DEMO_SITE_ID },
+      data: { apiToken: 'noto‘g‘ri-kalit-0123456789abcdefghij' },
+    });
+    try {
+      const { text } = await issueTrial();
+      expect(text).toContain('Arizangiz qabul qilindi');
+      expect(toOwner().at(-1)?.text).toContain('demo saytda hisob ochilmadi');
+      expect(await t.prisma.controlTrial.count()).toBe(0);
+    } finally {
+      await t.prisma.controlSite.update({
+        where: { id: DEMO_SITE_ID },
+        data: { apiToken: controlApiToken(t.config) },
+      });
+    }
+    // Sayt tuzalgach /start — shu ariza bo'yicha hisob beriladi, qayta so'ralmaydi.
+    await guest({ text: '/start' });
+    expect(toGuest().at(-1)?.text).toContain('Sinov sayti tayyor');
+    expect(await t.prisma.controlLead.count()).toBe(1);
+  });
+});
+
+describe('demo sayt cheklovlari', () => {
+  it('sinov hisobi foydalanuvchi qo‘sha, o‘zgartira va bloklay olmaydi; qolgani ochiq', async () => {
+    const trial = await issueTrial();
+    const token = await signIn(trial);
+    const other = await createUser(t, { password: PASSWORD, role: 'ADMIN' });
+
+    const created = await api('post', '/users', token).send({
+      login: 'yangiuser',
+      role: 'USER',
+      warehouseIds: [],
+    });
+    expect(created.status).toBe(403);
+    expect(created.body.error.code).toBe('DEMO_RESTRICTED');
+    for (const [method, path, body] of [
+      ['patch', `/users/${other.id}/status`, { status: 'BLOCKED' }],
+      ['patch', `/users/${other.id}`, { role: 'USER' }],
+      ['post', `/users/${other.id}/reset-password`, {}],
+    ] as const) {
+      const res = await api(method, path, token).send(body);
+      expect(res.status, path).toBe(403);
+      expect(res.body.error.code).toBe('DEMO_RESTRICTED');
+    }
+    await api('get', '/users', token).expect(200);
+    await api('get', '/products', token).expect(200);
+  });
+
+  it('jami 1 soat: so‘rovlar orasidagi vaqt yig‘iladi, uzun tanaffus 5 daqiqa hisoblanadi', async () => {
+    const trial = await issueTrial();
+    const user = await t.prisma.user.findFirstOrThrow({ where: { login: trial.login } });
+    const token = await signIn(trial);
+
+    await api('get', '/site/demo', token).expect(200);
+    t.clock.advance(60_000);
+    expect((await api('get', '/site/demo', token).expect(200)).body).toMatchObject({
+      minutesLeft: 59,
+    });
+    t.clock.advance(10 * 60_000);
+    await signIn(trial);
+    const fresh = await signIn(trial);
+    await api('get', '/products', fresh).expect(200);
+    const usage = await t.prisma.demoAccount.findUniqueOrThrow({ where: { userId: user.id } });
+    expect(usage.usedSeconds).toBe(60 + 300);
+
+    await t.prisma.demoAccount.update({
+      where: { userId: user.id },
+      data: { usedSeconds: 3_590 },
+    });
+    t.clock.advance(30_000);
+    const timeUp = await api('get', '/products', fresh);
+    expect(timeUp.status).toBe(403);
+    expect(timeUp.body.error.code).toBe('DEMO_TIME_UP');
+    const denied = await login(t, trial);
+    expect(denied.status).toBe(403);
+    expect(denied.body.error.code).toBe('DEMO_TIME_UP');
+  });
+
+  it('7 kundan keyin kirib bo‘lmaydi; oddiy hisob cheklanmaydi', async () => {
+    const trial = await issueTrial();
+    t.clock.advance(7 * 86_400_000);
+    const denied = await login(t, trial);
+    expect(denied.status).toBe(403);
+    expect(denied.body.error.code).toBe('DEMO_TIME_UP');
+
+    const owner = await createUser(t, { password: PASSWORD, role: 'ADMIN' });
+    const token = await signIn({ login: owner.login, password: PASSWORD });
+    expect((await api('get', '/site/demo', token).expect(200)).body).toEqual({});
+  });
+});
