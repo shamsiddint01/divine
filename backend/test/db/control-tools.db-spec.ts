@@ -140,8 +140,12 @@ beforeAll(async () => {
   const { port } = t.app.getHttpServer().address() as AddressInfo;
   apiUrl = `http://127.0.0.1:${port}`;
   admin = await createUser(t, { password: PASSWORD, role: 'ADMIN' });
-  await t.prisma.controlAdmin.create({
-    data: { login: 'egasi', passwordHash: await t.app.get(PasswordHasher).hash(PANEL_PASSWORD) },
+  // Boshqa test fayli shu DB'da `egasi`ni yaratgan bo'lishi mumkin.
+  const passwordHash = await t.app.get(PasswordHasher).hash(PANEL_PASSWORD);
+  await t.prisma.controlAdmin.upsert({
+    where: { login: 'egasi' },
+    create: { login: 'egasi', passwordHash },
+    update: { passwordHash },
   });
   panelCookie = await signInPanel();
 });
