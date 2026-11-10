@@ -9,7 +9,7 @@ import {
   applyPayment,
 } from '@divine/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Eye, Lock, LockOpen, LogOut, Plus, RefreshCw, Timer, Trash2 } from 'lucide-react';
+import { Eye, FileText, Lock, LockOpen, LogOut, Plus, RefreshCw, Timer, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { DatePicker } from '@/shared/components/DatePicker';
 import { formatDate, formatMoney, formatPhone, todayInTashkent } from '@/shared/lib/format';
@@ -19,10 +19,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Input } from '@/shared/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/ui/sheet';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
 import { Textarea } from '@/shared/ui/textarea';
 import { PanelError, panelApi } from './api';
 import { ErrorText, Field, formatTimestamp, values } from './common';
 import { maskDate, parseDayMonthYear, toDayMonthYear } from './date-text';
+import {
+  LeadsSection,
+  LoginsSection,
+  MoneySection,
+  ReceiptDialog,
+  SiteStats,
+  SiteTools,
+} from './tools';
 
 const SITES_KEY = ['sites'] as const;
 const siteKey = (id: string) => ['site', id] as const;
@@ -44,6 +53,10 @@ const EVENT_LABELS: Record<string, string> = {
   TICKET_STATUS: 'Murojaat holati o‘zgardi',
   ANNOUNCEMENT_SET: 'E’lon qo‘yildi',
   ANNOUNCEMENT_CLEARED: 'E’lon olib tashlandi',
+  MAINTENANCE_ON: 'Texnik ishlar boshlandi',
+  MAINTENANCE_OFF: 'Texnik ishlar tugadi',
+  SESSIONS_REVOKED: 'Hamma tizimdan chiqarildi',
+  LEAD_STATUS: 'Ariza holati o‘zgardi',
 };
 
 function eventText(event: ControlEventDto) {
@@ -484,6 +497,8 @@ function ViewAccess({ siteId }: { siteId: string }) {
 function SiteSheet({ id, onClose }: { id: string; onClose: () => void }) {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
+  const [receiptId, setReceiptId] = useState<string | null>(null);
+  const { data: health } = useQuery({ queryKey: ['health'], queryFn: panelApi.health });
   const { data: site, error } = useQuery({
     queryKey: siteKey(id),
     queryFn: () => panelApi.site(id),
@@ -629,6 +644,10 @@ function SiteSheet({ id, onClose }: { id: string; onClose: () => void }) {
 
               <ViewAccess siteId={id} />
 
+              <SiteStats siteId={id} />
+
+              <SiteTools siteId={id} health={health?.find((item) => item.id === id)} />
+
               <section className="grid gap-2">
                 <h3 className="text-sm font-semibold">E’lon (saytda hamma ko‘radi)</h3>
                 <AnnouncementForm siteId={id} />
@@ -665,6 +684,14 @@ function SiteSheet({ id, onClose }: { id: string; onClose: () => void }) {
                         <Button
                           variant="ghost"
                           size="icon"
+                          aria-label="Kvitansiya"
+                          onClick={() => setReceiptId(payment.id)}
+                        >
+                          <FileText />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           aria-label="To‘lovni o‘chirish"
                           disabled={removePayment.isPending}
                           onClick={() => removePayment.mutate(payment.id)}
@@ -676,6 +703,18 @@ function SiteSheet({ id, onClose }: { id: string; onClose: () => void }) {
                   </ul>
                 )}
               </section>
+              {(() => {
+                const index = site.payments.findIndex((payment) => payment.id === receiptId);
+                const payment = site.payments[index];
+                return payment ? (
+                  <ReceiptDialog
+                    site={site}
+                    payment={payment}
+                    number={site.payments.length - index}
+                    onClose={() => setReceiptId(null)}
+                  />
+                ) : null;
+              })()}
             </>
           ) : null}
         </div>
@@ -1074,67 +1113,89 @@ function SitesScreen({ sites }: { sites: ControlSiteDto[] }) {
           <LogOut />
         </Button>
       </header>
-      <DashboardCards />
-      <Card>
-        <CardContent className="overflow-x-auto p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Sayt</TableHead>
-                <TableHead>Egasi</TableHead>
-                <TableHead>Holat</TableHead>
-                <TableHead>Keyingi to‘lov</TableHead>
-                <TableHead>Bekap</TableHead>
-                <TableHead className="text-right">Kelishuv</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sites.map((site) => (
-                <TableRow
-                  key={site.id}
-                  className="cursor-pointer"
-                  tabIndex={0}
-                  onClick={() => setSelected(site.id)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') setSelected(site.id);
-                  }}
-                >
-                  <TableCell className="font-medium">
-                    <span className="flex items-center gap-2">
-                      <HealthDot ok={healthOf(site.id)?.ok} ms={healthOf(site.id)?.ms} />
-                      {site.name}
-                    </span>
-                  </TableCell>
-                  <TableCell>{site.ownerName}</TableCell>
-                  <TableCell>
-                    <Badge className={STATUS[site.status].className}>
-                      {STATUS[site.status].label}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {formatDate(site.paidUntil)}
-                    <span className="block text-xs text-muted-foreground">{daysLabel(site)}</span>
-                  </TableCell>
-                  <TableCell>
-                    <BackupBadge health={healthOf(site.id)} checkedAt={dataUpdatedAt} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatMoney(site.agreedPrice, { withCurrency: true })}
-                  </TableCell>
+      <Tabs defaultValue="sites">
+        <TabsList>
+          <TabsTrigger value="sites">Saytlar</TabsTrigger>
+          <TabsTrigger value="money">Pul</TabsTrigger>
+          <TabsTrigger value="tickets">Murojaatlar</TabsTrigger>
+          <TabsTrigger value="leads">Arizalar</TabsTrigger>
+          <TabsTrigger value="security">Xavfsizlik</TabsTrigger>
+        </TabsList>
+        <TabsContent value="sites" className="space-y-6">
+        <DashboardCards />
+        <Card>
+          <CardContent className="overflow-x-auto p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Sayt</TableHead>
+                  <TableHead>Egasi</TableHead>
+                  <TableHead>Holat</TableHead>
+                  <TableHead>Keyingi to‘lov</TableHead>
+                  <TableHead>Bekap</TableHead>
+                  <TableHead className="text-right">Kelishuv</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {sites.length === 0 ? (
-            <p className="p-6 text-center text-sm text-muted-foreground">Hali sayt yo‘q</p>
-          ) : null}
-        </CardContent>
-      </Card>
-      <TicketsSection />
-      <section className="space-y-2">
-        <h2 className="text-sm font-semibold">Oxirgi harakatlar</h2>
-        <EventList />
-      </section>
+              </TableHeader>
+              <TableBody>
+                {sites.map((site) => (
+                  <TableRow
+                    key={site.id}
+                    className="cursor-pointer"
+                    tabIndex={0}
+                    onClick={() => setSelected(site.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') setSelected(site.id);
+                    }}
+                  >
+                    <TableCell className="font-medium">
+                      <span className="flex items-center gap-2">
+                        <HealthDot ok={healthOf(site.id)?.ok} ms={healthOf(site.id)?.ms} />
+                        {site.name}
+                      </span>
+                    </TableCell>
+                    <TableCell>{site.ownerName}</TableCell>
+                    <TableCell>
+                      <Badge className={STATUS[site.status].className}>
+                        {STATUS[site.status].label}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {formatDate(site.paidUntil)}
+                      <span className="block text-xs text-muted-foreground">{daysLabel(site)}</span>
+                    </TableCell>
+                    <TableCell>
+                      <BackupBadge health={healthOf(site.id)} checkedAt={dataUpdatedAt} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatMoney(site.agreedPrice, { withCurrency: true })}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            {sites.length === 0 ? (
+              <p className="p-6 text-center text-sm text-muted-foreground">Hali sayt yo‘q</p>
+            ) : null}
+          </CardContent>
+        </Card>
+        </TabsContent>
+        <TabsContent value="money">
+          <MoneySection sites={sites} />
+        </TabsContent>
+        <TabsContent value="tickets">
+          <TicketsSection />
+        </TabsContent>
+        <TabsContent value="leads">
+          <LeadsSection />
+        </TabsContent>
+        <TabsContent value="security" className="space-y-6">
+          <LoginsSection />
+          <section className="space-y-2">
+            <h2 className="text-sm font-semibold">Oxirgi harakatlar</h2>
+            <EventList />
+          </section>
+        </TabsContent>
+      </Tabs>
       {selected ? <SiteSheet id={selected} onClose={() => setSelected(null)} /> : null}
       {adding ? <NewSiteSheet onClose={() => setAdding(false)} /> : null}
     </main>

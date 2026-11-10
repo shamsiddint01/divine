@@ -8,7 +8,7 @@ import {
   type SiteUserActivityDto,
 } from '@divine/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Download, FileText, LogOut, Printer, Wrench } from 'lucide-react';
+import { Download, LogOut, Printer, Wrench } from 'lucide-react';
 import { useState } from 'react';
 import { formatDate, formatMoney, formatPhone, todayInTashkent } from '@/shared/lib/format';
 import { Badge } from '@/shared/ui/badge';
@@ -646,4 +646,3 @@ export function ReceiptDialog({
   );
 }
 
-export { FileText as ReceiptIcon };
