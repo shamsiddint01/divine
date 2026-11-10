@@ -1,4 +1,4 @@
-import type { SiteAccessRequestDto, SiteLicenseDto } from '@divine/shared';
+import type { DemoStatusDto, SiteAccessRequestDto, SiteLicenseDto } from '@divine/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/shared/lib/api-client';
 import { apiMode } from '@/shared/lib/api-mode';
@@ -13,6 +13,16 @@ export function useSiteLicense() {
     queryFn: ({ signal }) => apiRequest<SiteLicenseDto | null>('/site/license', { signal }),
     enabled: apiMode === 'http',
     staleTime: 5 * 60_000,
+  });
+}
+
+/** Sinov hisobi (demo sayt): qolgan vaqt. Oddiy foydalanuvchida `null`. */
+export function useDemoStatus() {
+  return useQuery({
+    queryKey: ['site', 'demo'],
+    queryFn: ({ signal }) => apiRequest<DemoStatusDto | null>('/site/demo', { signal }),
+    enabled: apiMode === 'http',
+    refetchInterval: 60_000,
   });
 }
 

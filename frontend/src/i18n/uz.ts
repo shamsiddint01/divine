@@ -234,6 +234,8 @@ export const uz = {
       'Superadmin saytingizni ko‘rmoqchi. Ruxsat berasizmi? Rozi bo‘lsangiz, unga shu kodni ayting:',
     accessDeny: 'Rad etish',
     viewMode: 'Superadmin ko‘rish rejimi: faqat ko‘rish mumkin, o‘zgartirib bo‘lmaydi',
+    demoTrial: (minutesLeft: number, phone: string) =>
+      `Sinov hisobi: qolgan vaqt ${minutesLeft} daqiqa. Foydalanuvchi qo‘shish va bloklash yopiq. Savol bo‘lsa: ${phone}`,
   },
   topbar: {
     demoBadge: 'Demo rejim',

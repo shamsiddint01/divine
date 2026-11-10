@@ -171,9 +171,10 @@ async function authorizedRequest<T>(
       );
     } else if (
       error.code === ErrorCode.LICENSE_EXPIRED ||
-      error.code === ErrorCode.SITE_MAINTENANCE
+      error.code === ErrorCode.SITE_MAINTENANCE ||
+      error.code === ErrorCode.DEMO_TIME_UP
     ) {
-      // To'lov muddati tugadi yoki texnik ishlar boshlandi: login sahifasi sababini ko'rsatadi.
+      // To'lov muddati tugadi, texnik ishlar yoki sinov vaqti tugadi: login sahifasi sababini ko'rsatadi.
       authSession.notifyExpired(error.message);
     } else if (error.status === 403 && error.code === ErrorCode.FORBIDDEN) {
       authSession.notifyForbidden();
