@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Get,
-  HttpCode,
-  Patch,
-  Post,
-  Put,
-  Req,
-  Res,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, HttpCode, Patch, Post, Put, Req, Res, UseGuards } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   type CreateUserInput,

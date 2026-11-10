@@ -5,7 +5,12 @@ import { useHasAnyPermission } from '@/features/session/hooks/use-permissions';
 import { t } from '@/i18n/uz';
 import { readViewToken } from '@/shared/lib/view-session';
 import { Button } from '@/shared/ui/button';
-import { useDemoStatus, useDenySiteAccess, useSiteAccessRequest, useSiteLicense } from '../api/site';
+import {
+  useDemoStatus,
+  useDenySiteAccess,
+  useSiteAccessRequest,
+  useSiteLicense,
+} from '../api/site';
 
 const BANNER = 'flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-4 py-2.5 text-sm sm:px-6';
 

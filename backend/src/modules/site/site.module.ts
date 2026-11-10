@@ -13,6 +13,12 @@ import { SiteControlController, SiteController } from './site.controller.js';
 @Module({
   imports: [AuthModule, LicenseModule, DemoModule],
   controllers: [SiteController, SiteControlController],
-  providers: [SiteAccessService, DemoAccountService, BackupStatusService, SiteStatsService, ControlTokenGuard],
+  providers: [
+    SiteAccessService,
+    DemoAccountService,
+    BackupStatusService,
+    SiteStatsService,
+    ControlTokenGuard,
+  ],
 })
 export class SiteModule {}

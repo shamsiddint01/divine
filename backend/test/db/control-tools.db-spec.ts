@@ -489,3 +489,19 @@ describe('ishlayaptimi tekshiruvi', () => {
     await server().get('/api/v1/health/live').expect(200, { status: 'ok' });
   });
 });
+
+describe('demo hisob — faqat demo saytda', () => {
+  it('oddiy saytda `/site-control/demo-accounts` yopiq; foydalanuvchi boshqaruvi ishlaydi', async () => {
+    const res = await server()
+      .post('/api/v1/site-control/demo-accounts')
+      .set('x-control-token', token())
+      .send({ ref: 1, name: 'Ali Valiyev' });
+    expect(res.status).toBe(403);
+    expect(res.body.error.message).toContain('demo rejimida emas');
+    await server()
+      .post('/api/v1/site-control/demo-accounts')
+      .send({ ref: 1, name: 'Ali Valiyev' })
+      .expect(403);
+    expect(await t.prisma.user.count({ where: { login: 'demo1' } })).toBe(0);
+  });
+});

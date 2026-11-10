@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  DEMO_TRIAL_MINUTES,
-  ErrorCode,
-  type DemoStatusDto,
-} from '@divine/shared';
+import { DEMO_TRIAL_MINUTES, ErrorCode, type DemoStatusDto } from '@divine/shared';
 import { AppError } from '../../common/errors/app-error.js';
 import { Clock } from '../../common/time/clock.js';
 import { InjectConfig } from '../../config/config.module.js';
