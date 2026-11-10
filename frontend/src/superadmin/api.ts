@@ -13,6 +13,13 @@ import {
   type ControlSiteDetailDto,
   type ControlSiteDto,
   type ControlSiteUpdateInput,
+  type ControlLeadDto,
+  type ControlLeadUpdateInput,
+  type ControlLoginDto,
+  type ControlPaymentRowDto,
+  type ControlRevenueMonthDto,
+  type SiteMaintenanceInput,
+  type SiteStatsDto,
   isApiErrorBody,
   type SiteViewRequestStatus,
 } from '@divine/shared';
@@ -68,6 +75,17 @@ export const panelApi = {
   health: () => request<ControlSiteHealthDto[]>('/sites/health'),
   events: (siteId?: string) =>
     request<ControlEventDto[]>(`/sites/events${siteId ? `?siteId=${siteId}` : ''}`),
+  revenue: () => request<ControlRevenueMonthDto[]>('/sites/revenue'),
+  payments: () => request<ControlPaymentRowDto[]>('/sites/payments'),
+  leads: () => request<ControlLeadDto[]>('/sites/leads'),
+  updateLead: (id: string, input: ControlLeadUpdateInput) =>
+    request<ControlLeadDto>(`/sites/leads/${id}`, 'PATCH', input),
+  logins: () => request<ControlLoginDto[]>('/sites/logins'),
+  stats: (id: string) => request<SiteStatsDto>(`/sites/${id}/stats`),
+  setMaintenance: (id: string, input: SiteMaintenanceInput) =>
+    request<void>(`/sites/${id}/maintenance`, 'PUT', input),
+  revokeSessions: (id: string) =>
+    request<{ revoked: number }>(`/sites/${id}/sessions/revoke-all`, 'POST'),
   site: (id: string) => request<ControlSiteDetailDto>(`/sites/${id}`),
   createSite: (input: ControlSiteCreateInput) =>
     request<ControlSiteDetailDto>('/sites', 'POST', input),

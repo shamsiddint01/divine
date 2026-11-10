@@ -621,6 +621,13 @@ export interface ControlSiteDto {
   graceUntil: DateOnlyString | null;
 }
 
+/** `GET /control/sites/payments`: Excel va kvitansiya uchun. */
+export interface ControlPaymentRowDto extends ControlPaymentDto {
+  siteId: string;
+  siteName: string;
+  ownerName: string;
+}
+
 export interface ControlEventDto {
   id: string;
   occurredAt: string;
