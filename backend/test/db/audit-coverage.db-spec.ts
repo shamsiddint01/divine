@@ -455,6 +455,8 @@ describe('audit qamrovi (AC-21, REQ-120, BR-24)', () => {
       'SITE_VIEW_REQUESTED',
       'SITE_VIEW_GRANTED',
       'SITE_VIEW_DENIED',
+      'SITE_MAINTENANCE_CHANGED',
+      'SESSIONS_REVOKED',
     ]);
     expect([...produced].sort()).toEqual(
       [...AUDIT_ACTIONS].filter((a) => !historical.has(a)).sort(),
