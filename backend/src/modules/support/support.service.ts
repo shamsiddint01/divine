@@ -286,12 +286,24 @@ export class SupportService {
   async telegramUpdate(update: unknown): Promise<void> {
     const message = (update as { message?: TelegramMessage } | null)?.message;
     if (!message?.text || String(message.chat?.id) !== this.config.TELEGRAM_CHAT_ID) return;
-    const repliedTo = message.reply_to_message?.message_id;
-    if (!repliedTo) return;
-    const ticket = await this.prisma.supportTicket.findFirst({
-      where: { telegramMessageId: BigInt(repliedTo) },
-    });
-    if (!ticket) return;
+    const repliedTo = message.reply_to_message;
+    // Murojaatning birinchi xabari bo'yicha; keyingi xabarlarga (javob, holat) Reply qilinsa — matndagi raqam.
+    const number = /#(\d+)/.exec(repliedTo?.text ?? '')?.[1];
+    const ticket = repliedTo
+      ? ((await this.prisma.supportTicket.findFirst({
+          where: { telegramMessageId: BigInt(repliedTo.message_id) },
+        })) ??
+        (number
+          ? await this.prisma.supportTicket.findUnique({ where: { number: BigInt(number) } })
+          : null))
+      : null;
+    if (!ticket) {
+      await this.notify(
+        'Javob qaysi murojaatga ekanini topolmadim. Murojaat xabarini bosib, "Reply" qilib yozing.',
+        BigInt(message.message_id),
+      );
+      return;
+    }
     await this.replyAsSupport(ticket.id, message.text.slice(0, 2000), 'TELEGRAM');
     await this.notify(
       `Javob murojaat #${ticket.number} ga yozildi: foydalanuvchi saytda ko‘radi, panelda ham bor.`,
@@ -348,5 +360,5 @@ interface TelegramMessage {
   message_id: number;
   text?: string;
   chat?: { id: number };
-  reply_to_message?: { message_id: number };
+  reply_to_message?: { message_id: number; text?: string };
 }

@@ -155,6 +155,36 @@ describe('murojaat', () => {
     expect(sent.some((m) => m.text.includes('panelda javob berildi'))).toBe(false);
   });
 
+  it('Telegram’da keyingi xabarga (javob, holat) Reply qilinsa ham murojaat topiladi', async () => {
+    const ticket = (
+      await api('post', '/support/tickets', sellerToken).send({ message: 'Narx?' }).expect(201)
+    ).body;
+    const hook = (reply: { message_id: number; text?: string }, text: string) =>
+      api('post', '/site-control/telegram/webhook')
+        .set('x-telegram-bot-api-secret-token', telegramWebhookSecret(t.config))
+        .send({
+          message: {
+            message_id: 1000,
+            text,
+            chat: { id: Number(CHAT_ID) },
+            reply_to_message: reply,
+          },
+        })
+        .expect(200);
+    await hook(
+      { message_id: 555, text: `Murojaat #${ticket.number} — seller javob yozdi:\nNarx?` },
+      'yo‘q',
+    );
+    const mine = (await api('get', '/support/tickets', sellerToken).expect(200)).body[0];
+    expect(mine.replies).toEqual([expect.objectContaining({ author: 'SUPPORT', body: 'yo‘q' })]);
+
+    await hook({ message_id: 556, text: 'Divine superadmin kirish kodi: 123456' }, 'adashib');
+    expect(sent.at(-1)?.text).toContain('Reply');
+    expect(
+      (await api('get', '/support/tickets', sellerToken).expect(200)).body[0].replies,
+    ).toHaveLength(1);
+  });
+
   it('10 daqiqada 5 tadan ortiq murojaat yuborib bo‘lmaydi', async () => {
     for (let i = 0; i < 5; i += 1) {
       await api('post', '/support/tickets', sellerToken)
