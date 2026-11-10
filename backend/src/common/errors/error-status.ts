@@ -20,6 +20,8 @@ const STATUS: Readonly<Record<ErrorCode, number>> = {
   // 5xx emas: avtomatik xato xabari (Murojaat) ochilmasin.
   [ErrorCode.SITE_MAINTENANCE]: 403,
   [ErrorCode.READ_ONLY_SESSION]: 403,
+  [ErrorCode.DEMO_RESTRICTED]: 403,
+  [ErrorCode.DEMO_TIME_UP]: 403,
   [ErrorCode.WAREHOUSE_ACCESS_DENIED]: 403,
   [ErrorCode.CANNOT_MODIFY_SELF]: 403,
   [ErrorCode.LAST_ACTIVE_ADMIN]: 409,

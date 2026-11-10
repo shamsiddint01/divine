@@ -48,3 +48,8 @@ export const CREDIT_INTERVAL_DAYS_MAX = 365;
 export const LICENSE_CONTACT_PHONE = '+998901333831';
 /** Muddat tugashiga shuncha kun qolganda eslatma chiqadi. */
 export const LICENSE_WARNING_DAYS = 1;
+
+/** Bepul sinab ko'rish (Telegram bot, 2026-11-10): umumiy demo saytda har kimga alohida ADMIN hisob. */
+export const DEMO_TRIAL_DAYS = 7;
+/** Hisob ochilgandan boshlab jami ishlatish vaqti (daqiqa). */
+export const DEMO_TRIAL_MINUTES = 60;

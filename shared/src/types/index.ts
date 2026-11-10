@@ -693,7 +693,21 @@ export interface SiteUserActivityDto {
   lastSeenAt: string | null;
 }
 
-/** `GET /site-control/stats`. */
+/** `POST /site-control/demo-accounts`: parol faqat shu javobda bir marta. */
+export interface DemoAccountDto {
+  login: string;
+  password: string;
+  expiresAt: string;
+  minutes: number;
+}
+
+/** `GET /site/demo`: sinov hisobi uchun qolgan vaqt; oddiy foydalanuvchida `null`. */
+export interface DemoStatusDto {
+  minutesLeft: number;
+  expiresAt: string;
+}
+
+/** `GET /site-control/stats`.
 export interface SiteStatsDto {
   products: number;
   customers: number;

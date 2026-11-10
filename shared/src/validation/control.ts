@@ -162,6 +162,14 @@ export const siteMaintenanceSchema = z.strictObject({
     .optional(),
 });
 
+/** `POST /site-control/demo-accounts`: bot demo saytda yangi sinov hisobini ochadi. */
+export const demoAccountSchema = z.strictObject({
+  /** Hisob loginidagi raqam: ariza raqami (takror so'rov `LOGIN_TAKEN` beradi). */
+  ref: z.number().int().positive().max(99_999_999),
+  name: z.string().trim().min(2).max(120),
+});
+export type DemoAccountInput = z.infer<typeof demoAccountSchema>;
+
 export const CONTROL_LEAD_STATUSES = ['NEW', 'CALLED', 'CLIENT', 'REJECTED'] as const;
 
 export const controlLeadUpdateSchema = z
