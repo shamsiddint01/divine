@@ -191,8 +191,7 @@ export class ControlService {
   async report(kind: 'morning' | 'today'): Promise<string> {
     const sites = await this.list();
     const today = tashkentToday(this.clock.now());
-    const day =
-      kind === 'today' ? today : dateOnly(new Date(Date.parse(today) - DAY_MS));
+    const day = kind === 'today' ? today : dateOnly(new Date(Date.parse(today) - DAY_MS));
     const payments = await this.prisma.controlPayment.findMany({
       where: { paidAt: new Date(day) },
       include: { site: { select: { name: true } } },
@@ -223,9 +222,13 @@ export class ControlService {
       ...payments.map((payment) => `• ${payment.site.name}: ${money(payment.amount.toFixed(2))}`),
       `📅 Bu oy: tushgan ${money(dashboard.revenueThisMonth)}, kutilmoqda ${money(dashboard.expectedThisMonth)}`,
     ];
-    if (expiring.length > 0) parts.push('', '⏰ Bugun yoki ertaga to‘lashi kerak:', ...expiring.map(line));
+    if (expiring.length > 0)
+      parts.push('', '⏰ Bugun yoki ertaga to‘lashi kerak:', ...expiring.map(line));
     if (expired.length > 0) parts.push('', '⛔ Bloklangan:', ...expired.map(line));
-    parts.push('', `💬 Javob kutayotgan murojaatlar: ${open.length}${open.length ? ' (/murojaatlar)' : ''}`);
+    parts.push(
+      '',
+      `💬 Javob kutayotgan murojaatlar: ${open.length}${open.length ? ' (/murojaatlar)' : ''}`,
+    );
     parts.push(`📝 Yangi arizalar: ${leads.length}`);
     parts.push(...leads.map((lead) => `• #${lead.number} ${lead.name}, ${lead.phone}`));
     parts.push(`🖥 Saytlar: ${sites.length} ta, faol ${dashboard.sites.active}`);
@@ -707,7 +710,10 @@ export class ControlService {
     if (count === 0) notFound();
     const row = await this.prisma.controlLead.findUniqueOrThrow({ where: { id } });
     if (input.status) {
-      await this.event(null, 'LEAD_STATUS', { number: row.number.toString(), status: input.status });
+      await this.event(null, 'LEAD_STATUS', {
+        number: row.number.toString(),
+        status: input.status,
+      });
     }
     return this.toLeadDto(row);
   }

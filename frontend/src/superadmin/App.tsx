@@ -9,7 +9,17 @@ import {
   applyPayment,
 } from '@divine/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Eye, FileText, Lock, LockOpen, LogOut, Plus, RefreshCw, Timer, Trash2 } from 'lucide-react';
+import {
+  Eye,
+  FileText,
+  Lock,
+  LockOpen,
+  LogOut,
+  Plus,
+  RefreshCw,
+  Timer,
+  Trash2,
+} from 'lucide-react';
 import { useState } from 'react';
 import { DatePicker } from '@/shared/components/DatePicker';
 import { formatDate, formatMoney, formatPhone, todayInTashkent } from '@/shared/lib/format';
@@ -1122,62 +1132,64 @@ function SitesScreen({ sites }: { sites: ControlSiteDto[] }) {
           <TabsTrigger value="security">Xavfsizlik</TabsTrigger>
         </TabsList>
         <TabsContent value="sites" className="space-y-6">
-        <DashboardCards />
-        <Card>
-          <CardContent className="overflow-x-auto p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Sayt</TableHead>
-                  <TableHead>Egasi</TableHead>
-                  <TableHead>Holat</TableHead>
-                  <TableHead>Keyingi to‘lov</TableHead>
-                  <TableHead>Bekap</TableHead>
-                  <TableHead className="text-right">Kelishuv</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sites.map((site) => (
-                  <TableRow
-                    key={site.id}
-                    className="cursor-pointer"
-                    tabIndex={0}
-                    onClick={() => setSelected(site.id)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') setSelected(site.id);
-                    }}
-                  >
-                    <TableCell className="font-medium">
-                      <span className="flex items-center gap-2">
-                        <HealthDot ok={healthOf(site.id)?.ok} ms={healthOf(site.id)?.ms} />
-                        {site.name}
-                      </span>
-                    </TableCell>
-                    <TableCell>{site.ownerName}</TableCell>
-                    <TableCell>
-                      <Badge className={STATUS[site.status].className}>
-                        {STATUS[site.status].label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {formatDate(site.paidUntil)}
-                      <span className="block text-xs text-muted-foreground">{daysLabel(site)}</span>
-                    </TableCell>
-                    <TableCell>
-                      <BackupBadge health={healthOf(site.id)} checkedAt={dataUpdatedAt} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatMoney(site.agreedPrice, { withCurrency: true })}
-                    </TableCell>
+          <DashboardCards />
+          <Card>
+            <CardContent className="overflow-x-auto p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Sayt</TableHead>
+                    <TableHead>Egasi</TableHead>
+                    <TableHead>Holat</TableHead>
+                    <TableHead>Keyingi to‘lov</TableHead>
+                    <TableHead>Bekap</TableHead>
+                    <TableHead className="text-right">Kelishuv</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            {sites.length === 0 ? (
-              <p className="p-6 text-center text-sm text-muted-foreground">Hali sayt yo‘q</p>
-            ) : null}
-          </CardContent>
-        </Card>
+                </TableHeader>
+                <TableBody>
+                  {sites.map((site) => (
+                    <TableRow
+                      key={site.id}
+                      className="cursor-pointer"
+                      tabIndex={0}
+                      onClick={() => setSelected(site.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') setSelected(site.id);
+                      }}
+                    >
+                      <TableCell className="font-medium">
+                        <span className="flex items-center gap-2">
+                          <HealthDot ok={healthOf(site.id)?.ok} ms={healthOf(site.id)?.ms} />
+                          {site.name}
+                        </span>
+                      </TableCell>
+                      <TableCell>{site.ownerName}</TableCell>
+                      <TableCell>
+                        <Badge className={STATUS[site.status].className}>
+                          {STATUS[site.status].label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {formatDate(site.paidUntil)}
+                        <span className="block text-xs text-muted-foreground">
+                          {daysLabel(site)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <BackupBadge health={healthOf(site.id)} checkedAt={dataUpdatedAt} />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatMoney(site.agreedPrice, { withCurrency: true })}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {sites.length === 0 ? (
+                <p className="p-6 text-center text-sm text-muted-foreground">Hali sayt yo‘q</p>
+              ) : null}
+            </CardContent>
+          </Card>
         </TabsContent>
         <TabsContent value="money">
           <MoneySection sites={sites} />

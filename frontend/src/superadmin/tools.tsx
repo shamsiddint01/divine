@@ -374,9 +374,7 @@ export function LoginsSection() {
                         {LOGIN_OUTCOME[login.outcome].label}
                       </Badge>
                       {login.newDevice ? (
-                        <Badge className="ml-1 bg-amber-500/15 text-amber-500">
-                          Yangi qurilma
-                        </Badge>
+                        <Badge className="ml-1 bg-amber-500/15 text-amber-500">Yangi qurilma</Badge>
                       ) : null}
                     </TableCell>
                     <TableCell>{login.device}</TableCell>
@@ -395,7 +393,8 @@ export function LoginsSection() {
 const ROLE_LABEL: Record<string, string> = { ADMIN: 'Admin', USER: 'Sotuvchi' };
 
 function UserActivity({ users }: { users: SiteUserActivityDto[] }) {
-  if (users.length === 0) return <p className="text-sm text-muted-foreground">Foydalanuvchi yo‘q</p>;
+  if (users.length === 0)
+    return <p className="text-sm text-muted-foreground">Foydalanuvchi yo‘q</p>;
   return (
     <ul className="divide-y rounded-lg border text-sm">
       {users.map((user) => (
@@ -602,7 +601,10 @@ export function ReceiptDialog({
   onClose: () => void;
 }) {
   const rows: [string, string][] = [
-    ['Kvitansiya raqami', `${site.name.slice(0, 3).toUpperCase()}-${String(number).padStart(4, '0')}`],
+    [
+      'Kvitansiya raqami',
+      `${site.name.slice(0, 3).toUpperCase()}-${String(number).padStart(4, '0')}`,
+    ],
     ['To‘langan sana', formatDate(payment.paidAt)],
     ['Mijoz', site.ownerName],
     ...(site.ownerPhone ? ([['Telefon', formatPhone(site.ownerPhone)]] as [string, string][]) : []),
@@ -645,4 +647,3 @@ export function ReceiptDialog({
     </Dialog>
   );
 }
-

@@ -27,7 +27,10 @@ export class SiteStatsService {
   }
 
   version(): SiteVersionDto {
-    return { commit: this.config.RENDER_GIT_COMMIT?.slice(0, 7) ?? null, startedAt: this.startedAt };
+    return {
+      commit: this.config.RENDER_GIT_COMMIT?.slice(0, 7) ?? null,
+      startedAt: this.startedAt,
+    };
   }
 
   async stats(): Promise<SiteStatsDto> {

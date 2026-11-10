@@ -20,7 +20,13 @@ describe('xlsx', () => {
 
   it('ZIP tuzilmasi: fayllar va markaziy katalog, matn XML’da xavfsiz', () => {
     const bytes = buildXlsx([
-      { name: 'To‘lovlar', rows: [['Sayt', 'Summa'], ['A & <B>', 500000.5]] },
+      {
+        name: 'To‘lovlar',
+        rows: [
+          ['Sayt', 'Summa'],
+          ['A & <B>', 500000.5],
+        ],
+      },
     ]);
     const view = new DataView(bytes.buffer);
     expect(view.getUint32(0, true)).toBe(0x04034b50);

@@ -126,9 +126,10 @@ function files(sheets: Sheet[]): [string, string][] {
         '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs>' +
         '</styleSheet>',
     ],
-    ...sheets.map(
-      (sheet, i): [string, string] => [`xl/worksheets/sheet${i + 1}.xml`, sheetXml(sheet.rows)],
-    ),
+    ...sheets.map((sheet, i): [string, string] => [
+      `xl/worksheets/sheet${i + 1}.xml`,
+      sheetXml(sheet.rows),
+    ]),
   ];
 }
 

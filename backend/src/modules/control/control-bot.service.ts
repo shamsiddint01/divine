@@ -95,7 +95,9 @@ export class ControlBotService implements OnModuleInit {
       if (!CONTROL_LEAD_STATUSES.includes(status)) return true;
       const row = await this.control.updateLead(lead[2]!, { status }).catch(() => null);
       await this.say(
-        row ? `Ariza #${row.number} (${row.name}): ${LEAD_STATUS_LABEL[status]}.` : 'Ariza topilmadi.',
+        row
+          ? `Ariza #${row.number} (${row.name}): ${LEAD_STATUS_LABEL[status]}.`
+          : 'Ariza topilmadi.',
       );
       return true;
     }
@@ -116,7 +118,10 @@ export class ControlBotService implements OnModuleInit {
         {
           buttons: [
             [
-              { text: site.manualBlock ? '🔓 Ha, ochish' : '🔒 Ha, bloklash', data: `block-yes:${site.id}` },
+              {
+                text: site.manualBlock ? '🔓 Ha, ochish' : '🔒 Ha, bloklash',
+                data: `block-yes:${site.id}`,
+              },
               { text: 'Yo‘q', data: 'block-no' },
             ],
           ],

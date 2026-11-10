@@ -307,7 +307,10 @@ export class ControlSitesController {
   @Put(':id/maintenance')
   @HttpCode(204)
   @ApiOperation({ summary: 'Texnik ishlar rejimi' })
-  setMaintenance(@Param('id') id: string, @ZodBody(siteMaintenanceSchema) body: SiteMaintenanceInput) {
+  setMaintenance(
+    @Param('id') id: string,
+    @ZodBody(siteMaintenanceSchema) body: SiteMaintenanceInput,
+  ) {
     return this.control.setMaintenance(id, body);
   }
 
