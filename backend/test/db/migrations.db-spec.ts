@@ -7,6 +7,8 @@ const TABLES = [
   'audit_logs',
   'control_admins',
   'control_events',
+  'control_leads',
+  'control_logins',
   'control_payments',
   'control_sites',
   'credit_installments',
@@ -39,10 +41,11 @@ const TABLES = [
   'warehouses',
 ];
 /** Holati o'zgaradi, lekin o'chirilmaydi: murojaat tarixi qoladi. */
-const NO_DELETE = ['support_tickets'];
+const NO_DELETE = ['control_leads', 'support_tickets'];
 const IMMUTABLE = [
   'audit_logs',
   'control_events',
+  'control_logins',
   'inventory_movements',
   'sale_items',
   'sales',
@@ -177,6 +180,7 @@ describe('FK delete strategiyasi (tarix yo‘qolmaydi)', () => {
       .sort();
     expect(nonRestrict).toEqual([
       'control_events.site_id:c',
+      'control_logins.admin_id:n', // admin o'chsa ham kirishlar tarixi qoladi
       'control_payments.site_id:c',
       'incoming_items.incoming_id:c', // faqat DRAFT kirim o'chiriladi (trigger)
       'role_permissions.permission_id:c',
