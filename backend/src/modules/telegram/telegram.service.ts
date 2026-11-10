@@ -17,26 +17,47 @@ export class TelegramService {
     return Boolean(this.config.TELEGRAM_BOT_TOKEN && this.config.TELEGRAM_CHAT_ID);
   }
 
-  /** Xabar yuboradi va Telegram'dagi `message_id`ni qaytaradi (javobni murojaatga bog'lash uchun). */
+  /**
+   * Xabar yuboradi va Telegram'dagi `message_id`ni qaytaradi (javobni murojaatga bog'lash uchun).
+   * `chatId` berilmasa — egasiga. `askContact` — "Raqamni yuborish" tugmasi, `removeKeyboard` — uni olib tashlash.
+   */
   async send(
     text: string,
-    options: { replyTo?: number; buttons?: { text: string; data: string }[][] } = {},
+    options: {
+      chatId?: string;
+      replyTo?: number;
+      buttons?: { text: string; data: string }[][];
+      askContact?: string;
+      removeKeyboard?: boolean;
+    } = {},
   ): Promise<number | null> {
+    const replyMarkup = options.buttons
+      ? {
+          inline_keyboard: options.buttons.map((row) =>
+            row.map((button) => ({ text: button.text, callback_data: button.data })),
+          ),
+        }
+      : options.askContact
+        ? {
+            keyboard: [[{ text: options.askContact, request_contact: true }]],
+            resize_keyboard: true,
+            one_time_keyboard: true,
+          }
+        : options.removeKeyboard
+          ? { remove_keyboard: true }
+          : null;
     const result = await this.call<{ message_id?: number }>('sendMessage', {
-      chat_id: this.config.TELEGRAM_CHAT_ID,
+      chat_id: options.chatId ?? this.config.TELEGRAM_CHAT_ID,
       text,
       ...(options.replyTo ? { reply_parameters: { message_id: options.replyTo } } : {}),
-      ...(options.buttons
-        ? {
-            reply_markup: {
-              inline_keyboard: options.buttons.map((row) =>
-                row.map((button) => ({ text: button.text, callback_data: button.data })),
-              ),
-            },
-          }
-        : {}),
+      ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
     });
     return result?.message_id ?? null;
+  }
+
+  /** Egasining xabari: shu chatdanmi (begonalar buyrug'i bajarilmaydi). */
+  isOwnerChat(chatId: unknown): boolean {
+    return this.enabled && String(chatId) === this.config.TELEGRAM_CHAT_ID;
   }
 
   /** Tugma bosilganini Telegram'ga tasdiqlash (aks holda tugmada soat belgisi aylanib turadi). */
@@ -44,8 +65,15 @@ export class TelegramService {
     await this.call('answerCallbackQuery', { callback_query_id: id });
   }
 
-  async setCommands(commands: { command: string; description: string }[]): Promise<void> {
-    await this.call('setMyCommands', { commands });
+  /** `ownerOnly` — faqat egasining chatida ko'rinadi; aks holda hammaga. */
+  async setCommands(
+    commands: { command: string; description: string }[],
+    ownerOnly = false,
+  ): Promise<void> {
+    await this.call('setMyCommands', {
+      commands,
+      ...(ownerOnly ? { scope: { type: 'chat', chat_id: this.config.TELEGRAM_CHAT_ID } } : {}),
+    });
   }
 
   /** Egasi Telegram'da javob yozsa, Telegram shu manzilga yuboradi (`secret` sarlavhada qaytadi). */
