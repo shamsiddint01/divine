@@ -18,6 +18,8 @@ export const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     APP_VERSION: z.string().default('0.1.0'),
+    /** Render o'zi beradi: saytda qaysi commit ishlayapti (superadmin panelida ko'rinadi). */
+    RENDER_GIT_COMMIT: z.string().trim().min(7).optional(),
 
     API_HOST: z.string().min(1).default('0.0.0.0'),
     API_PORT: z.coerce.number().int().min(1).max(65535).default(3000),
