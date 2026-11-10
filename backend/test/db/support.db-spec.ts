@@ -18,7 +18,7 @@ const BASE_TIME = new Date('2026-10-09T07:00:00.000Z');
 let t: AuthTestApp;
 let sellerToken: string;
 let otherToken: string;
-const sent: { text: string; replyTo?: number }[] = [];
+const sent: { text: string; replyTo?: number; buttons?: string[] }[] = [];
 let nextMessageId = 100;
 const realFetch = globalThis.fetch;
 
@@ -41,8 +41,15 @@ beforeAll(async () => {
     const body = JSON.parse(String(init?.body)) as {
       text?: string;
       reply_parameters?: { message_id: number };
+      reply_markup?: { inline_keyboard: { text: string; callback_data: string }[][] };
     };
-    if (body.text) sent.push({ text: body.text, replyTo: body.reply_parameters?.message_id });
+    if (body.text) {
+      sent.push({
+        text: body.text,
+        replyTo: body.reply_parameters?.message_id,
+        buttons: body.reply_markup?.inline_keyboard.flat().map((b) => b.callback_data),
+      });
+    }
     return new Response(JSON.stringify({ ok: true, result: { message_id: nextMessageId++ } }), {
       status: 200,
     });
@@ -121,68 +128,59 @@ describe('murojaat', () => {
     await api('get', '/site-control/support/tickets').expect(403);
   });
 
-  it('egasi Telegram’da javob yozsa, javob murojaatga qo‘shiladi', async () => {
-    const ticket = (
-      await api('post', '/support/tickets', sellerToken).send({ message: 'Savol' }).expect(201)
-    ).body;
-    const messageId = (await t.prisma.supportTicket.findUnique({ where: { id: ticket.id } }))!
-      .telegramMessageId;
-    const update = (chatId: string) => ({
-      message: {
-        message_id: 999,
-        text: 'Telegram’dan javob',
-        chat: { id: Number(chatId) },
-        reply_to_message: { message_id: Number(messageId) },
-      },
-    });
-    const hook = () => api('post', '/site-control/telegram/webhook');
-    await hook().send(update(CHAT_ID)).expect(403);
-    await hook()
-      .set('x-telegram-bot-api-secret-token', telegramWebhookSecret(t.config))
-      .send(update('111'))
-      .expect(200);
-    await hook()
-      .set('x-telegram-bot-api-secret-token', telegramWebhookSecret(t.config))
-      .send(update(CHAT_ID))
-      .expect(200);
-    const mine = (await api('get', '/support/tickets', sellerToken).expect(200)).body[0];
-    expect(mine.replies).toEqual([
-      expect.objectContaining({ author: 'SUPPORT', body: 'Telegram’dan javob' }),
-    ]);
-    // Telegram javobi panel ro'yxatida ham bor; botga faqat tasdiq boradi, javob qayta yuborilmaydi.
-    const panelList = (await control('get', '/tickets').expect(200)).body;
-    expect(panelList[0].replies[0].body).toBe('Telegram’dan javob');
-    expect(sent.some((m) => m.text.includes('panelda javob berildi'))).toBe(false);
-  });
-
-  it('Telegram’da keyingi xabarga (javob, holat) Reply qilinsa ham murojaat topiladi', async () => {
+  it('Telegram: murojaat tanlanadi, keyingi BITTA xabar javob; keyingisi hech narsa qilmaydi', async () => {
     const ticket = (
       await api('post', '/support/tickets', sellerToken).send({ message: 'Narx?' }).expect(201)
     ).body;
-    const hook = (reply: { message_id: number; text?: string }, text: string) =>
+    expect(sent.at(-1)?.buttons).toEqual([`reply:${ticket.id}`]);
+    const hook = (update: object) =>
       api('post', '/site-control/telegram/webhook')
         .set('x-telegram-bot-api-secret-token', telegramWebhookSecret(t.config))
-        .send({
-          message: {
-            message_id: 1000,
-            text,
-            chat: { id: Number(CHAT_ID) },
-            reply_to_message: reply,
-          },
-        })
+        .send(update)
         .expect(200);
-    await hook(
-      { message_id: 555, text: `Murojaat #${ticket.number} — seller javob yozdi:\nNarx?` },
-      'yo‘q',
-    );
-    const mine = (await api('get', '/support/tickets', sellerToken).expect(200)).body[0];
-    expect(mine.replies).toEqual([expect.objectContaining({ author: 'SUPPORT', body: 'yo‘q' })]);
+    const text = (value: string, chatId = CHAT_ID) =>
+      hook({ message: { message_id: 1000, text: value, chat: { id: Number(chatId) } } });
+    const replies = async () =>
+      (await api('get', '/support/tickets', sellerToken).expect(200)).body[0].replies;
 
-    await hook({ message_id: 556, text: 'Divine superadmin kirish kodi: 123456' }, 'adashib');
-    expect(sent.at(-1)?.text).toContain('Reply');
-    expect(
-      (await api('get', '/support/tickets', sellerToken).expect(200)).body[0].replies,
-    ).toHaveLength(1);
+    await text('tanlovsiz');
+    expect(sent.at(-1)?.text).toContain('Avval murojaatni tanlang');
+    expect(await replies()).toHaveLength(0);
+
+    await hook({
+      callback_query: {
+        id: 'cb1',
+        data: `reply:${ticket.id}`,
+        message: { chat: { id: Number(CHAT_ID) } },
+      },
+    });
+    expect(sent.at(-1)?.text).toContain(`Murojaat #${ticket.number}`);
+    await text('Narxi 100 000 so‘m', '111');
+    expect(await replies()).toHaveLength(0);
+    await text('Narxi 100 000 so‘m');
+    await text('ikkinchi xabar');
+    expect(await replies()).toEqual([
+      expect.objectContaining({ author: 'SUPPORT', body: 'Narxi 100 000 so‘m' }),
+    ]);
+    expect(sent.at(-1)?.text).toContain('Avval murojaatni tanlang');
+    // Telegram javobi panelda ham bor; botga qayta "panelda javob" yuborilmaydi.
+    const panelList = (await control('get', '/tickets').expect(200)).body;
+    expect(panelList[0].replies[0].body).toBe('Narxi 100 000 so‘m');
+    expect(sent.some((m) => m.text.includes('panelda javob berildi'))).toBe(false);
+
+    await text('/murojaatlar');
+    expect(sent.at(-1)?.buttons).toEqual([`reply:${ticket.id}`]);
+    await hook({
+      callback_query: {
+        id: 'cb2',
+        data: `reply:${ticket.id}`,
+        message: { chat: { id: Number(CHAT_ID) } },
+      },
+    });
+    await text('/bekor');
+    await text('bekor qilingandan keyin');
+    expect(await replies()).toHaveLength(1);
+    await api('post', '/site-control/telegram/webhook').send({}).expect(403);
   });
 
   it('10 daqiqada 5 tadan ortiq murojaat yuborib bo‘lmaydi', async () => {
