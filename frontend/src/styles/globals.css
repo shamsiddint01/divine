@@ -218,6 +218,11 @@
     box-shadow: none !important;
     background: #fff !important;
   }
+  /* Superadmin kvitansiyasi: A4 varaq kengligida. */
+  .receipt-print.receipt-wide {
+    width: 170mm !important;
+    max-width: 170mm !important;
+  }
   .receipt-print,
   .receipt-print * {
     color: #000 !important;
