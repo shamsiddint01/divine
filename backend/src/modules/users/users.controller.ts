@@ -1,4 +1,14 @@
-import { Controller, Get, HttpCode, Patch, Post, Put, Req, Res } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  Patch,
+  Post,
+  Put,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   type CreateUserInput,
@@ -27,6 +37,7 @@ import { createListQuerySchema, listFilters } from '../../common/query/list-quer
 import { ApiErrorResponses } from '../../common/swagger/api-schemas.js';
 import { ZodBody, ZodParam, ZodQuery } from '../../common/validation/zod-validation.pipe.js';
 import { requestMeta } from '../auth/auth.http.js';
+import { DemoRestrictedGuard } from '../demo/demo-restricted.guard.js';
 import type { ListUsersQuery } from './users.repository.js';
 import { UsersService } from './users.service.js';
 
@@ -46,7 +57,7 @@ const idParam = () => ZodParam('id', uuidSchema);
 /**
  * Users (Phase 5, API §4). O'qish — `users.read`, har qanday o'zgartirish — `users.manage` (faqat ADMIN).
  * Kim bajarayotgani `@Ctx()` dan (tasdiqlangan token + DB), hech qachon body/query'dan emas.
- * Parol qaytaradigan javoblar keshlanmaydi (`Cache-Control: no-store`).
+ * Demo saytda (`DEMO_MODE`) o'zgartirishlar yopiq: `403 DEMO_RESTRICTED`. Parol qaytaradigan javoblar keshlanmaydi (`Cache-Control: no-store`).
  */
 @ApiTags('Users')
 @Controller('users')
@@ -83,6 +94,7 @@ export class UsersController {
 
   @Post()
   @RequirePermissions(Permission.USERS_MANAGE)
+  @UseGuards(DemoRestrictedGuard)
   @ApiOperation({ summary: 'User yaratish (parolni server yaratadi, javobda bir marta)' })
   @ApiErrorResponses(
     ErrorCode.VALIDATION_ERROR,
@@ -103,6 +115,7 @@ export class UsersController {
 
   @Patch(':id')
   @RequirePermissions(Permission.USERS_MANAGE)
+  @UseGuards(DemoRestrictedGuard)
   @ApiOperation({ summary: 'Ism, rol va omborlarni o‘zgartirish (bitta tranzaksiya)' })
   @ApiErrorResponses(
     ErrorCode.VALIDATION_ERROR,
@@ -122,6 +135,7 @@ export class UsersController {
 
   @Patch(':id/status')
   @RequirePermissions(Permission.USERS_MANAGE)
+  @UseGuards(DemoRestrictedGuard)
   @ApiOperation({ summary: 'Bloklash / blokdan chiqarish (sessiyalar darhol bekor qilinadi)' })
   @ApiErrorResponses(
     ErrorCode.VALIDATION_ERROR,
@@ -140,6 +154,7 @@ export class UsersController {
 
   @Post(':id/reset-password')
   @RequirePermissions(Permission.USERS_MANAGE)
+  @UseGuards(DemoRestrictedGuard)
   @HttpCode(200)
   @ApiOperation({ summary: 'Parolni tiklash (yangi parol javobda bir marta, sessiyalar bekor)' })
   @ApiErrorResponses(ErrorCode.NOT_FOUND, ErrorCode.CANNOT_MODIFY_SELF, ErrorCode.FORBIDDEN)
@@ -155,6 +170,7 @@ export class UsersController {
 
   @Put(':id/warehouses')
   @RequirePermissions(Permission.USERS_MANAGE)
+  @UseGuards(DemoRestrictedGuard)
   @ApiOperation({ summary: 'Ombor biriktirishlarini to‘liq almashtirish' })
   @ApiErrorResponses(ErrorCode.VALIDATION_ERROR, ErrorCode.NOT_FOUND, ErrorCode.WAREHOUSE_INACTIVE)
   replaceWarehouses(

@@ -8,6 +8,7 @@ import {
   type LoginResponse,
 } from '@divine/shared';
 import { AppError } from '../../common/errors/app-error.js';
+import { DemoUsageService } from '../demo/demo-usage.service.js';
 import { LicenseService } from '../license/license.service.js';
 import { LoginFingerprint } from '../../common/security/login-fingerprint.js';
 import { Clock } from '../../common/time/clock.js';
@@ -61,6 +62,7 @@ export class AuthService {
     private readonly unknownLogins: UnknownLoginLockout,
     private readonly fingerprint: LoginFingerprint,
     private readonly license: LicenseService,
+    private readonly demo: DemoUsageService,
     private readonly audit: AuditService,
     private readonly transactions: TransactionRunner,
     private readonly clock: Clock,
