@@ -50,7 +50,11 @@ export class TelegramService {
 
   /** Egasi Telegram'da javob yozsa, Telegram shu manzilga yuboradi (`secret` sarlavhada qaytadi). */
   async setWebhook(url: string, secret: string): Promise<void> {
-    await this.call('setWebhook', { url, secret_token: secret, allowed_updates: ['message', 'callback_query'] });
+    await this.call('setWebhook', {
+      url,
+      secret_token: secret,
+      allowed_updates: ['message', 'callback_query'],
+    });
   }
 
   private async call<T>(method: string, body: object): Promise<T | null> {

@@ -17,6 +17,7 @@ import { InjectConfig } from '../../config/config.module.js';
 import type { AppConfig } from '../../config/env.schema.js';
 import type { SupportReply, SupportTicket } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
+import { RedisService } from '../../infrastructure/redis/redis.service.js';
 import { TelegramService } from '../telegram/telegram.service.js';
 
 /** Bitta foydalanuvchi 10 daqiqada shuncha murojaat yozadi: tasodifiy takror va spamdan himoya. */
@@ -25,6 +26,11 @@ const TICKET_WINDOW_MS = 10 * 60_000;
 /** Bir xil avtomatik xato shu vaqt ichida yangi murojaat ochmaydi, soni oshadi. */
 const ERROR_DEDUPE_MS = 60 * 60_000;
 const ANNOUNCEMENT_KEY = 'announcement';
+const ANSWER_BUTTON = '✍️ Javob yozish';
+/** Telegram'da tanlangan murojaat: keyingi BITTA xabar shu murojaatga javob (egasining qarori, 2026-11-10). */
+const REPLY_TARGET_KEY = 'divine:support:telegram-reply-target';
+const REPLY_TARGET_TTL_SECONDS = 30 * 60;
+const OPEN_LIST_LIMIT = 10;
 const STATUS_LABEL: Record<SupportStatus, string> = {
   NEW: 'yangi',
   SEEN: 'ko‘rildi',
@@ -50,6 +56,7 @@ export class SupportService {
     private readonly prisma: PrismaService,
     private readonly clock: Clock,
     private readonly telegram: TelegramService,
+    private readonly redis: RedisService,
     @InjectConfig() private readonly config: AppConfig,
   ) {}
 
@@ -92,7 +99,9 @@ export class SupportService {
     try {
       return await this.telegram.send(text, {
         ...(replyTo ? { replyTo: Number(replyTo) } : {}),
-        ...(answerTicket ? { buttons: [[{ text: ANSWER_BUTTON, data: `reply:${answerTicket}` }]] } : {}),
+        ...(answerTicket
+          ? { buttons: [[{ text: ANSWER_BUTTON, data: `reply:${answerTicket}` }]] }
+          : {}),
       });
     } catch {
       this.logger.warn('Murojaat Telegram’ga yuborilmadi');
@@ -226,8 +235,9 @@ export class SupportService {
       this.prisma.supportTicket.update({ where: { id }, data: { status: 'NEW' } }),
     ]);
     await this.notify(
-      `Murojaat #${ticket.number} — ${ctx.login} javob yozdi:\n${body}`,
+      `Murojaat #${ticket.number} — ${ctx.login} yana yozdi:\n${body}`,
       ticket.telegramMessageId,
+      ticket.id,
     );
     return this.get(id);
   }
@@ -292,35 +302,78 @@ export class SupportService {
   }
 
   /**
-   * Telegram webhook: egasi murojaat xabariga javob yozsa — javob murojaatga qo'shiladi.
-   * Faqat egasining chati; boshqa xabarlar e'tiborsiz (bot boshqalarga javob bermaydi).
+   * Telegram webhook (egasining qarori, 2026-11-10): avval murojaat tanlanadi ("Javob yozish" tugmasi
+   * yoki /murojaatlar), keyingi BITTA xabar shu murojaatga javob bo'ladi. Tanlovsiz xabar hech narsa
+   * qilmaydi — faqat qanday javob berishni eslatadi. Faqat egasining chati.
    */
   async telegramUpdate(update: unknown): Promise<void> {
+    const callback = (update as { callback_query?: TelegramCallback } | null)?.callback_query;
+    if (callback) {
+      if (String(callback.message?.chat?.id) !== this.config.TELEGRAM_CHAT_ID) return;
+      await this.telegram.answerCallback(callback.id).catch(() => undefined);
+      const ticketId = /^reply:([0-9a-f-]{36})$/.exec(callback.data ?? '')?.[1];
+      if (ticketId) await this.selectReplyTarget(ticketId);
+      return;
+    }
     const message = (update as { message?: TelegramMessage } | null)?.message;
     if (!message?.text || String(message.chat?.id) !== this.config.TELEGRAM_CHAT_ID) return;
-    const repliedTo = message.reply_to_message;
-    // Murojaatning birinchi xabari bo'yicha; keyingi xabarlarga (javob, holat) Reply qilinsa — matndagi raqam.
-    const number = /#(\d+)/.exec(repliedTo?.text ?? '')?.[1];
-    const ticket = repliedTo
-      ? ((await this.prisma.supportTicket.findFirst({
-          where: { telegramMessageId: BigInt(repliedTo.message_id) },
-        })) ??
-        (number
-          ? await this.prisma.supportTicket.findUnique({ where: { number: BigInt(number) } })
-          : null))
+    const text = message.text.trim();
+    if (text.startsWith('/murojaatlar') || text.startsWith('/start')) return this.sendOpenList();
+    if (text.startsWith('/bekor')) {
+      await this.redis.client.del(REPLY_TARGET_KEY);
+      await this.notify('Tanlov bekor qilindi.');
+      return;
+    }
+    const target = await this.redis.client.getdel(REPLY_TARGET_KEY);
+    const ticket = target
+      ? await this.prisma.supportTicket.findUnique({ where: { id: target } })
       : null;
     if (!ticket) {
       await this.notify(
-        'Javob qaysi murojaatga ekanini topolmadim. Murojaat xabarini bosib, "Reply" qilib yozing.',
-        BigInt(message.message_id),
+        'Avval murojaatni tanlang: xabar ostidagi «Javob yozish» tugmasi yoki /murojaatlar.',
       );
       return;
     }
-    await this.replyAsSupport(ticket.id, message.text.slice(0, 2000), 'TELEGRAM');
+    await this.replyAsSupport(ticket.id, text.slice(0, 2000), 'TELEGRAM');
     await this.notify(
-      `Javob murojaat #${ticket.number} ga yozildi: foydalanuvchi saytda ko‘radi, panelda ham bor.`,
-      BigInt(message.message_id),
+      `✅ Javob murojaat #${ticket.number} ga yuborildi. Keyingi javob uchun murojaatni qayta tanlang.`,
+      ticket.telegramMessageId,
     );
+  }
+
+  private async selectReplyTarget(ticketId: string): Promise<void> {
+    const ticket = await this.prisma.supportTicket.findUnique({ where: { id: ticketId } });
+    if (!ticket) return;
+    await this.redis.client.set(REPLY_TARGET_KEY, ticket.id, 'EX', REPLY_TARGET_TTL_SECONDS);
+    await this.notify(
+      `Murojaat #${ticket.number} (${ticket.userLogin ?? '—'}) tanlandi.\n` +
+        `Javobingizni bitta xabar qilib yozing. Bekor qilish: /bekor`,
+      ticket.telegramMessageId,
+    );
+  }
+
+  /** Javob kutayotgan murojaatlar: har biri tugma bilan. */
+  private async sendOpenList(): Promise<void> {
+    const tickets = await this.prisma.supportTicket.findMany({
+      where: { kind: 'MANUAL', status: { not: 'RESOLVED' } },
+      orderBy: { updatedAt: 'desc' },
+      take: OPEN_LIST_LIMIT,
+    });
+    if (tickets.length === 0) {
+      await this.notify('Ochiq murojaat yo‘q.');
+      return;
+    }
+    if (!this.telegram.enabled) return;
+    await this.telegram
+      .send('Qaysi murojaatga javob yozasiz?', {
+        buttons: tickets.map((ticket) => [
+          {
+            text: `#${ticket.number} ${ticket.userLogin ?? ''}: ${ticket.message.slice(0, 40)}`,
+            data: `reply:${ticket.id}`,
+          },
+        ]),
+      })
+      .catch(() => undefined);
   }
 
   async feedback(topic: string, helpful: boolean): Promise<void> {
@@ -364,6 +417,10 @@ export class SupportService {
     if (!this.telegram.enabled)
       throw new AppError(ErrorCode.BAD_REQUEST, { message: 'Telegram sozlanmagan' });
     await this.telegram.setWebhook(url, telegramWebhookSecret(this.config));
+    await this.telegram.setCommands([
+      { command: 'murojaatlar', description: 'Javob kutayotgan murojaatlar' },
+      { command: 'bekor', description: 'Tanlangan murojaatni bekor qilish' },
+    ]);
     return { ok: true };
   }
 }
@@ -372,5 +429,10 @@ interface TelegramMessage {
   message_id: number;
   text?: string;
   chat?: { id: number };
-  reply_to_message?: { message_id: number; text?: string };
+}
+
+interface TelegramCallback {
+  id: string;
+  data?: string;
+  message?: { chat?: { id: number } };
 }
