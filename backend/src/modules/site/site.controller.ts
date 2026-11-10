@@ -13,6 +13,10 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import {
   type BackupReportInput,
+  type DemoAccountDto,
+  type DemoAccountInput,
+  demoAccountSchema,
+  type DemoStatusDto,
   backupReportSchema,
   Permission,
   type SiteAccessRequestDto,
@@ -34,8 +38,10 @@ import {
   RequirePermissions,
 } from '../../common/auth/auth.decorators.js';
 import { ZodBody } from '../../common/validation/zod-validation.pipe.js';
+import { DemoUsageService } from '../demo/demo-usage.service.js';
 import { LicenseService } from '../license/license.service.js';
 import { ControlTokenGuard } from './control-token.guard.js';
+import { DemoAccountService } from './demo-account.service.js';
 import { BackupStatusService } from './backup-status.service.js';
 import { SiteAccessService } from './site-access.service.js';
 import { SiteStatsService } from './site-stats.service.js';
@@ -47,7 +53,15 @@ export class SiteController {
   constructor(
     private readonly license: LicenseService,
     private readonly access: SiteAccessService,
+    private readonly demo: DemoUsageService,
   ) {}
+
+  @Get('demo')
+  @Authenticated()
+  @ApiOperation({ summary: 'Sinov hisobi: qolgan vaqt (oddiy foydalanuvchida null)' })
+  getDemo(@Ctx() ctx: AccessContext): Promise<DemoStatusDto | null> {
+    return this.demo.status(ctx.userId);
+  }
 
   @Get('license')
   @Authenticated()
@@ -83,7 +97,14 @@ export class SiteControlController {
     private readonly access: SiteAccessService,
     private readonly backups: BackupStatusService,
     private readonly siteStats: SiteStatsService,
+    private readonly demoAccounts: DemoAccountService,
   ) {}
+
+  @Post('demo-accounts')
+  @ApiOperation({ summary: 'Demo saytda sinov hisobi ochish (bot)' })
+  createDemoAccount(@ZodBody(demoAccountSchema) body: DemoAccountInput): Promise<DemoAccountDto> {
+    return this.demoAccounts.create(body);
+  }
 
   @Put('license')
   @HttpCode(204)
