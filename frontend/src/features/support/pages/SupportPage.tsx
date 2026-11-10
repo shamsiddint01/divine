@@ -176,29 +176,27 @@ function StateBadge({ state }: { state: MessageState }) {
   return <Badge className={STATE_CLASS[state]}>{t.support.state[state]}</Badge>;
 }
 
+/** Foydalanuvchi xabari. Holat xabarda emas — butun murojaat uchun bitta (sarlavhada). */
 function UserBubble({
   body,
   meta,
-  state,
+  failed = false,
   action,
 }: {
   body: string;
   meta: string;
-  state: MessageState;
+  failed?: boolean;
   action?: ReactNode;
 }) {
   return (
     <div
       className={
-        state === 'FAILED'
+        failed
           ? 'rounded-md border border-destructive/30 bg-destructive/5 p-3'
           : 'rounded-md bg-muted p-3'
       }
     >
-      <div className="mb-1 flex items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground">{meta}</p>
-        <StateBadge state={state} />
-      </div>
+      <p className="mb-1 text-xs text-muted-foreground">{meta}</p>
       <p className="whitespace-pre-wrap">{body}</p>
       {action}
     </div>
@@ -206,19 +204,14 @@ function UserBubble({
 }
 
 /**
- * Har savolning holati: keyin egasining javobi bo'lsa — "Javob berildi", aks holda "Yuborildi"; egasi
- * yopgan murojaat — "Hal qilindi";
- * serverga yetmagani — "Yuborilmadi" (matn saqlanadi, qayta yuborsa bo'ladi).
+ * Bitta murojaat — bitta holat (egasining qarori, 2026-11-10): ichidagi qo'shimcha savollar ham shu
+ * holatga kiradi. Yuborilmagan xabar bo'lsa — "Yuborilmadi"; egasi yopgan — "Hal qilindi"; oxirgi xabar
+ * egasiniki — "Javob berildi"; aks holda — "Yuborildi".
  */
 function TicketCard({ ticket }: { ticket: SupportTicketDto }) {
   const reply = useReplyTicket();
   const [failed, setFailed] = useState<string[]>([]);
-  const answeredAfter = (createdAt: string) =>
-    ticket.replies.some((item) => item.author === 'SUPPORT' && item.createdAt > createdAt);
-  const stateOf = (createdAt: string): MessageState =>
-    answeredAfter(createdAt) ? 'ANSWERED' : 'SENT';
   const last = ticket.replies.at(-1);
-  // Murojaat holati: yuborilmagan xabar bo'lsa — shu; egasi "Hal qilindi" desa — shu; aks holda oxirgi xabarga qarab.
   const headerState: MessageState =
     failed.length > 0
       ? 'FAILED'
@@ -250,7 +243,6 @@ function TicketCard({ ticket }: { ticket: SupportTicketDto }) {
         <UserBubble
           body={ticket.message}
           meta={`${t.support.you} · ${formatDateTime(ticket.createdAt)}`}
-          state={stateOf(ticket.createdAt)}
         />
         {ticket.replies.map((item) =>
           item.author === 'SUPPORT' ? (
@@ -265,7 +257,6 @@ function TicketCard({ ticket }: { ticket: SupportTicketDto }) {
               key={item.id}
               body={item.body}
               meta={`${t.support.you} · ${formatDateTime(item.createdAt)}`}
-              state={stateOf(item.createdAt)}
             />
           ),
         )}
@@ -274,7 +265,7 @@ function TicketCard({ ticket }: { ticket: SupportTicketDto }) {
             key={body}
             body={body}
             meta={t.support.failedHint}
-            state="FAILED"
+            failed
             action={
               <Button
                 size="sm"
