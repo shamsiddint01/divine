@@ -183,9 +183,10 @@ describe('login enumeration (SECURITY §1, §18)', () => {
       }
     }
     expect([...shapes]).toHaveLength(1);
-    // Ikkala yo'lda ham argon2 tekshiruvi (~170–210 ms) — farq shundan ancha kichik bo'lishi kerak.
+    // Ikkala yo'lda ham argon2 tekshiruvi (mahalliy ~170–210 ms, tez CI serverida ~40 ms) — farq shundan
+    // ancha kichik bo'lishi kerak. Tekshiruvsiz yo'l 1–3 ms bo'lardi: 20 ms chegara shuni ushlaydi.
     const [k, u] = [median(known), median(unknown)];
-    expect(Math.min(k, u)).toBeGreaterThan(50);
+    expect(Math.min(k, u)).toBeGreaterThan(20);
     expect(Math.abs(k - u) / Math.max(k, u)).toBeLessThan(0.35);
   });
 });
