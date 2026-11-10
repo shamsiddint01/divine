@@ -55,6 +55,11 @@ export class JwtAuthGuard implements CanActivate {
       if (!READ_METHODS.has(req.method)) throw new AppError(ErrorCode.READ_ONLY_SESSION);
     } else {
       await this.license.assertActive();
+      // "Hammani chiqarish" (superadmin): shundan oldingi access tokenlar ham yaroqsiz.
+      const revokedAt = await this.license.sessionsRevokedAt();
+      if (revokedAt && claims.iat < Math.floor(revokedAt.getTime() / 1000)) {
+        throw new AppError(ErrorCode.SESSION_EXPIRED);
+      }
     }
 
     req.accessContext = {
