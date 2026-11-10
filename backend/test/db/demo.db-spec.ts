@@ -54,11 +54,11 @@ async function issueTrial(chat = GUEST_CHAT, phone = '901234567') {
   await guest({ text: 'Ali Valiyev' }, chat);
   await guest({ text: phone }, chat);
   const text = toGuest(chat).at(-1)?.text ?? '';
-  return {
-    text,
+  const credentials = {
     login: /Login: (\S+)/.exec(text)?.[1] ?? '',
     password: /Parol: (\d{6})/.exec(text)?.[1] ?? '',
   };
+  return { text, credentials };
 }
 
 async function signIn(credentials: { login: string; password: string }) {
@@ -185,7 +185,7 @@ describe('bot: bepul sinab ko‘rish hisobi', () => {
 
 describe('demo sayt cheklovlari', () => {
   it('sinov hisobi foydalanuvchi qo‘sha, o‘zgartira va bloklay olmaydi; qolgani ochiq', async () => {
-    const trial = await issueTrial();
+    const { credentials: trial } = await issueTrial();
     const token = await signIn(trial);
     const other = await createUser(t, { password: PASSWORD, role: 'ADMIN' });
 
@@ -210,7 +210,7 @@ describe('demo sayt cheklovlari', () => {
   });
 
   it('jami 1 soat: so‘rovlar orasidagi vaqt yig‘iladi, uzun tanaffus 5 daqiqa hisoblanadi', async () => {
-    const trial = await issueTrial();
+    const { credentials: trial } = await issueTrial();
     const user = await t.prisma.user.findFirstOrThrow({ where: { login: trial.login } });
     const token = await signIn(trial);
 
@@ -220,7 +220,6 @@ describe('demo sayt cheklovlari', () => {
       minutesLeft: 59,
     });
     t.clock.advance(10 * 60_000);
-    await signIn(trial);
     const fresh = await signIn(trial);
     await api('get', '/products', fresh).expect(200);
     const usage = await t.prisma.demoAccount.findUniqueOrThrow({ where: { userId: user.id } });
@@ -240,7 +239,7 @@ describe('demo sayt cheklovlari', () => {
   });
 
   it('7 kundan keyin kirib bo‘lmaydi; oddiy hisob cheklanmaydi', async () => {
-    const trial = await issueTrial();
+    const { credentials: trial } = await issueTrial();
     t.clock.advance(7 * 86_400_000);
     const denied = await login(t, trial);
     expect(denied.status).toBe(403);

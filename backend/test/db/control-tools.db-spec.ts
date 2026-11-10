@@ -218,8 +218,10 @@ describe('superadmin kirishlar tarixi', () => {
 describe('bepul sinab ko‘rish arizasi (bot)', () => {
   it('/start → ism → telefon: ariza panelga va egasiga tugmalar bilan', async () => {
     await guest({ text: '/start' });
-    expect(toGuest().at(-1)?.text).toContain('ismingizni yozing');
+    expect(toGuest().at(-1)?.text).toContain('ism va familiyangizni yozing');
     await guest({ text: 'Sardor' });
+    expect(toGuest().at(-1)?.text).toContain('Ism va familiyangizni birga yozing');
+    await guest({ text: 'Sardor Aliyev' });
     expect(toGuest().at(-1)).toMatchObject({ contact: true });
     await guest({ text: '12' });
     expect(toGuest().at(-1)?.text).toContain('Raqam noto‘g‘ri');
@@ -229,7 +231,7 @@ describe('bepul sinab ko‘rish arizasi (bot)', () => {
     const leads = (await panel('get', '/sites/leads').expect(200)).body;
     expect(leads).toEqual([
       expect.objectContaining({
-        name: 'Sardor',
+        name: 'Sardor Aliyev',
         phone: '+998901234567',
         username: 'mijoz_uz',
         status: 'NEW',
