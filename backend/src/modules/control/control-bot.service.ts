@@ -1,4 +1,4 @@
-import { Injectable, type OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 import {
   CONTROL_LEAD_STATUSES,
   type ControlLeadStatus,
@@ -67,6 +67,9 @@ export function normalizeLeadPhone(input: string): string | null {
  */
 @Injectable()
 export class ControlBotService implements OnModuleInit {
+  private readonly logger = new Logger(ControlBotService.name);
+  private readonly background = new Set<Promise<void>>();
+
   constructor(
     private readonly support: SupportService,
     private readonly telegram: TelegramService,
