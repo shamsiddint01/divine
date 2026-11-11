@@ -468,15 +468,17 @@ export class ControlBotService implements OnModuleInit {
     // Telefon tugmasi alohida xabar bilan yopiladi: bitta xabarga ham u, ham inline tugmalar sig'maydi.
     if (removeKeyboard) await send('Raqamingiz qabul qilindi.', { removeKeyboard: true });
     // Login va parol `<code>`da (telefonda bir bosishda nusxalanadi) va alohida nusxalash tugmalari.
-    await send(
+    const terms =
+      `Muddat: ${DEMO_TRIAL_DAYS} kun, jami ${DEMO_TRIAL_MINUTES} daqiqa ishlatish mumkin. ` +
+      'Bu hamma uchun umumiy test sayt: foydalanuvchi qo‘shib va bloklab bo‘lmaydi, qolgan hamma narsa ochiq.\n' +
+      `Savol bo‘lsa: ${CONTACT_PHONE}`;
+    const delivered = await send(
       '✅ Sinov sayti tayyor!\n\n' +
         `🌐 Sayt: ${escapeHtml(site.siteUrl)}\n` +
         `👤 Login: <code>${escapeHtml(account.login)}</code>\n` +
         `🔑 Parol: <code>${escapeHtml(account.password)}</code>\n` +
         '<i>Login yoki parol ustiga bosing — nusxalanadi.</i>\n\n' +
-        `Muddat: ${DEMO_TRIAL_DAYS} kun, jami ${DEMO_TRIAL_MINUTES} daqiqa ishlatish mumkin. ` +
-        'Bu hamma uchun umumiy test sayt: foydalanuvchi qo‘shib va bloklab bo‘lmaydi, qolgan hamma narsa ochiq.\n' +
-        `Savol bo‘lsa: ${CONTACT_PHONE}`,
+        escapeHtml(terms),
       {
         html: true,
         buttons: [
@@ -488,6 +490,13 @@ export class ControlBotService implements OnModuleInit {
         ],
       },
     );
+    // Telegram formatli xabarni rad etsa ham mijoz login va parolsiz qolmasin.
+    if (!delivered) {
+      await send(
+        '✅ Sinov sayti tayyor!\n\n' +
+          `Sayt: ${site.siteUrl}\nLogin: ${account.login}\nParol: ${account.password}\n\n${terms}`,
+      );
+    }
     await this.say(`🎁 Ariza #${lead.number}: sinov hisobi berildi (${account.login}).`);
     return true;
   }
