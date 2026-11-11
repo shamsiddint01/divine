@@ -34,6 +34,8 @@ const PUBLIC_TOKEN = '654321:public-token-abcdefghijk';
 let t: AuthTestApp;
 const sent: { bot: 'owner' | 'public'; method: string; chatId: string; text: string }[] = [];
 const realFetch = globalThis.fetch;
+/** Demo sayt uyg'onishini sekinlashtirish (bepul server uxlab yotgandek). */
+let wakeDelayMs = 0;
 
 const server = () => request(t.app.getHttpServer());
 /** Mijozga — faqat mijozlar botidan; egasiga bildirishnoma — faqat egasining botidan. */
@@ -99,7 +101,12 @@ beforeAll(async () => {
   });
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     const url = String(input instanceof Request ? input.url : input);
-    if (!url.startsWith('https://api.telegram.org/')) return realFetch(input, init);
+    if (!url.startsWith('https://api.telegram.org/')) {
+      if (wakeDelayMs && url.endsWith('/health/live')) {
+        await new Promise((resolve) => setTimeout(resolve, wakeDelayMs));
+      }
+      return realFetch(input, init);
+    }
     const body = JSON.parse(String(init?.body)) as { chat_id?: string; text?: string };
     sent.push({
       bot: url.includes(PUBLIC_TOKEN) ? 'public' : 'owner',
@@ -234,6 +241,18 @@ describe('bot: bepul sinab ko‘rish hisobi', () => {
     await guest({ text: '+998 90 123 45 67' }, OTHER_CHAT);
     expect(toGuest(OTHER_CHAT).at(-1)?.text).toContain('Sizga sinov hisobi berilgan');
     expect(await t.prisma.controlTrial.count()).toBe(1);
+  });
+
+  it('demo sayt sekin uyg‘onsa — mijozga "kuting", keyin login', async () => {
+    wakeDelayMs = 6_000;
+    try {
+      const { text } = await issueTrial();
+      const messages = toGuest().map((m) => m.text);
+      expect(messages.at(-2)).toContain('Sinov saytingiz tayyorlanmoqda');
+      expect(text).toContain('Sinov sayti tayyor');
+    } finally {
+      wakeDelayMs = 0;
+    }
   });
 
   it('demo sayt javob bermasa — oddiy ariza, egasiga ogohlantirish', async () => {
