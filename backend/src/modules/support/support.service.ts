@@ -376,15 +376,18 @@ export class SupportService {
     );
   }
 
-  /** Javob kutayotgan murojaatlar: har biri tugma bilan. */
+  /**
+   * Javob kutayotgan murojaatlar (`NEW`: hali javob yo'q yoki foydalanuvchi yana yozgan), har biri tugma
+   * bilan. Javob berilgani (`SEEN`) va hal qilingani ro'yxatga kirmaydi.
+   */
   private async sendOpenList(): Promise<void> {
     const tickets = await this.prisma.supportTicket.findMany({
-      where: { kind: 'MANUAL', status: { not: 'RESOLVED' } },
+      where: { kind: 'MANUAL', status: 'NEW' },
       orderBy: { updatedAt: 'desc' },
       take: OPEN_LIST_LIMIT,
     });
     if (tickets.length === 0) {
-      await this.notify('Ochiq murojaat yo‘q.');
+      await this.notify('Javob kutayotgan murojaat yo‘q.');
       return;
     }
     if (!this.telegram.enabled) return;

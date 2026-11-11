@@ -198,8 +198,9 @@ export class ControlService {
     });
     const dashboard = await this.dashboard();
     const tickets = await this.tickets().catch(() => ({ tickets: [], unreachable: [] }));
+    // Javob kutayotgan: hali javob yo'q yoki foydalanuvchi javobdan keyin yana yozgan (`NEW`).
     const open = tickets.tickets.filter(
-      (ticket) => ticket.kind === 'MANUAL' && ticket.status !== 'RESOLVED',
+      (ticket) => ticket.kind === 'MANUAL' && ticket.status === 'NEW',
     );
     const leads = await this.prisma.controlLead.findMany({
       where: { status: 'NEW' },
