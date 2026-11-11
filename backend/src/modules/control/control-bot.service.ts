@@ -12,7 +12,12 @@ import type { AppConfig } from '../../config/env.schema.js';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import { RedisService } from '../../infrastructure/redis/redis.service.js';
 import { SupportService } from '../support/support.service.js';
-import { PublicTelegramService, TelegramService } from '../telegram/telegram.service.js';
+import {
+  escapeHtml,
+  PublicTelegramService,
+  type TelegramSendOptions,
+  TelegramService,
+} from '../telegram/telegram.service.js';
 import { ControlService, LEAD_STATUS_LABEL } from './control.service.js';
 import { SiteClient } from './site-client.js';
 
@@ -304,7 +309,7 @@ export class ControlBotService implements OnModuleInit {
     const chatId = String(message.chat!.id);
     const key = leadKey(chatId);
     const text = message.text?.trim() ?? '';
-    const send = (body: string, options: { askContact?: string; removeKeyboard?: boolean } = {}) =>
+    const send = (body: string, options: Omit<TelegramSendOptions, 'chatId'> = {}) =>
       bot.send(body, { chatId, ...options }).catch(() => undefined);
 
     if (text.startsWith('/start')) {
@@ -420,7 +425,7 @@ export class ControlBotService implements OnModuleInit {
    */
   private async issueTrial(
     lead: { id: string; number: bigint; name: string; phone: string; chatId: bigint },
-    send: (body: string, options?: { removeKeyboard?: boolean }) => Promise<unknown>,
+    send: (body: string, options?: Omit<TelegramSendOptions, 'chatId'>) => Promise<unknown>,
     removeKeyboard = false,
   ): Promise<boolean> {
     const siteId = this.config.DEMO_SITE_ID;
@@ -460,13 +465,28 @@ export class ControlBotService implements OnModuleInit {
         expiresAt: new Date(account.expiresAt),
       },
     });
+    // Telefon tugmasi alohida xabar bilan yopiladi: bitta xabarga ham u, ham inline tugmalar sig'maydi.
+    if (removeKeyboard) await send('Raqamingiz qabul qilindi.', { removeKeyboard: true });
+    // Login va parol `<code>`da (telefonda bir bosishda nusxalanadi) va alohida nusxalash tugmalari.
     await send(
       '✅ Sinov sayti tayyor!\n\n' +
-        `Sayt: ${site.siteUrl}\nLogin: ${account.login}\nParol: ${account.password}\n\n` +
+        `🌐 Sayt: ${escapeHtml(site.siteUrl)}\n` +
+        `👤 Login: <code>${escapeHtml(account.login)}</code>\n` +
+        `🔑 Parol: <code>${escapeHtml(account.password)}</code>\n` +
+        '<i>Login yoki parol ustiga bosing — nusxalanadi.</i>\n\n' +
         `Muddat: ${DEMO_TRIAL_DAYS} kun, jami ${DEMO_TRIAL_MINUTES} daqiqa ishlatish mumkin. ` +
         'Bu hamma uchun umumiy test sayt: foydalanuvchi qo‘shib va bloklab bo‘lmaydi, qolgan hamma narsa ochiq.\n' +
         `Savol bo‘lsa: ${CONTACT_PHONE}`,
-      removeKeyboard ? { removeKeyboard: true } : {},
+      {
+        html: true,
+        buttons: [
+          [
+            { text: '📋 Login', copy: account.login },
+            { text: '📋 Parol', copy: account.password },
+          ],
+          [{ text: '🌐 Saytni ochish', url: site.siteUrl }],
+        ],
+      },
     );
     await this.say(`🎁 Ariza #${lead.number}: sinov hisobi berildi (${account.login}).`);
     return true;

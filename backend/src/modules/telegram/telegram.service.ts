@@ -6,6 +6,30 @@ import type { AppConfig } from '../../config/env.schema.js';
 
 const TELEGRAM_TIMEOUT_MS = 15_000;
 
+/** Xabar ostidagi tugma: bot javobi (`data`), havola (`url`) yoki bosganda nusxalanadigan matn (`copy`). */
+export type TelegramButton =
+  { text: string; data: string } | { text: string; url: string } | { text: string; copy: string };
+
+export interface TelegramSendOptions {
+  chatId?: string;
+  replyTo?: number;
+  buttons?: TelegramButton[][];
+  askContact?: string;
+  removeKeyboard?: boolean;
+  /** Matn HTML: `<code>…</code>` telefonda bir bosishda nusxalanadi. Qiymatlar `escapeHtml` bilan. */
+  html?: boolean;
+}
+
+export const escapeHtml = (value: string) =>
+  value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+const toInlineButton = (button: TelegramButton) =>
+  'url' in button
+    ? { text: button.text, url: button.url }
+    : 'copy' in button
+      ? { text: button.text, copy_text: { text: button.copy } }
+      : { text: button.text, callback_data: button.data };
+
 /** Egasining Telegram'iga xabar: superadmin kirish kodi va kunlik eslatmalar. Sozlanmagan — o'chiq. */
 @Injectable()
 export class TelegramService {
@@ -27,22 +51,9 @@ export class TelegramService {
    * Xabar yuboradi va Telegram'dagi `message_id`ni qaytaradi (javobni murojaatga bog'lash uchun).
    * `chatId` berilmasa — egasiga. `askContact` — "Raqamni yuborish" tugmasi, `removeKeyboard` — uni olib tashlash.
    */
-  async send(
-    text: string,
-    options: {
-      chatId?: string;
-      replyTo?: number;
-      buttons?: { text: string; data: string }[][];
-      askContact?: string;
-      removeKeyboard?: boolean;
-    } = {},
-  ): Promise<number | null> {
+  async send(text: string, options: TelegramSendOptions = {}): Promise<number | null> {
     const replyMarkup = options.buttons
-      ? {
-          inline_keyboard: options.buttons.map((row) =>
-            row.map((button) => ({ text: button.text, callback_data: button.data })),
-          ),
-        }
+      ? { inline_keyboard: options.buttons.map((row) => row.map(toInlineButton)) }
       : options.askContact
         ? {
             keyboard: [[{ text: options.askContact, request_contact: true }]],
@@ -55,6 +66,7 @@ export class TelegramService {
     const result = await this.call<{ message_id?: number }>('sendMessage', {
       chat_id: options.chatId ?? this.config.TELEGRAM_CHAT_ID,
       text,
+      ...(options.html ? { parse_mode: 'HTML' } : {}),
       ...(options.replyTo ? { reply_parameters: { message_id: options.replyTo } } : {}),
       ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
     });
