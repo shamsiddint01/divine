@@ -64,7 +64,7 @@ export const ERROR_MESSAGES_UZ: Readonly<Record<ErrorCode, string>> = {
   LICENSE_EXPIRED: 'Sizning to‘lov muddatingiz tugadi. Bog‘lanish uchun: +998901333831',
   SITE_MAINTENANCE: 'Saytda texnik ishlar ketmoqda. Birozdan keyin qayta kiring',
   READ_ONLY_SESSION: 'Bu ko‘rish rejimi: o‘zgartirish mumkin emas',
-  DEMO_RESTRICTED: 'Sinov saytida foydalanuvchi qo‘shib, o‘zgartirib yoki bloklab bo‘lmaydi',
+  DEMO_RESTRICTED: 'Sinov hisobida foydalanuvchi qo‘shib, o‘zgartirib yoki bloklab bo‘lmaydi',
   DEMO_TIME_UP:
     'Sinov muddati tugadi: 1 soatlik vaqt yoki 7 kun o‘tdi. Davom etish uchun bog‘laning: +998901333831',
   FORBIDDEN: 'Bu amalni bajarishga ruxsatingiz yo‘q',

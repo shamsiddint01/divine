@@ -61,6 +61,15 @@ export class DemoUsageService {
     );
   }
 
+  /** Sinov hisobimi (`demo_accounts` yozuvi bor). Egasining o'z hisobi — yo'q. */
+  async isTrial(userId: string): Promise<boolean> {
+    const row = await this.prisma.demoAccount.findUnique({
+      where: { userId },
+      select: { userId: true },
+    });
+    return row !== null;
+  }
+
   async status(userId: string): Promise<DemoStatusDto | null> {
     if (!this.enabled) return null;
     const row = await this.prisma.demoAccount.findUnique({ where: { userId } });

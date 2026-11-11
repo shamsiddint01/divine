@@ -1,16 +1,23 @@
-import { type CanActivate, Injectable } from '@nestjs/common';
+import { type CanActivate, type ExecutionContext, Injectable } from '@nestjs/common';
 import { ErrorCode } from '@divine/shared';
+import type { AuthRequest } from '../../common/auth/request-types.js';
 import { AppError } from '../../common/errors/app-error.js';
-import { InjectConfig } from '../../config/config.module.js';
-import type { AppConfig } from '../../config/env.schema.js';
+import { DemoUsageService } from './demo-usage.service.js';
 
-/** Demo saytda yopiq amallar (foydalanuvchi qo'shish, o'zgartirish, bloklash): `403 DEMO_RESTRICTED`. */
+/**
+ * Demo saytda sinov hisobi uchun yopiq amallar (foydalanuvchi qo'shish, o'zgartirish, bloklash):
+ * `403 DEMO_RESTRICTED`. Sinov yozuvi yo'q hisob (egasining o'z admini) cheklanmaydi (2026-11-11).
+ */
 @Injectable()
 export class DemoRestrictedGuard implements CanActivate {
-  constructor(@InjectConfig() private readonly config: AppConfig) {}
+  constructor(private readonly demo: DemoUsageService) {}
 
-  canActivate(): boolean {
-    if (this.config.DEMO_MODE) throw new AppError(ErrorCode.DEMO_RESTRICTED);
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    if (!this.demo.enabled) return true;
+    const userId = context.switchToHttp().getRequest<AuthRequest>().accessContext?.userId;
+    if (!userId || (await this.demo.isTrial(userId))) {
+      throw new AppError(ErrorCode.DEMO_RESTRICTED);
+    }
     return true;
   }
 }
