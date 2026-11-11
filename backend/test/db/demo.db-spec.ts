@@ -348,6 +348,22 @@ describe('demo sayt cheklovlari', () => {
     await api('get', '/products', token).expect(200);
   });
 
+  it('egasining hisobi (sinov yozuvisiz) demo saytda ham cheklanmaydi', async () => {
+    const owner = await createUser(t, { password: PASSWORD, role: 'ADMIN' });
+    const token = await signIn({ login: owner.login, password: PASSWORD });
+    const { credentials } = await issueTrial();
+    const trialUser = await t.prisma.user.findFirstOrThrow({ where: { login: credentials.login } });
+
+    const created = await api('post', '/users', token)
+      .send({ login: `yangi${Date.now() % 100000}`, role: 'USER', warehouseIds: [] })
+      .expect(201);
+    expect(created.body.user.role).toBe('USER');
+    await api('patch', `/users/${trialUser.id}/status`, token)
+      .send({ status: 'BLOCKED' })
+      .expect(200);
+    await api('post', `/users/${trialUser.id}/reset-password`, token).send({}).expect(200);
+  });
+
   it('jami 1 soat: so‘rovlar orasidagi vaqt yig‘iladi, uzun tanaffus 5 daqiqa hisoblanadi', async () => {
     const { credentials: trial } = await issueTrial();
     const user = await t.prisma.user.findFirstOrThrow({ where: { login: trial.login } });
