@@ -23,6 +23,8 @@ set +a
 
 read -rsp "Yangi parol (6 raqam): " NEW_PASSWORD
 echo
+# Nusxalashda qo'shilib ketgan bo'sh joy va qator belgilari olib tashlanadi.
+NEW_PASSWORD=$(printf '%s' "$NEW_PASSWORD" | tr -d '[:space:]')
 export NEW_PASSWORD
 NODE_ENV=production DATABASE_URL="$DB_URL" npx --yes pnpm@11.21.0 --filter @divine/backend \
   exec tsx src/database/set-password.cli.ts "$1"
