@@ -59,6 +59,25 @@ export class SiteClient {
     return payload as T;
   }
 
+  /**
+   * Bepul serverdagi sayt uxlab yotgan bo'lsa, uyg'otadi: `/health/live` (bazaga bormaydi, hech narsa
+   * yozmaydi) javob berguncha `attempts` marta urinadi. Uyg'onmasa — `false`.
+   */
+  async wake(site: Target, attempts = 3): Promise<boolean> {
+    for (let i = 0; i < attempts; i++) {
+      try {
+        const response = await fetch(`${site.apiUrl}/api/v1/health/live`, {
+          signal: AbortSignal.timeout(SITE_TIMEOUT_MS),
+        });
+        if (response.ok) return true;
+      } catch {
+        // Uyg'onayotgan bo'lishi mumkin: keyingi urinish.
+      }
+    }
+    this.logger.warn(`Sayt uyg'onmadi: ${site.apiUrl}`);
+    return false;
+  }
+
   createDemoAccount(site: Target, input: DemoAccountInput): Promise<DemoAccountDto> {
     return this.call(site, 'POST', '/demo-accounts', input);
   }

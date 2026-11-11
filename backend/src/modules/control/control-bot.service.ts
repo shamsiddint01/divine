@@ -19,6 +19,11 @@ import { SiteClient } from './site-client.js';
 /** Ariza suhbati: ism → telefon. Bir soatda tugatilmasa, qaytadan boshlanadi. */
 const leadKey = (chatId: string) => `divine:control:lead:${chatId}`;
 const LEAD_TTL_SECONDS = 60 * 60;
+/** Telegram javob kutmasdan qayta yuborgan yangilanish ikki marta bajarilmasin. */
+const updateKey = (id: number) => `divine:control:public-update:${id}`;
+const UPDATE_TTL_SECONDS = 24 * 60 * 60;
+/** Demo sayt shuncha vaqtda uyg'onmasa, mijozga "kuting" deb yoziladi. */
+const WAKE_NOTICE_MS = 5_000;
 /** Bir chatdan bir kunda bitta ariza: takror bosish va spamdan himoya. */
 const LEAD_REPEAT_MS = 24 * 3_600_000;
 const CONTACT_PHONE = '+998901333831';
@@ -99,9 +104,30 @@ export class ControlBotService implements OnModuleInit {
    */
   async handlePublic(update: unknown): Promise<void> {
     if (!this.publicBot.enabled) return;
+    const id = (update as { update_id?: unknown } | null)?.update_id;
+    if (typeof id === 'number') {
+      const fresh = await this.redis.client.set(updateKey(id), '1', 'EX', UPDATE_TTL_SECONDS, 'NX');
+      if (!fresh) return;
+    }
     const message = (update as { message?: Message } | null)?.message;
     if (!message?.chat || message.chat.type !== 'private') return;
     await this.lead(message, this.publicBot);
+  }
+
+  /**
+   * Telegram'ga darhol javob: demo sayt uyg'onishi (bepul server, ~1 daqiqa) Telegram kutadigan
+   * vaqtdan uzun. Aks holda Telegram xabarni qayta yuboradi va mijoz chalkash javob oladi.
+   */
+  handlePublicInBackground(update: unknown): void {
+    const job = this.handlePublic(update)
+      .catch((error: unknown) => this.logger.error(error, 'Mijozlar boti xabari bajarilmadi'))
+      .finally(() => this.background.delete(job));
+    this.background.add(job);
+  }
+
+  /** Testlar uchun: fonda ishlayotgan xabarlar tugashini kutish. */
+  async idle(): Promise<void> {
+    while (this.background.size > 0) await Promise.all([...this.background]);
   }
 
   private async callback(callback: Callback): Promise<boolean> {
@@ -398,16 +424,26 @@ export class ControlBotService implements OnModuleInit {
     if (!siteId) return false;
     const site = await this.prisma.controlSite.findUnique({ where: { id: siteId } });
     if (!site) return false;
+    // Bepul serverdagi demo sayt uxlab yotgan bo'lishi mumkin: avval uyg'otiladi, keyin hisob ochiladi
+    // (hisob so'rovi qayta yuborilmaydi — ikki marta ochilib qolmasin).
+    const waking = this.sites.wake(site);
+    const slow = await Promise.race([
+      waking.then(() => false),
+      new Promise<boolean>((resolve) => setTimeout(() => resolve(true), WAKE_NOTICE_MS).unref()),
+    ]);
+    if (slow) await send('⏳ Sinov saytingiz tayyorlanmoqda, 1–2 daqiqa kuting…');
     let account;
     try {
+      if (!(await waking)) throw new Error('demo sayt 4 daqiqada uyg‘onmadi');
       account = await this.sites.createDemoAccount(site, {
         ref: Number(lead.number),
         name: lead.name,
       });
-    } catch {
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : 'noma’lum xato';
       await this.say(
-        `⚠️ Ariza #${lead.number}: demo saytda hisob ochilmadi (sayt javob bermadi yoki sozlanmagan). ` +
-          'Mijoz oddiy ariza sifatida qoldi.',
+        `⚠️ Ariza #${lead.number}: demo saytda hisob ochilmadi (${reason}). ` +
+          'Mijoz /start bossa, qayta urinib ko‘riladi.',
       );
       return false;
     }

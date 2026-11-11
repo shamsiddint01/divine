@@ -385,7 +385,7 @@ export class PublicBotWebhookController {
     if (given.length !== this.secret.length || !timingSafeEqual(given, this.secret)) {
       throw new AppError(ErrorCode.FORBIDDEN);
     }
-    await this.bot.handlePublic(update);
+    this.bot.handlePublicInBackground(update);
     return { ok: true };
   }
 }
