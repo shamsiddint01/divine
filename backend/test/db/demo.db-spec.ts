@@ -2,6 +2,7 @@ import type { AddressInfo } from 'node:net';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RedisService } from '../../src/infrastructure/redis/redis.service.js';
+import { ControlBotService } from '../../src/modules/control/control-bot.service.js';
 import { controlApiToken } from '../../src/modules/site/control-token.guard.js';
 import {
   telegramPublicWebhookSecret,
@@ -53,10 +54,14 @@ const ownerHook = (update: object) =>
     .set('X-Forwarded-For', uniqueIp())
     .send(update)
     .expect(200);
-const guest = (message: object, chat: number | string = GUEST_CHAT) =>
-  publicHook({
+/** Webhook Telegram'ga darhol javob beradi, xabar fonda bajariladi: test uning tugashini kutadi. */
+async function guest(message: object, chat: number | string = GUEST_CHAT, updateId?: number) {
+  await publicHook({
+    ...(updateId === undefined ? {} : { update_id: updateId }),
     message: { message_id: 1, chat: { id: Number(chat), type: 'private' }, ...message },
   }).expect(200);
+  await t.app.get(ControlBotService).idle();
+}
 
 const api = (method: 'get' | 'post' | 'patch', path: string, accessToken: string) =>
   server()
@@ -151,6 +156,15 @@ describe('ikki bot: mijozlar boti va egasining boti', () => {
 
     await guest({ text: '/start' }, CHAT_ID);
     expect(toGuest(CHAT_ID).at(-1)?.text).toContain('ism va familiyangizni yozing');
+  });
+
+  it('Telegram qayta yuborgan xabar (bir xil update_id) ikkinchi marta bajarilmaydi', async () => {
+    const updateId = Math.floor(Math.random() * 1e9);
+    await guest({ text: '/start' }, GUEST_CHAT, updateId);
+    await guest({ text: '/start' }, GUEST_CHAT, updateId);
+    expect(toGuest()).toHaveLength(1);
+    await guest({ text: 'Ali Valiyev' }, GUEST_CHAT, updateId + 1);
+    expect(toGuest().at(-1)?.text).toContain('telefon raqamingizni');
   });
 
   it('mijozlar boti webhook’i sirsiz ishlamaydi', async () => {
