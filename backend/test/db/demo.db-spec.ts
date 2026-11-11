@@ -113,7 +113,11 @@ beforeAll(async () => {
       }
       return realFetch(input, init);
     }
-    const body = JSON.parse(String(init?.body)) as { chat_id?: string; text?: string };
+    const body = JSON.parse(String(init?.body)) as {
+      chat_id?: string;
+      text?: string;
+      reply_markup?: unknown;
+    };
     sent.push({
       bot: url.includes(PUBLIC_TOKEN) ? 'public' : 'owner',
       method: url.split('/').at(-1)!,
