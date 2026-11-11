@@ -75,8 +75,8 @@ Admin paroli terminalda bir marta chiqadi. Render qiymatlari `.env.render.secret
 
 `@divine_uzbot`: `/start` → ism familiya → telefon → umumiy demo saytda shu odamga alohida ADMIN hisob
 (`demo<ariza raqami>`, 6 xonali parol). Bot login, parol va manzilni yuboradi. Hisob 7 kun va jami 1 soat ishlaydi
-(so'rovlar orasidagi vaqt, 5 daqiqadan uzun tanaffus 5 daqiqa hisoblanadi). Demo saytda foydalanuvchi qo'shish,
-o'zgartirish, bloklash va parol tiklash yopiq (`403 DEMO_RESTRICTED`). Bitta chat yoki telefon — bitta sinov.
+(so'rovlar orasidagi vaqt, 5 daqiqadan uzun tanaffus 5 daqiqa hisoblanadi). Sinov hisobi foydalanuvchi qo'sha,
+o'zgartira, bloklay va parol tiklay olmaydi (`403 DEMO_RESTRICTED`); egasining o'z hisobi (sinov yozuvisiz) cheklanmaydi. Bitta chat yoki telefon — bitta sinov.
 
 Tartib muhim (har qadam oldingisidan keyin):
 
