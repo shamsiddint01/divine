@@ -168,6 +168,12 @@ describe('murojaat', () => {
     expect(panelList[0].replies[0].body).toBe('Narxi 100 000 so‘m');
     expect(sent.some((m) => m.text.includes('panelda javob berildi'))).toBe(false);
 
+    // Javob berilgani "javob kutayotganlar" ro'yxatiga kirmaydi; foydalanuvchi yana yozsa — qaytadi.
+    await text('/murojaatlar');
+    expect(sent.at(-1)?.text).toContain('Javob kutayotgan murojaat yo‘q');
+    await api('post', `/support/tickets/${ticket.id}/replies`, sellerToken)
+      .send({ body: 'Yana savol' })
+      .expect(201);
     await text('/murojaatlar');
     expect(sent.at(-1)?.buttons).toEqual([`reply:${ticket.id}`]);
     await hook({
@@ -179,7 +185,7 @@ describe('murojaat', () => {
     });
     await text('/bekor');
     await text('bekor qilingandan keyin');
-    expect(await replies()).toHaveLength(1);
+    expect(await replies()).toHaveLength(2);
     await api('post', '/site-control/telegram/webhook').send({}).expect(403);
   });
 
