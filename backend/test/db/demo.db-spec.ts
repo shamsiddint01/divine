@@ -32,7 +32,13 @@ const OWNER_TOKEN = '123456:test-token-abcdefghijk';
 const PUBLIC_TOKEN = '654321:public-token-abcdefghijk';
 
 let t: AuthTestApp;
-const sent: { bot: 'owner' | 'public'; method: string; chatId: string; text: string }[] = [];
+const sent: {
+  bot: 'owner' | 'public';
+  method: string;
+  chatId: string;
+  text: string;
+  markup?: string;
+}[] = [];
 const realFetch = globalThis.fetch;
 /** Demo sayt uyg'onishini sekinlashtirish (bepul server uxlab yotgandek). */
 let wakeDelayMs = 0;
@@ -78,8 +84,8 @@ async function issueTrial(chat = GUEST_CHAT, phone = '901234567') {
   await guest({ text: phone }, chat);
   const text = toGuest(chat).at(-1)?.text ?? '';
   const credentials = {
-    login: /Login: (\S+)/.exec(text)?.[1] ?? '',
-    password: /Parol: (\d{6})/.exec(text)?.[1] ?? '',
+    login: /Login: <code>(\w+)<\/code>/.exec(text)?.[1] ?? '',
+    password: /Parol: <code>(\d{6})<\/code>/.exec(text)?.[1] ?? '',
   };
   return { text, credentials };
 }
@@ -113,6 +119,7 @@ beforeAll(async () => {
       method: url.split('/').at(-1)!,
       chatId: String(body.chat_id),
       text: body.text ?? JSON.stringify(body),
+      markup: JSON.stringify(body.reply_markup ?? null),
     });
     return new Response(JSON.stringify({ ok: true, result: { message_id: 1 } }), { status: 200 });
   });
@@ -214,7 +221,17 @@ describe('bot: bepul sinab ko‘rish hisobi', () => {
     expect(message).toContain('7 kun, jami 60 daqiqa');
     const lead = await t.prisma.controlLead.findFirstOrThrow();
     const loginName = `demo${lead.number}`;
-    expect(message).toContain(`Login: ${loginName}`);
+    expect(message).toContain(`Login: <code>${loginName}</code>`);
+    // Bir bosishda nusxalash: login va parol tugmalari, sayt havolasi; telefon tugmasi oldin yopiladi.
+    const markup = JSON.parse(toGuest().at(-1)!.markup!) as {
+      inline_keyboard: { text: string; url?: string; copy_text?: { text: string } }[][];
+    };
+    expect(markup.inline_keyboard.flat()).toEqual([
+      { text: '📋 Login', copy_text: { text: loginName } },
+      { text: '📋 Parol', copy_text: { text: expect.stringMatching(/^\d{6}$/) } },
+      { text: '🌐 Saytni ochish', url: 'https://demo.example' },
+    ]);
+    expect(toGuest().at(-2)?.markup).toContain('remove_keyboard');
     expect(toOwner().at(-1)?.text).toContain(`sinov hisobi berildi (${loginName})`);
 
     const user = await t.prisma.user.findFirstOrThrow({
@@ -229,7 +246,7 @@ describe('bot: bepul sinab ko‘rish hisobi', () => {
       siteId: DEMO_SITE_ID,
     });
 
-    const password = /Parol: (\d{6})/.exec(message)![1]!;
+    const password = /Parol: <code>(\d{6})<\/code>/.exec(message)![1]!;
     await signIn({ login: loginName, password });
 
     // Takror /start — yangi hisob yo'q, berilgani eslatiladi.
@@ -248,7 +265,7 @@ describe('bot: bepul sinab ko‘rish hisobi', () => {
     try {
       const { text } = await issueTrial();
       const messages = toGuest().map((m) => m.text);
-      expect(messages.at(-2)).toContain('Sinov saytingiz tayyorlanmoqda');
+      expect(messages.at(-3)).toContain('Sinov saytingiz tayyorlanmoqda');
       expect(text).toContain('Sinov sayti tayyor');
     } finally {
       wakeDelayMs = 0;
