@@ -42,6 +42,8 @@ const sent: {
 const realFetch = globalThis.fetch;
 /** Demo sayt uyg'onishini sekinlashtirish (bepul server uxlab yotgandek). */
 let wakeDelayMs = 0;
+/** Telegram HTML formatli xabarni rad etadi (masalan, eski mijoz yoki format xatosi). */
+let rejectHtml = false;
 
 const server = () => request(t.app.getHttpServer());
 /** Mijozga — faqat mijozlar botidan; egasiga bildirishnoma — faqat egasining botidan. */
@@ -117,7 +119,16 @@ beforeAll(async () => {
       chat_id?: string;
       text?: string;
       reply_markup?: unknown;
+      parse_mode?: string;
     };
+    if (rejectHtml && body.parse_mode) {
+      return new Response(
+        JSON.stringify({ ok: false, description: "Bad Request: can't parse entities" }),
+        {
+          status: 400,
+        },
+      );
+    }
     sent.push({
       bot: url.includes(PUBLIC_TOKEN) ? 'public' : 'owner',
       method: url.split('/').at(-1)!,
@@ -274,6 +285,18 @@ describe('bot: bepul sinab ko‘rish hisobi', () => {
     } finally {
       wakeDelayMs = 0;
     }
+  });
+
+  it('Telegram formatli xabarni rad etsa — login va parol oddiy matnda', async () => {
+    rejectHtml = true;
+    try {
+      await issueTrial();
+    } finally {
+      rejectHtml = false;
+    }
+    const text = toGuest().at(-1)!.text;
+    expect(text).toMatch(/Login: demo\d+\nParol: \d{6}/);
+    expect(await t.prisma.controlTrial.count()).toBe(1);
   });
 
   it('demo sayt javob bermasa — oddiy ariza, egasiga ogohlantirish', async () => {
