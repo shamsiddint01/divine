@@ -495,13 +495,14 @@ describe('demo hisob — faqat demo saytda', () => {
     const res = await server()
       .post('/api/v1/site-control/demo-accounts')
       .set('x-control-token', token())
-      .send({ ref: 1, name: 'Ali Valiyev' });
+      .send({ ref: 99_999_999, name: 'Ali Valiyev' });
     expect(res.status).toBe(403);
     expect(res.body.error.message).toContain('demo rejimida emas');
     await server()
       .post('/api/v1/site-control/demo-accounts')
-      .send({ ref: 1, name: 'Ali Valiyev' })
+      .send({ ref: 99_999_999, name: 'Ali Valiyev' })
       .expect(403);
-    expect(await t.prisma.user.count({ where: { login: 'demo1' } })).toBe(0);
+    // Boshqa test fayllari `demo<raqam>` hisoblarini ochadi: bu raqam ularda uchramaydi.
+    expect(await t.prisma.user.count({ where: { login: 'demo99999999' } })).toBe(0);
   });
 });
