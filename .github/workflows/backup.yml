@@ -44,7 +44,7 @@ jobs:
             --symmetric --cipher-algo AES256 -o divine.dump.gpg divine.dump
           rm divine.dump
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: divine-backup-${{ github.run_id }}
           path: divine.dump.gpg
