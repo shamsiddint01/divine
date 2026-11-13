@@ -17,6 +17,7 @@ export const ErrorCode = {
   READ_ONLY_SESSION: 'READ_ONLY_SESSION',
   DEMO_RESTRICTED: 'DEMO_RESTRICTED',
   DEMO_TIME_UP: 'DEMO_TIME_UP',
+  DEMO_NO_PAYMENTS: 'DEMO_NO_PAYMENTS',
 
   NOT_FOUND: 'NOT_FOUND',
   CONFLICT: 'CONFLICT',
@@ -67,6 +68,7 @@ export const ERROR_MESSAGES_UZ: Readonly<Record<ErrorCode, string>> = {
   DEMO_RESTRICTED: 'Sinov hisobida foydalanuvchi qo‘shib, o‘zgartirib yoki bloklab bo‘lmaydi',
   DEMO_TIME_UP:
     'Sinov muddati tugadi: 1 soatlik vaqt yoki 7 kun o‘tdi. Davom etish uchun bog‘laning: +998901333831',
+  DEMO_NO_PAYMENTS: 'Demo saytga to‘lov kiritib bo‘lmaydi: u bepul va muddatsiz',
   FORBIDDEN: 'Bu amalni bajarishga ruxsatingiz yo‘q',
 
   NOT_FOUND: 'Ma’lumot topilmadi',

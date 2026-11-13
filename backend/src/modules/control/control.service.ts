@@ -343,6 +343,7 @@ export class ControlService {
       amountDue: amountDue(agreedPrice, balance),
       manualBlock: site.manualBlock,
       graceUntil,
+      isDemo: site.id === this.config.DEMO_SITE_ID,
     };
   }
 
@@ -436,6 +437,7 @@ export class ControlService {
 
   async addPayment(id: string, input: ControlPaymentInput): Promise<ControlSiteDetailDto> {
     const site = await this.get(id);
+    if (site.isDemo) throw new AppError(ErrorCode.DEMO_NO_PAYMENTS);
     const result = applyPayment({
       paidUntil: site.paidUntil,
       balance: site.balance,

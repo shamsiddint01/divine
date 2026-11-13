@@ -619,6 +619,8 @@ export interface ControlSiteDto {
   amountDue: string;
   manualBlock: boolean;
   graceUntil: DateOnlyString | null;
+  /** Umumiy demo sayt (`DEMO_SITE_ID`): bepul, muddatsiz, to'lov qabul qilmaydi. */
+  isDemo: boolean;
 }
 
 /** `GET /control/sites/payments`: Excel va kvitansiya uchun. */
