@@ -112,6 +112,7 @@ function EventList({ siteId }: { siteId?: string }) {
 }
 
 function daysLabel(site: ControlSiteDto) {
+  if (site.isDemo) return 'Cheksiz';
   if (site.daysLeft < 0) return `${-site.daysLeft} kun oldin tugagan`;
   if (site.daysLeft === 0) return 'Bugun oxirgi kun';
   return `${site.daysLeft} kun qoldi`;
@@ -586,7 +587,7 @@ function SiteSheet({ id, onClose }: { id: string; onClose: () => void }) {
                   <dt className="text-muted-foreground">Oxirgi to‘lov</dt>
                   <dd>{site.lastPaidAt ? formatDate(site.lastPaidAt) : '—'}</dd>
                   <dt className="text-muted-foreground">Keyingi to‘lov</dt>
-                  <dd>{formatDate(site.paidUntil)}</dd>
+                  <dd>{site.isDemo ? 'Cheksiz' : formatDate(site.paidUntil)}</dd>
                   {site.graceUntil ? (
                     <>
                       <dt className="text-muted-foreground">Yengillik</dt>
@@ -663,10 +664,12 @@ function SiteSheet({ id, onClose }: { id: string; onClose: () => void }) {
                 <AnnouncementForm siteId={id} />
               </section>
 
-              <section className="grid gap-3">
-                <h3 className="text-sm font-semibold">To‘lov yozish</h3>
-                <PaymentForm site={site} />
-              </section>
+              {site.isDemo ? null : (
+                <section className="grid gap-3">
+                  <h3 className="text-sm font-semibold">To‘lov yozish</h3>
+                  <PaymentForm site={site} />
+                </section>
+              )}
 
               <section className="grid gap-2">
                 <h3 className="text-sm font-semibold">Jurnal</h3>
@@ -1170,10 +1173,12 @@ function SitesScreen({ sites }: { sites: ControlSiteDto[] }) {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {formatDate(site.paidUntil)}
-                        <span className="block text-xs text-muted-foreground">
-                          {daysLabel(site)}
-                        </span>
+                        {site.isDemo ? 'Cheksiz' : formatDate(site.paidUntil)}
+                        {site.isDemo ? null : (
+                          <span className="block text-xs text-muted-foreground">
+                            {daysLabel(site)}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <BackupBadge health={healthOf(site.id)} checkedAt={dataUpdatedAt} />
