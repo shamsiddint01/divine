@@ -81,6 +81,7 @@ export interface ProductInput {
 export type {
   MovementDto,
   StockRowDto,
+  StockSummaryDto,
   WarehouseDetailDto,
   WarehouseDto,
   WarehouseListItemDto,

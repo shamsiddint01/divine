@@ -6,7 +6,7 @@ import {
   warehouseUpdateSchema,
 } from '@divine/shared';
 import { compareQty, lineTotal, sumQty } from '@/shared/lib/decimal';
-import type { StockRowDto, WarehouseDetailDto } from '@/shared/types/api';
+import type { StockRowDto, StockSummaryDto, WarehouseDetailDto } from '@/shared/types/api';
 import { db } from '../db';
 import { diffChanges, hasChanges, recordAudit } from '../audit';
 import { getStock } from '../inventory';
@@ -144,16 +144,12 @@ route('PATCH', '/warehouses/:id/status', ({ params, body }) => {
   return toWarehouseBaseDto(w);
 });
 
-route('GET', '/warehouses/:id/stock', ({ params, query }) => {
-  assertReadAll();
+function stockRows(
+  w: { id: string },
+  query: Record<string, string | undefined>,
+  canReadCost: boolean,
+): StockRowDto[] {
   const s = db();
-  const canReadCost = currentCan(s, 'products.read_cost');
-  if (!canReadCost && query.sort?.startsWith('stockValue')) {
-    fail(400, ErrorCode.VALIDATION_ERROR, [
-      { field: 'sort', message: VALIDATION_MESSAGES_UZ.invalidSort },
-    ]);
-  }
-  const w = s.warehouses.find((x) => x.id === params.id) ?? notFound();
   let rows: StockRowDto[] = s.products
     .filter((p) => s.stock[`${w.id}|${p.id}`] !== undefined)
     .filter((p) => includesText([p.name, p.barcode], query.search))
@@ -180,8 +176,21 @@ route('GET', '/warehouses/:id/stock', ({ params, query }) => {
     });
   if (query.stock === 'low') rows = rows.filter((r) => r.isLowStock);
   if (query.stock === 'out') rows = rows.filter((r) => compareQty(r.quantity, '0') <= 0);
+  return rows;
+}
+
+route('GET', '/warehouses/:id/stock', ({ params, query }) => {
+  assertReadAll();
+  const s = db();
+  const canReadCost = currentCan(s, 'products.read_cost');
+  if (!canReadCost && query.sort?.startsWith('stockValue')) {
+    fail(400, ErrorCode.VALIDATION_ERROR, [
+      { field: 'sort', message: VALIDATION_MESSAGES_UZ.invalidSort },
+    ]);
+  }
+  const w = s.warehouses.find((x) => x.id === params.id) ?? notFound();
   const sorted = sortBy(
-    rows,
+    stockRows(w, query, canReadCost),
     query.sort,
     {
       productName: (r) => r.productName,
@@ -192,6 +201,24 @@ route('GET', '/warehouses/:id/stock', ({ params, query }) => {
     'productName:asc',
   );
   return paginate(sorted, query);
+});
+
+route('GET', '/warehouses/:id/stock/summary', ({ params, query }): StockSummaryDto => {
+  assertReadAll();
+  const s = db();
+  const canReadCost = currentCan(s, 'products.read_cost');
+  const w = s.warehouses.find((x) => x.id === params.id) ?? notFound();
+  const rows = stockRows(w, query, canReadCost);
+  const units = [...new Set(rows.map((r) => r.unit))].sort();
+  return {
+    positions: rows.length,
+    lowStockCount: rows.filter((r) => r.isLowStock).length,
+    quantities: units.map((unit) => ({
+      unit,
+      quantity: sumQty(rows.filter((r) => r.unit === unit).map((r) => r.quantity)),
+    })),
+    ...(canReadCost ? { stockValue: sumMoney(rows.map((r) => r.stockValue ?? '0')) } : {}),
+  };
 });
 
 route('GET', '/warehouses/:id/movements', ({ params, query }) => {

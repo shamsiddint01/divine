@@ -5,6 +5,7 @@ import type {
   MovementDto,
   Paginated,
   StockRowDto,
+  StockSummaryDto,
   WarehouseDetailDto,
   WarehouseDto,
   WarehouseInput,
@@ -18,6 +19,8 @@ export const warehouseKeys = {
   detail: (id: string) => [...warehouseKeys.all, 'detail', id] as const,
   stock: (id: string, q: Record<string, QueryValue>) =>
     [...warehouseKeys.all, 'stock', id, q] as const,
+  stockSummary: (id: string, q: Record<string, QueryValue>) =>
+    [...warehouseKeys.all, 'stock-summary', id, q] as const,
   movements: (id: string, q: Record<string, QueryValue>) =>
     [...warehouseKeys.all, 'movements', id, q] as const,
 };
@@ -57,6 +60,16 @@ export function useWarehouseStock(id: string, query: Record<string, QueryValue>)
     queryKey: warehouseKeys.stock(id, query),
     queryFn: ({ signal }) =>
       apiRequest<Paginated<StockRowDto>>(`/warehouses/${id}/stock`, { signal, query }),
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** Qoldiq jadvalidagi qidiruv, guruh va holat filtrlari bo'yicha umumiy hisob (barcha sahifalar). */
+export function useWarehouseStockSummary(id: string, query: Record<string, QueryValue>) {
+  return useQuery({
+    queryKey: warehouseKeys.stockSummary(id, query),
+    queryFn: ({ signal }) =>
+      apiRequest<StockSummaryDto>(`/warehouses/${id}/stock/summary`, { signal, query }),
     placeholderData: keepPreviousData,
   });
 }
