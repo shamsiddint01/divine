@@ -786,3 +786,63 @@ describe('haqiqiy backend: sotuvchi ish jarayoni (aniq biriktirilgan ombor bilan
     await api('get', `/warehouses/${w.id}`, token).expect(403);
   });
 });
+
+describe('qoldiq hisobi: guruh va mahsulot bo‘yicha (GET /warehouses/:id/stock/summary)', () => {
+  it('filtrsiz — butun ombor, guruh/qidiruv/holat bilan — faqat shu qism; birliklar alohida; kelgan narxisiz — stockValue yo‘q', async () => {
+    const w = await createViaApi();
+    const otherGroup = await withCommit((db) => createGroup(db, adminId));
+    const pieces = await newProduct();
+    const weighed = await withCommit((db) =>
+      createProduct(db, {
+        groupId: otherGroup,
+        name: 'Hisob-un',
+        actor: adminId,
+        costPrice: COST,
+        salePrice: '2150000.00',
+      }),
+    );
+    await t.prisma.product.update({ where: { id: weighed }, data: { unit: 'KG' } });
+    await receiveViaService(w.id, pieces, '10');
+    await receiveViaService(w.id, weighed, '2.5');
+    const summary = (query: string) =>
+      api('get', `/warehouses/${w.id}/stock/summary${query}`, adminToken).expect(200);
+
+    const all = await summary('');
+    expect(all.body).toEqual({
+      positions: 2,
+      lowStockCount: 0,
+      quantities: [
+        { unit: 'DONA', quantity: '10.000' },
+        { unit: 'KG', quantity: '2.500' },
+      ],
+      stockValue: '22932087.50',
+    });
+    const byGroup = await summary(`?groupId=${otherGroup}`);
+    expect(byGroup.body).toEqual({
+      positions: 1,
+      lowStockCount: 0,
+      quantities: [{ unit: 'KG', quantity: '2.500' }],
+      stockValue: '4586417.50',
+    });
+    const byProduct = await summary('?search=Hisob-un');
+    expect(byProduct.body).toEqual(byGroup.body);
+    const none = await summary('?search=yoq-mahsulot');
+    expect(none.body).toEqual({
+      positions: 0,
+      lowStockCount: 0,
+      quantities: [],
+      stockValue: '0.00',
+    });
+
+    const noCost = await t.app
+      .get(WarehousesService)
+      .stockSummary(contextWithout('products.read_cost' as Permission), w.id, {
+        page: 1,
+        pageSize: 20,
+        sort: { field: 'productName', direction: 'asc' },
+      });
+    expect(noCost).not.toHaveProperty('stockValue');
+    expect(noCost.positions).toBe(2);
+    await api('get', `/warehouses/${w.id}/stock/summary`, sellerToken).expect(403);
+  });
+});
