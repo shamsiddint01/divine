@@ -44,26 +44,22 @@ function ScannerView({ onDetected }: { onDetected: (code: string) => void }) {
     let stop: (() => void) | undefined;
     void (async () => {
       try {
-        const [{ BrowserMultiFormatReader }, { BarcodeFormat, DecodeHintType }] = await Promise.all(
-          [import('@zxing/browser'), import('@zxing/library')],
-        );
-        if (cancelled) return;
-        const hints = new Map<number, unknown>([
-          [
-            DecodeHintType.POSSIBLE_FORMATS,
-            [
-              BarcodeFormat.EAN_13,
-              BarcodeFormat.EAN_8,
-              BarcodeFormat.UPC_A,
-              BarcodeFormat.UPC_E,
-              BarcodeFormat.CODE_128,
-            ],
-          ],
-          [DecodeHintType.TRY_HARDER, true],
+        const [{ BrowserMultiFormatReader }, { DecodeHintType }] = await Promise.all([
+          import('@zxing/browser'),
+          import('@zxing/library'),
         ]);
+        if (cancelled) return;
+        // `POSSIBLE_FORMATS` berilmaydi: QR, Data Matrix, Code 39/93/128, EAN/UPC, ITF, PDF417 va boshqalar o'qiladi.
+        const hints = new Map<number, unknown>([[DecodeHintType.TRY_HARDER, true]]);
         const reader = new BrowserMultiFormatReader(hints);
         const controls = await reader.decodeFromConstraints(
-          { video: { facingMode: { ideal: 'environment' } } },
+          {
+            video: {
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+          },
           video,
           (result, _error, active) => {
             if (!result) return;

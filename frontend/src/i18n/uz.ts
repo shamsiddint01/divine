@@ -827,8 +827,8 @@ export const uz = {
 
   scanner: {
     open: 'Kamera bilan skanerlash',
-    title: 'Shtrix-kodni skanerlash',
-    hint: 'Kamerani shtrix-kodga tuting, o‘qilishi bilan oyna yopiladi.',
+    title: 'Shtrix-kod yoki QR-kodni skanerlash',
+    hint: 'Kamerani shtrix-kod yoki QR-kodga tuting, o‘qilishi bilan oyna yopiladi.',
     errors: {
       unsupported: 'Bu manzilda kamera ochilmaydi. Saytni https yoki localhost orqali oching.',
       denied: 'Kameraga ruxsat berilmagan. Brauzer sozlamalaridan ruxsat bering.',
