@@ -32,7 +32,12 @@ import { StatusBadge } from '@/shared/components/StatusBadge';
 import { Badge } from '@/shared/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
 import type { MovementDto, StockRowDto } from '@/shared/types/api';
-import { useWarehouse, useWarehouseMovements, useWarehouseStock } from '../api/warehouses';
+import {
+  useWarehouse,
+  useWarehouseMovements,
+  useWarehouseStock,
+  useWarehouseStockSummary,
+} from '../api/warehouses';
 
 function StockTab({ warehouseId }: { warehouseId: string }) {
   const list = useListParams({
@@ -45,6 +50,19 @@ function StockTab({ warehouseId }: { warehouseId: string }) {
   );
   const { data: groups } = useGroupOptions();
   const canReadCost = useHasAnyPermission([Permission.PRODUCTS_READ_COST]);
+  const { search, filters } = list;
+  const summary = useWarehouseStockSummary(warehouseId, {
+    search,
+    groupId: filters.groupId,
+    stock: filters.stock,
+  });
+  const summaryTitle = filters.groupId
+    ? t.warehouses.summary.group(
+        groups?.find((g) => g.id === filters.groupId)?.name ?? t.common.loading,
+      )
+    : search
+      ? t.warehouses.summary.product(search)
+      : t.warehouses.summary.all;
 
   const columns: Column<StockRowDto>[] = [
     {
@@ -157,6 +175,61 @@ function StockTab({ warehouseId }: { warehouseId: string }) {
           ]}
         />
       </FilterBar>
+      <section aria-label={summaryTitle} className="space-y-2">
+        <h3 className="text-sm font-medium text-muted-foreground">{summaryTitle}</h3>
+        <div
+          className={cn(
+            'grid gap-3 sm:grid-cols-2',
+            canReadCost ? 'xl:grid-cols-4' : 'xl:grid-cols-3',
+          )}
+        >
+          <StatCard
+            label={t.warehouses.summary.positions}
+            icon={Boxes}
+            loading={!summary.data}
+            value={summary.data ? summary.data.positions : null}
+          />
+          <StatCard
+            label={t.warehouses.summary.quantity}
+            icon={Boxes}
+            tone="success"
+            loading={!summary.data}
+            value={
+              summary.data
+                ? summary.data.quantities.length
+                  ? summary.data.quantities.map((q) => (
+                      <span key={q.unit} className="block">
+                        <QtyText value={q.quantity} unit={q.unit} />
+                      </span>
+                    ))
+                  : '0'
+                : null
+            }
+          />
+          {canReadCost ? (
+            <StatCard
+              label={t.warehouses.summary.value}
+              icon={Wallet}
+              tone="info"
+              loading={!summary.data}
+              value={
+                summary.data
+                  ? summary.data.stockValue === undefined
+                    ? '—'
+                    : formatCompactMoney(summary.data.stockValue)
+                  : null
+              }
+            />
+          ) : null}
+          <StatCard
+            label={t.warehouses.summary.low}
+            icon={PackageX}
+            tone="warning"
+            loading={!summary.data}
+            value={summary.data ? summary.data.lowStockCount : null}
+          />
+        </div>
+      </section>
       <DataTable
         columns={visibleColumns}
         rows={data?.data}

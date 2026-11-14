@@ -151,9 +151,7 @@ export class WarehousesService {
   async stockSummary(ctx: AccessContext, id: string, query: StockQuery): Promise<StockSummaryDto> {
     await this.assertExists(id);
     const { stockValue, ...summary } = await this.repository.stockSummary(id, query);
-    return hasPermission(ctx, Permission.PRODUCTS_READ_COST)
-      ? { ...summary, stockValue }
-      : summary;
+    return hasPermission(ctx, Permission.PRODUCTS_READ_COST) ? { ...summary, stockValue } : summary;
   }
 
   async movements(

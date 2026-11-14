@@ -632,6 +632,15 @@ export const uz = {
       movements: 'Harakatlar tarixi',
     },
     stockSearch: 'Mahsulot nomi yoki shtrix-kod',
+    summary: {
+      all: 'Ombor hisobi',
+      group: (name: string) => `Guruh hisobi: ${name}`,
+      product: (query: string) => `Mahsulot hisobi: «${query}»`,
+      positions: 'Mahsulot turlari',
+      quantity: 'Umumiy miqdor',
+      value: 'Qiymati (kelgan narxida)',
+      low: 'Kam qolgan',
+    },
     movement: {
       date: 'Sana va vaqt',
       type: 'Turi',

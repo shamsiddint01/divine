@@ -5,7 +5,7 @@ import {
   warehouseStatusSchema,
   warehouseUpdateSchema,
 } from '@divine/shared';
-import { compareQty, lineTotal, sumQty } from '@/shared/lib/decimal';
+import { compareQty, lineTotal, sumMoney, sumQty } from '@/shared/lib/decimal';
 import type { StockRowDto, StockSummaryDto, WarehouseDetailDto } from '@/shared/types/api';
 import { db } from '../db';
 import { diffChanges, hasChanges, recordAudit } from '../audit';
