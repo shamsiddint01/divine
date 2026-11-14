@@ -191,6 +191,18 @@ export interface StockRowDto {
   updatedAt: IsoDateTimeString;
 }
 
+/**
+ * `GET /warehouses/:id/stock/summary`: qoldiq ro'yxatining (qidiruv, guruh, holat filtrlari bilan) umumiy
+ * hisobi — sahifalarga bo'linmagan. `stockValue` — faqat `products.read_cost`.
+ */
+export interface StockSummaryDto {
+  positions: number;
+  lowStockCount: number;
+  /** Birliklar bo'yicha alohida: kg va dona qo'shilmaydi. */
+  quantities: { unit: ProductUnit; quantity: QuantityString }[];
+  stockValue?: MoneyString;
+}
+
 export interface UserRefDto {
   id: string;
   login: string;

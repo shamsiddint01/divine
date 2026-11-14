@@ -26,6 +26,13 @@ export interface StockQuery {
   stock?: 'low' | 'out';
 }
 
+export interface StockSummaryRow {
+  positions: number;
+  lowStockCount: number;
+  quantities: { unit: ProductUnit; quantity: string }[];
+  stockValue: string;
+}
+
 export interface WarehouseRow {
   id: string;
   name: string;
@@ -189,7 +196,7 @@ export class WarehousesRepository {
     return row ?? { assignedUsers: 0, productsInStock: 0 };
   }
 
-  async stock(id: string, query: StockQuery): Promise<{ rows: StockRow[]; total: number }> {
+  private stockConditions(id: string, query: StockQuery): Prisma.Sql[] {
     const conditions: Prisma.Sql[] = [Prisma.sql`ws.warehouse_id = ${id}::uuid`];
     if (query.search) {
       const pattern = `%${escapeLike(query.search)}%`;
@@ -204,6 +211,37 @@ export class WarehousesRepository {
       );
     }
     if (query.stock === 'out') conditions.push(Prisma.sql`ws.quantity <= 0`);
+    return conditions;
+  }
+
+  /** Qoldiq ro'yxatidagi bir xil filtrlar bo'yicha umumiy hisob (barcha sahifalar). */
+  async stockSummary(id: string, query: StockQuery): Promise<StockSummaryRow> {
+    const where = Prisma.join(this.stockConditions(id, query), ' AND ');
+    const rows = await this.prisma.$queryRaw<
+      { unit: string; positions: number; qty: string; value: string; low: number }[]
+    >`
+      WITH ${THRESHOLD}
+      SELECT p.unit::text AS unit, count(*)::int AS positions,
+             coalesce(sum(ws.quantity), 0)::numeric(14, 3)::text AS qty,
+             coalesce(sum(round(ws.quantity * p.cost_price, 2)), 0)::numeric(18, 2)::text AS value,
+             (count(*) FILTER (WHERE p.status = 'ACTIVE' AND ws.quantity <= coalesce(p.min_stock, th.v)))::int AS low
+        FROM warehouse_stock ws
+        JOIN products p ON p.id = ws.product_id
+        CROSS JOIN th
+       WHERE ${where}
+       GROUP BY p.unit
+       ORDER BY p.unit`;
+    const value = rows.reduce((sum, row) => sum + Number(row.value) * 100, 0);
+    return {
+      positions: rows.reduce((sum, row) => sum + row.positions, 0),
+      lowStockCount: rows.reduce((sum, row) => sum + row.low, 0),
+      quantities: rows.map((row) => ({ unit: row.unit as ProductUnit, quantity: row.qty })),
+      stockValue: (Math.round(value) / 100).toFixed(2),
+    };
+  }
+
+  async stock(id: string, query: StockQuery): Promise<{ rows: StockRow[]; total: number }> {
+    const conditions = this.stockConditions(id, query);
     const orderBy = toSqlOrderBy(query.sort, STOCK_SORT, Prisma.sql`p.id`);
     const { skip, take } = toPrismaPagination(query);
     const rows = await this.prisma.$queryRaw<(StockRow & { total: bigint })[]>`
