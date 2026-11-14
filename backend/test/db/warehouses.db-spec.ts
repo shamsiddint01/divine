@@ -791,7 +791,7 @@ describe('qoldiq hisobi: guruh va mahsulot bo‘yicha (GET /warehouses/:id/stock
   it('filtrsiz — butun ombor, guruh/qidiruv/holat bilan — faqat shu qism; birliklar alohida; kelgan narxisiz — stockValue yo‘q', async () => {
     const w = await createViaApi();
     const otherGroup = await withCommit((db) => createGroup(db, adminId));
-    const pieces = await newProduct();
+    const pieces = await newProduct({ minStock: '1' });
     const weighed = await withCommit((db) =>
       createProduct(db, {
         groupId: otherGroup,
@@ -801,7 +801,7 @@ describe('qoldiq hisobi: guruh va mahsulot bo‘yicha (GET /warehouses/:id/stock
         salePrice: '2150000.00',
       }),
     );
-    await t.prisma.product.update({ where: { id: weighed }, data: { unit: 'KG' } });
+    await t.prisma.product.update({ where: { id: weighed }, data: { unit: 'KG', minStock: '1' } });
     await receiveViaService(w.id, pieces, '10');
     await receiveViaService(w.id, weighed, '2.5');
     const summary = (query: string) =>
