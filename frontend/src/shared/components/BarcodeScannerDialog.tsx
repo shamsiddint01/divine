@@ -55,7 +55,12 @@ async function startNative(
     ?.applyConstraints({ advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet] })
     .catch(() => undefined);
   video.srcObject = stream;
-  await video.play();
+  try {
+    await video.play();
+  } catch (cause) {
+    stream.getTracks().forEach((item) => item.stop());
+    throw cause;
+  }
   let alive = true;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const stop = () => {
