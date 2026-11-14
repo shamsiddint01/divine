@@ -20,6 +20,98 @@ function errorOf(error: unknown): ScannerError {
   return 'failed';
 }
 
+type NativeDetector = { detect: (source: HTMLVideoElement) => Promise<{ rawValue: string }[]> };
+type NativeDetectorCtor = new () => NativeDetector;
+
+const nativeDetector = () =>
+  (window as unknown as { BarcodeDetector?: NativeDetectorCtor }).BarcodeDetector;
+
+const onFound = (code: string, report: (code: string) => void) => {
+  navigator.vibrate?.(60);
+  report(code);
+};
+
+/**
+ * Brauzerning ichki detektori (Android Chrome): telefon kamerasi ilovasi kabi tez va aniq, barcha kod turlari.
+ * Qo'llab-quvvatlanmasa `null` qaytadi va zxing ishlatiladi.
+ */
+async function startNative(
+  video: HTMLVideoElement,
+  report: (code: string) => void,
+): Promise<(() => void) | null> {
+  const Detector = nativeDetector();
+  if (!Detector) return null;
+  const detector = new Detector();
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: {
+      facingMode: { ideal: 'environment' },
+      width: { ideal: 1920 },
+      height: { ideal: 1080 },
+    },
+  });
+  const track = stream.getVideoTracks()[0];
+  // Uzluksiz fokus: yaqin masofadagi QR/shtrix-kod aniq chiqadi.
+  await track
+    ?.applyConstraints({ advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet] })
+    .catch(() => undefined);
+  video.srcObject = stream;
+  await video.play();
+  let alive = true;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const stop = () => {
+    alive = false;
+    clearTimeout(timer);
+    stream.getTracks().forEach((item) => item.stop());
+    video.srcObject = null;
+  };
+  const tick = async () => {
+    if (!alive) return;
+    try {
+      const [found] = video.readyState >= 2 ? await detector.detect(video) : [];
+      if (found?.rawValue && alive) {
+        stop();
+        onFound(found.rawValue, report);
+        return;
+      }
+    } catch {
+      // Bitta kadrni o'qib bo'lmadi — keyingisiga o'tamiz.
+    }
+    if (alive) timer = setTimeout(() => void tick(), 100);
+  };
+  void tick();
+  return stop;
+}
+
+/** Zaxira: `BarcodeDetector` yo'q brauzerlar (iPhone Safari, Firefox) uchun zxing. */
+async function startZxing(
+  video: HTMLVideoElement,
+  report: (code: string) => void,
+): Promise<() => void> {
+  const [{ BrowserMultiFormatReader }, { DecodeHintType }] = await Promise.all([
+    import('@zxing/browser'),
+    import('@zxing/library'),
+  ]);
+  // `POSSIBLE_FORMATS` berilmaydi: QR, Data Matrix, Code 39/93/128, EAN/UPC, ITF, PDF417 va boshqalar o'qiladi.
+  const hints = new Map<number, unknown>([[DecodeHintType.TRY_HARDER, true]]);
+  const reader = new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 80 });
+  const controls = await reader.decodeFromConstraints(
+    {
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+      },
+    },
+    video,
+    (result, _error, active) => {
+      if (!result) return;
+      active.stop();
+      onFound(result.getText(), report);
+    },
+  );
+  return () => controls.stop();
+}
+
 /**
  * Kamera oqimi va o'qish: oyna ochilganda ishga tushadi, kod topilganda yoki yopilganda kamera to'xtaydi.
  * O'qish kutubxonasi faqat shu yerda yuklanadi (kassa sahifasi og'irlashmaydi).
@@ -44,33 +136,12 @@ function ScannerView({ onDetected }: { onDetected: (code: string) => void }) {
     let stop: (() => void) | undefined;
     void (async () => {
       try {
-        const [{ BrowserMultiFormatReader }, { DecodeHintType }] = await Promise.all([
-          import('@zxing/browser'),
-          import('@zxing/library'),
-        ]);
-        if (cancelled) return;
-        // `POSSIBLE_FORMATS` berilmaydi: QR, Data Matrix, Code 39/93/128, EAN/UPC, ITF, PDF417 va boshqalar o'qiladi.
-        const hints = new Map<number, unknown>([[DecodeHintType.TRY_HARDER, true]]);
-        const reader = new BrowserMultiFormatReader(hints);
-        const controls = await reader.decodeFromConstraints(
-          {
-            video: {
-              facingMode: { ideal: 'environment' },
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
-            },
-          },
-          video,
-          (result, _error, active) => {
-            if (!result) return;
-            active.stop();
-            navigator.vibrate?.(60);
-            latest.current(result.getText());
-          },
-        );
-        if (cancelled) controls.stop();
+        const report = (code: string) => latest.current(code);
+        const started =
+          (await startNative(video, report).catch(() => null)) ?? (await startZxing(video, report));
+        if (cancelled) started();
         else {
-          stop = () => controls.stop();
+          stop = started;
           setReady(true);
         }
       } catch (cause) {
