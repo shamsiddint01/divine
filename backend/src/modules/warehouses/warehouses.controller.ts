@@ -6,6 +6,7 @@ import {
   type Paginated,
   Permission,
   type StockRowDto,
+  type StockSummaryDto,
   uuidSchema,
   WAREHOUSE_STATUSES,
   type WarehouseCreateInput,
@@ -94,6 +95,19 @@ export class WarehousesController {
     @ZodQuery(stockQuerySchema) query: StockQuery,
   ): Promise<Paginated<StockRowDto>> {
     return this.warehouses.stock(ctx, id, query);
+  }
+
+  @Get(':id/stock/summary')
+  @RequirePermissions(Permission.WAREHOUSES_READ_ALL)
+  @ApiOperation({ summary: 'Qoldiq hisobi: qidiruv, guruh va holat filtrlari bo‘yicha umumiy' })
+  @ApiOkResponse({ description: 'StockSummaryDto' })
+  @ApiErrorResponses(ErrorCode.VALIDATION_ERROR, ErrorCode.NOT_FOUND, ErrorCode.FORBIDDEN)
+  stockSummary(
+    @Ctx() ctx: AccessContext,
+    @idParam() id: string,
+    @ZodQuery(stockQuerySchema) query: StockQuery,
+  ): Promise<StockSummaryDto> {
+    return this.warehouses.stockSummary(ctx, id, query);
   }
 
   @Get(':id/movements')

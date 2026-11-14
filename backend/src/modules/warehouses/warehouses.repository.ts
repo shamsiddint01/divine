@@ -231,12 +231,12 @@ export class WarehousesRepository {
        WHERE ${where}
        GROUP BY p.unit
        ORDER BY p.unit`;
-    const value = rows.reduce((sum, row) => sum + Number(row.value) * 100, 0);
+    const cents = rows.reduce((sum, row) => sum + BigInt(row.value.replace('.', '')), 0n);
     return {
       positions: rows.reduce((sum, row) => sum + row.positions, 0),
       lowStockCount: rows.reduce((sum, row) => sum + row.low, 0),
       quantities: rows.map((row) => ({ unit: row.unit as ProductUnit, quantity: row.qty })),
-      stockValue: (Math.round(value) / 100).toFixed(2),
+      stockValue: `${cents / 100n}.${(cents % 100n).toString().padStart(2, '0')}`,
     };
   }
 
